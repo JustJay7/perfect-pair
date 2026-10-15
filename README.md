@@ -16,7 +16,7 @@ Node runtime when available. For other computers, install Node.js 22 or newer
 
 1. Open **http://127.0.0.1:8787/connect**.
 2. Enter the organizer-approved region and Haiku model/inference profile ID.
-   The default is `us-east-1` / `us.anthropic.claude-haiku-5-5`.
+   The default is `us-east-1` / `us.anthropic.claude-haiku-4-5-20251001-v1:0`.
 3. Enter the workshop's temporary access key ID, secret access key and session
    token in the local form. Do not put credentials in chat, HTML, or GitHub.
    In the workshop event dashboard, look under **AWS account access → Get AWS CLI
@@ -95,7 +95,7 @@ Before a pitch, run a Return investigation and action against the actual worksho
 model, inspect the tool/audit trace, and rerun the scripted scenario evaluations.
 
 AWS references: [Converse API](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html),
-[Haiku model configuration](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-5-5.html),
+[Haiku model configuration](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html),
 [Workshop credentials](https://catalog.us-east-1.prod.workshops.aws/v2/workshops/63320e83-6abc-493d-83d8-f822584fb3cb/en-US/getting-started/aws-hosted),
 [AgentCore Node.js deployment](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-node.html).
 

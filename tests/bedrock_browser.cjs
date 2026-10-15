@@ -51,7 +51,7 @@ const { chromium } = require('playwright');
     });
     assert.equal(result.status, 'options');
     assert.ok(result.calls.includes('look_up_order_and_customer'));
-    assert.equal(result.model, 'us.anthropic.claude-haiku-5-5');
+    assert.equal(result.model, 'us.anthropic.claude-haiku-4-5-20251001-v1:0');
     assert.ok(sent.at(-1).messages.at(-1).content[0].toolResult.content[0].json.order);
     assert.doesNotMatch(JSON.stringify(sent), /temporary-test-secret|temporary-test-token/);
     await page.getByRole('group', { name: 'Dataset', exact: true }).getByRole('button', { name: 'Actual', exact: true }).click();

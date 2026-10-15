@@ -15,6 +15,7 @@ async function bedrockImage(blob) {
 }
 async function bedrockSample(prompt, options = {}) {
   const tools = new Map((options.tools || []).map(t => [t.name, t]));
+  if (tools.has('find_exchange_options')) prompt += '\nTool input contract: find_exchange_options takes the ORIGINAL returned item’s style_id, size, width and colour from look_up_order_and_customer. Its width means the returned shoe’s width, not the desired replacement width. Pass the customer’s fit problem as issue; the tool generates replacement sizes and widths itself.';
   let run;
   try {
     options.signal?.throwIfAborted();

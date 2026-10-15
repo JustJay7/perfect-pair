@@ -44,7 +44,7 @@ export function publicError(error) {
 }
 
 export function readConfig(env = process.env) {
-  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-5-5', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
+  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
 }
 
 export class BedrockService {
