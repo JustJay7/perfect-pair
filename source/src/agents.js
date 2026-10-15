@@ -303,8 +303,8 @@ const LIVE_COPY = {
 const PERMANENT = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed', 'tools_unavailable'];
 function liveError(e) {
   const code = e && e.code ? String(e.code) : 'upstream_error';
-  const copy = LIVE_COPY[code] || (e && e.message) || LIVE_COPY.upstream_error;
-  if (PERMANENT.includes(code)) { STATE.live.available = false; STATE.live.reason = copy; STATE.mode = 'scripted'; UI.onLiveChanged?.(); }
+  const copy = (STATE.live.provider === 'bedrock' && e?.message) || LIVE_COPY[code] || (e && e.message) || LIVE_COPY.upstream_error;
+  if (PERMANENT.includes(code) || ['aws_credentials', 'aws_access_denied', 'aws_model_config'].includes(code)) { STATE.live.available = false; STATE.live.reason = copy; STATE.mode = 'scripted'; UI.onLiveChanged?.(); }
   return { code, copy };
 }
 function extractLastJSON(text) {

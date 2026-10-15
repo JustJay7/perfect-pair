@@ -1057,6 +1057,7 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
       <label class="switch" title="Makes the first reservation fail, so the agent has to re-plan"><input type="checkbox" id="failsw" checked> Pair sells mid-reservation</label>
       <button type="button" class="btn-ghost theme-btn" id="theme-btn" aria-label="Switch to dark mode" title="Switch light and dark mode"></button>
       <button type="button" class="btn-ghost" id="reset-btn">Reset demo</button>
+      <a class="btn-ghost" id="aws-connect" href="/connect" target="_blank" rel="noopener" hidden>Connect AWS</a>
     </div>
     <div class="livenote" id="livenote"></div>
     <div class="livenote" id="data-source-note" role="status"></div>
@@ -2582,8 +2583,8 @@ const LIVE_COPY = {
 const PERMANENT = ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed', 'tools_unavailable'];
 function liveError(e) {
   const code = e && e.code ? String(e.code) : 'upstream_error';
-  const copy = LIVE_COPY[code] || (e && e.message) || LIVE_COPY.upstream_error;
-  if (PERMANENT.includes(code)) { STATE.live.available = false; STATE.live.reason = copy; STATE.mode = 'scripted'; UI.onLiveChanged?.(); }
+  const copy = (STATE.live.provider === 'bedrock' && e?.message) || LIVE_COPY[code] || (e && e.message) || LIVE_COPY.upstream_error;
+  if (PERMANENT.includes(code) || ['aws_credentials', 'aws_access_denied', 'aws_model_config'].includes(code)) { STATE.live.available = false; STATE.live.reason = copy; STATE.mode = 'scripted'; UI.onLiveChanged?.(); }
   return { code, copy };
 }
 function extractLastJSON(text) {
@@ -4539,13 +4540,15 @@ function renderBarcode() {
 }
 function renderMast() {
   const live = STATE.live;
+  const liveModel = STATE.tier === 'default' && live.thoroughModelId ? live.thoroughModelId : live.modelId;
   $('#mode-live').setAttribute('aria-pressed', STATE.mode === 'live');
   $('#mode-scripted').setAttribute('aria-pressed', STATE.mode === 'scripted');
   $('#mode-live').disabled = !live.available;
-  $('#tier').value = STATE.tier; $('#tier').disabled = STATE.mode !== 'live';
+  $('#tier').value = STATE.tier; $('#tier').disabled = STATE.mode !== 'live' || (live.provider === 'bedrock' && !live.thoroughModelId);
+  $('#aws-connect').hidden = !BEDROCK_LOCAL;
   $('#failsw').checked = STATE.failureSwitch;
   $('#livenote').innerHTML = live.available
-    ? (STATE.mode === 'live' ? '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.' : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
+    ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Tools and safety rules still run as browser simulations.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
 const TABS = [['return', 'Return'], ['store', 'Store counter'], ['approvals', 'Approvals'], ['dashboard', 'Dashboard'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
@@ -6365,15 +6368,15 @@ function boot() {
   const tab = TABS.some(t => t[0] === hash) ? hash : 'return';
   renderMast(); showTab(tab);
   const use = window.claude && typeof window.claude.use === 'function' ? n => window.claude.use(n) : () => Promise.resolve(null);
-  use('sample').then(async s => {
+  getLiveSample().then(async s => {
     STATE.live.checked = true;
-    if (!s) { STATE.live.reason = 'The live agent needs this page open in Claude (claude.ai or the Claude app). Using the scripted backup.'; renderMast(); return; }
+    if (!s) { if (!BEDROCK_LOCAL) STATE.live.reason = 'For Amazon Bedrock, start the local Perfect Pair server and use Connect AWS. Claude-hosted pages can also use the live agent. The scripted backup is ready.'; renderMast(); return; }
     let lim = null; try { lim = await s.limits(); } catch (e) { lim = null; }
     if (lim && !lim.tools) { STATE.live.reason = "This viewer can't run the agent's tools, so the live agent is off. Using the scripted backup."; renderMast(); return; }
     const need = Math.max(INVESTIGATE_TOOLS.length, PREVENT_TOOLS.length, ...Object.values(ACT_TOOLS).map(a => a.length));
     if (lim && lim.tools && lim.tools.maxCount && lim.tools.maxCount < need) { STATE.live.reason = `This viewer allows ${lim.tools.maxCount} tools per call and the agent needs ${need}. Using the scripted backup.`; renderMast(); return; }
     STATE.live.sample = s; STATE.live.available = true; STATE.live.limits = lim; STATE.live.images = !!(lim && lim.images);
-    if (!anyBusy()) STATE.mode = 'live';
+    if (!anyBusy() && !BEDROCK_LOCAL) STATE.mode = 'live';
     renderMast(); if (STATE.tab === 'return' || STATE.tab === 'evals') renderTab(STATE.tab);
   }).catch(() => { STATE.live.reason = 'Could not reach Claude from this page. Using the scripted backup.'; renderMast(); });
   use('downloads').then(d => { UI.downloads = d || null; if (STATE.tab === 'audit') renderAudit(); }).catch(() => {});
@@ -6646,6 +6649,92 @@ function renderActualData() {
     <label class="sr-only" for="dsq">Filter rows</label><input id="dsq" type="search" placeholder="Filter by date, banner or product" value="${esc(UI.data.q)}"><span class="small muted">${num(rows.length)} of ${num(ds.rows.length)} aggregate rows${rows.length > 200 ? ' (showing 200)' : ''}</span></div>
     <div class="tbl-wrap data-scroll"><table><thead><tr>${ds.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 200).map(row => `<tr>${row.map(value => `<td class="${typeof value === 'number' ? 'num' : ''}">${value == null ? '—' : esc(value)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
+
+/* Bedrock transport for the local demo. Existing tools still simulate actions in the page. */
+const BEDROCK_LOCAL = location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname);
+let bedrockToken = '';
+async function bedrockPost(path, input, signal) {
+  const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-PP-Token': bedrockToken }, body: JSON.stringify(input), signal });
+  const result = await response.json();
+  if (!response.ok) throw Object.assign(new Error(result.error?.message || 'Bedrock request failed.'), { code: result.error?.code || 'aws_unavailable' });
+  return result;
+}
+async function bedrockImage(blob) {
+  const format = ({ 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' })[blob.type];
+  if (!format || blob.size > 3750000) throw Object.assign(new Error('Use a supported image smaller than 3.75 MB.'), { code: 'image_rejected' });
+  const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.onerror = reject; reader.readAsDataURL(blob); });
+  return { format, base64 };
+}
+async function bedrockSample(prompt, options = {}) {
+  const tools = new Map((options.tools || []).map(t => [t.name, t]));
+  let run;
+  try {
+    options.signal?.throwIfAborted();
+    const images = await Promise.all((options.images || []).map(bedrockImage));
+    run = await bedrockPost('/api/runs', { prompt, tools: [...tools.keys()], tier: options.modelTier || 'quick', images }, options.signal);
+    while (true) {
+      options.signal?.throwIfAborted();
+      if (run.text) options.onText?.({ text: run.text });
+      if (run.done) return { text: run.text, modelTierApplied: run.modelId, truncated: false, usage: run.usage };
+      const results = [];
+      // Keep dependent simulated actions in order and stop before another action after cancellation.
+      for (const call of run.tools) {
+        options.signal?.throwIfAborted();
+        const tool = tools.get(call.name);
+        if (!tool) throw Object.assign(new Error('The model requested a tool outside this workflow.'), { code: 'invalid_tool' });
+        try {
+          const value = await tool.execute(call.input, { signal: options.signal });
+          const json = JSON.stringify(value ?? null);
+          results.push({ toolUseId: call.toolUseId, status: 'success', result: json.length <= 40000 ? (value ?? null) : { note: 'Tool result exceeded the response limit. Narrow the query.' } });
+        } catch (error) {
+          if (options.signal?.aborted) throw error;
+          results.push({ toolUseId: call.toolUseId, status: 'error', result: { error: error.message || 'Tool failed.', ...(error.rule ? { rule: error.rule, decision: error.decision, tier: error.tier } : {}) } });
+        }
+      }
+      run = await bedrockPost(`/api/runs/${run.id}/results`, { results }, options.signal);
+    }
+  } catch (error) {
+    if (run && !run.done) await bedrockPost(`/api/runs/${run.id}/cancel`, {}).catch(() => {});
+    if (options.signal?.aborted || error.name === 'AbortError') throw Object.assign(new Error('Stopped.'), { code: 'cancelled' });
+    throw error;
+  }
+}
+bedrockSample.limits = async () => ({ tools: { maxCount: 30 }, images: { mediaTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], maxInputBytes: 3750000 } });
+bedrockSample.json = async (prompt, options) => {
+  const result = await bedrockSample(prompt + '\nReturn the requested JSON object only.', options);
+  const parsed = extractLastJSON(result.text);
+  if (!parsed) throw Object.assign(new Error('The model did not return valid JSON.'), { code: 'invalid_json' });
+  return parsed;
+};
+async function getLiveSample() {
+  if (!BEDROCK_LOCAL) return window.claude?.use ? window.claude.use('sample') : null;
+  STATE.live.provider = 'bedrock';
+  try {
+    const response = await fetch('/api/status', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    if (!response.ok) throw new Error();
+    const info = await response.json();
+    bedrockToken = info.csrfToken;
+    STATE.live.modelId = info.modelId;
+    STATE.live.thoroughModelId = info.thoroughModelId;
+    STATE.live.reason = info.error?.message || 'Use Connect AWS to test your workshop connection. The scripted backup is ready.';
+    return info.connected ? bedrockSample : null;
+  } catch {
+    STATE.live.reason = 'The local AWS connection is unavailable. Start the Perfect Pair server, then reload.';
+    return null;
+  }
+}
+async function refreshBedrock() {
+  if (!BEDROCK_LOCAL || anyBusy()) return;
+  const sample = await getLiveSample();
+  STATE.live.checked = true;
+  STATE.live.available = !!sample;
+  STATE.live.sample = sample;
+  STATE.live.limits = sample ? await sample.limits() : null;
+  STATE.live.images = !!sample;
+  if (!sample) STATE.mode = 'scripted';
+  renderMast();
+}
+window.addEventListener('focus', refreshBedrock);
 
 boot();
 

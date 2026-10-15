@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connect AWS · Perfect Pair</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f4ef;color:#24332e;font:16px/1.5 system-ui,sans-serif}main{max-width:680px;margin:40px auto;padding:28px;background:#fff;border:1px solid #ddd9cf;border-radius:16px}h1{font-size:30px;margin:0 0 12px}p{color:#53645b}label{display:block;font-weight:600;margin-top:18px}input,textarea,button{font:inherit}input,textarea{display:block;width:100%;padding:11px;border:1px solid #a7b2aa;border-radius:6px;margin-top:6px}textarea{resize:vertical}button,.back{display:inline-block;margin:18px 8px 0 0;border:0;border-radius:6px;padding:12px 16px;background:#264d3d;color:white;text-decoration:none;cursor:pointer}button.secondary{background:#edece7;color:#24332e}button:disabled{opacity:.5;cursor:wait}#status{padding:14px;background:#f1f3ed;border-radius:8px;white-space:pre-wrap}small{display:block;color:#617067}.brand{letter-spacing:.12em;font-size:12px;text-transform:uppercase}details{margin-top:22px}a{color:#264d3d}@media(max-width:720px){main{margin:12px;padding:20px}}
+</style><script src="/connect.js" defer></script></head>
+<body><main><p class="brand">Perfect Pair · Team Code Reapers</p><h1>Connect your workshop AWS session</h1>
+<p>Use the temporary credentials supplied by the hackathon. They stay in this local server’s memory and are cleared when you disconnect or stop it. They are not saved to the project or GitHub.</p>
+<div id="status" role="status" aria-live="polite">Checking the local connection…</div>
+<details><summary>Where do I find the workshop credentials?</summary><p>Return to the workshop event dashboard where you opened the AWS console. Under <b>AWS account access</b>, choose <b>Get AWS CLI credentials</b> (sometimes called <b>Get AWS Credentials</b>). Copy the values for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN into the matching fields below. Copy only the values, without the export commands or surrounding quotes. Refresh all three together when the session expires.</p></details>
+<form id="connect-form" autocomplete="off">
+<label for="region">AWS region</label><input id="region" name="region" required value="us-east-1" spellcheck="false">
+<label for="modelId">Haiku model or inference profile ID</label><input id="modelId" name="modelId" required value="us.anthropic.claude-haiku-5-5" spellcheck="false"><small>Use the exact profile approved by the organizers.</small>
+<label for="accessKeyId">Access key ID</label><input id="accessKeyId" name="accessKeyId" type="password" autocomplete="off" spellcheck="false">
+<label for="secretAccessKey">Secret access key</label><input id="secretAccessKey" name="secretAccessKey" type="password" autocomplete="new-password" spellcheck="false">
+<label for="sessionToken">Session token</label><input id="sessionToken" name="sessionToken" type="password" autocomplete="off" spellcheck="false"><small>All three credential fields are required for a workshop session. Leave all three blank to use credentials already configured locally.</small>
+<details><summary>Optional second model</summary><label for="thoroughModelId">Model for the Thorough option</label><input id="thoroughModelId" name="thoroughModelId" spellcheck="false"><small>Leave blank to use the same model for both options. A second model needs its own AWS access and workflow testing.</small></details>
+<button type="submit">Connect and test</button><button type="button" id="disconnect" class="secondary">Disconnect</button>
+</form>
+<p>The test makes one small model request using your workshop allowance. Live runs also use that allowance. The synthetic demo tools still simulate refunds, exchanges, and stock changes.</p>
+<a class="back" href="/">Open Perfect Pair</a>
+</main></body></html>

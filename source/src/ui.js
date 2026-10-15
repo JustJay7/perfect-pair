@@ -55,13 +55,15 @@ function renderBarcode() {
 }
 function renderMast() {
   const live = STATE.live;
+  const liveModel = STATE.tier === 'default' && live.thoroughModelId ? live.thoroughModelId : live.modelId;
   $('#mode-live').setAttribute('aria-pressed', STATE.mode === 'live');
   $('#mode-scripted').setAttribute('aria-pressed', STATE.mode === 'scripted');
   $('#mode-live').disabled = !live.available;
-  $('#tier').value = STATE.tier; $('#tier').disabled = STATE.mode !== 'live';
+  $('#tier').value = STATE.tier; $('#tier').disabled = STATE.mode !== 'live' || (live.provider === 'bedrock' && !live.thoroughModelId);
+  $('#aws-connect').hidden = !BEDROCK_LOCAL;
   $('#failsw').checked = STATE.failureSwitch;
   $('#livenote').innerHTML = live.available
-    ? (STATE.mode === 'live' ? '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.' : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
+    ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Tools and safety rules still run as browser simulations.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
 const TABS = [['return', 'Return'], ['store', 'Store counter'], ['approvals', 'Approvals'], ['dashboard', 'Dashboard'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
@@ -1881,15 +1883,15 @@ function boot() {
   const tab = TABS.some(t => t[0] === hash) ? hash : 'return';
   renderMast(); showTab(tab);
   const use = window.claude && typeof window.claude.use === 'function' ? n => window.claude.use(n) : () => Promise.resolve(null);
-  use('sample').then(async s => {
+  getLiveSample().then(async s => {
     STATE.live.checked = true;
-    if (!s) { STATE.live.reason = 'The live agent needs this page open in Claude (claude.ai or the Claude app). Using the scripted backup.'; renderMast(); return; }
+    if (!s) { if (!BEDROCK_LOCAL) STATE.live.reason = 'For Amazon Bedrock, start the local Perfect Pair server and use Connect AWS. Claude-hosted pages can also use the live agent. The scripted backup is ready.'; renderMast(); return; }
     let lim = null; try { lim = await s.limits(); } catch (e) { lim = null; }
     if (lim && !lim.tools) { STATE.live.reason = "This viewer can't run the agent's tools, so the live agent is off. Using the scripted backup."; renderMast(); return; }
     const need = Math.max(INVESTIGATE_TOOLS.length, PREVENT_TOOLS.length, ...Object.values(ACT_TOOLS).map(a => a.length));
     if (lim && lim.tools && lim.tools.maxCount && lim.tools.maxCount < need) { STATE.live.reason = `This viewer allows ${lim.tools.maxCount} tools per call and the agent needs ${need}. Using the scripted backup.`; renderMast(); return; }
     STATE.live.sample = s; STATE.live.available = true; STATE.live.limits = lim; STATE.live.images = !!(lim && lim.images);
-    if (!anyBusy()) STATE.mode = 'live';
+    if (!anyBusy() && !BEDROCK_LOCAL) STATE.mode = 'live';
     renderMast(); if (STATE.tab === 'return' || STATE.tab === 'evals') renderTab(STATE.tab);
   }).catch(() => { STATE.live.reason = 'Could not reach Claude from this page. Using the scripted backup.'; renderMast(); });
   use('downloads').then(d => { UI.downloads = d || null; if (STATE.tab === 'audit') renderAudit(); }).catch(() => {});

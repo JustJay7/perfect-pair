@@ -6,7 +6,84 @@ An agentic returns prototype: a Return agent that turns returns into exchanges o
 > **Confidential.** The Dashboard is built from aggregates of ALDO Group's returns extract (`source/src/real.json`, also baked into the HTML). Keep this zip inside the team. Everything else (customers, orders, photos, costs, policy text) is synthetic.
 
 ## Open the demo
-Double-click `perfect_pair_demo_offline.html` and open it in Chrome. The **Scripted backup** runs with no internet. The **Live agent** only works from the published link inside Claude.
+Double-click `perfect_pair_demo_offline.html` and open it in Chrome. The **Scripted backup** runs with no internet. For Amazon Bedrock, use the local app below. Claude-hosted pages can still use the original Claude connection.
+
+## Connect Amazon Bedrock
+
+On this Mac, double-click **Start Perfect Pair.command**. It uses the bundled
+Node runtime when available. For other computers, install Node.js 22 or newer
+(Node.js 24 recommended), then run `npm ci` and `npm start` in the project folder.
+
+1. Open **http://127.0.0.1:8787/connect**.
+2. Enter the organizer-approved region and Haiku model/inference profile ID.
+   The default is `us-east-1` / `us.anthropic.claude-haiku-5-5`.
+3. Enter the workshop's temporary access key ID, secret access key and session
+   token in the local form. Do not put credentials in chat, HTML, or GitHub.
+   In the workshop event dashboard, look under **AWS account access → Get AWS CLI
+   credentials**. Copy only the three values, not the shell commands or quotes.
+   Alternatively, leave all three blank to use an existing local AWS profile or
+   standard AWS SDK credentials. The browser console login does not sign in the
+   local server.
+4. Click **Connect and test**. This makes one small paid model request. The page
+   only says Connected after Bedrock returns a complete text response.
+5. Open **http://127.0.0.1:8787**, then select **Live agent**. Start with Maya's
+   Return scenario. Switching the dataset does not switch the AI model.
+
+The connection screen holds entered credentials in server memory only. Disconnect
+or stop the server to clear them. Reconnect when workshop credentials expire.
+The server listens only on this Mac, and must remain running. Reloading the app
+starts in Scripted backup and Synthetic data; it never starts inference by itself.
+
+Both model-speed options use the same Haiku unless a second model is configured.
+The selector is disabled when there is only one model. Configure another approved
+model on the connection screen, or use the non-secret settings in `.env.example`.
+An optional `.env` is ignored by Git. Changing models requires another connection
+check and scenario testing; image/tool support and parameters can differ.
+
+### Architecture and current boundary
+
+Browser interface → local Node backend → Bedrock Converse → requested demo tools
+in the browser → tool results through the backend → final model response.
+
+The backend keeps the model transcript, supplies the tool schemas from our source,
+validates tool names/arguments and matching results, handles cancellation, and limits
+runs to 8 model calls / 16,000 output tokens. Each call allows at most 4,096 output
+tokens. There is also a 120-call hourly limit and a five-minute run expiry. These
+are usage controls, not a dollar spending cap. No automatic SDK retries are used.
+No raw credentials, prompts or tool results are logged by this server. The local
+form and API reject other web origins; only the demo and connection page are served.
+
+**This is a local model integration, not a deployed operational backend.** The
+existing simulated tools, business rules, approvals and session state still run
+in the browser. Refunds do not move money. Bedrock receives only the current prompt,
+attached photos and requested tool outputs; the entire dataset is not uploaded.
+Actual aggregates can be used by the existing `real_returns_stats` assistant tool.
+Raw ALDO source files remain local and are not served by the backend.
+
+Shared AWS hosting is a separate step: move authoritative rules/tools and durable
+state into the backend, add teammate authentication for both the interface and API,
+then deploy to AgentCore Runtime. Do not expose this local demo through a public
+tunnel. A private GitHub repository does not make a hosted website private.
+
+### Verification
+
+- `npm test`: model transport, tool validation, cancellation, limits, credential
+  handling and local HTTP access checks, with fake AWS responses and no AWS costs.
+- `npm run test:bedrock-browser`: browser flow through a mocked AWS SDK, including
+  a Return investigation, source toggle, expired credentials and disconnect.
+- `npm run check:aws`: one real model request using locally configured AWS
+  credentials. It does not share the connection screen's in-memory credentials.
+- The browser checks require Playwright and Chrome. The local launcher requires
+  network access on first run to install dependencies.
+
+Passing mocked checks does not establish model access or live decision quality.
+Before a pitch, run a Return investigation and action against the actual workshop
+model, inspect the tool/audit trace, and rerun the scripted scenario evaluations.
+
+AWS references: [Converse API](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html),
+[Haiku model configuration](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-5-5.html),
+[Workshop credentials](https://catalog.us-east-1.prod.workshops.aws/v2/workshops/63320e83-6abc-493d-83d8-f822584fb3cb/en-US/getting-started/aws-hosted),
+[AgentCore Node.js deployment](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-node.html).
 
 ## Choose the dataset
 The header's **Synthetic / Actual** toggle switches Dashboard and Data together.
