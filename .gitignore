@@ -1,0 +1,38 @@
+# Local settings and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+.claude/
+.codex/
+
+# Dependencies and caches
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+
+# Local browser-test build
+source/dist/test.html
+
+# Raw source datasets stay local; data/ contains the bundled synthetic tables.
+/raw_data/
+/local_data/
+Dataset McGill/
+OMS Data_Feb24-Jan26_new.csv
+OMS_Data_Feb24-Jan26_new.csv
+McGill_Instore_return_exchanges.csv
+McGill - Returns - Returnable Flag 2024-2025.csv
+McGill_-_Returns_-_Returnable_Flag_2024-2025.csv
+McGill - Returns - Restocking Fees 2024 - 2025.csv
+All OMS orders_Feb 2024 to Feb 2026.csv
+instore.csv
+restock.csv
+Notes.docx
+Book.xlsx
+perfect_pair.zip

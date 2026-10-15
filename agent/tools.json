@@ -1,0 +1,702 @@
+[
+  {
+    "name": "look_up_order_and_customer",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Returns the order (lines, price paid, final-sale flag, delivery vs estimated date), the customer profile without personal details (loyalty, tenure, return rate, past categories, credit history, damage claims) and carrier tracking events.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "order_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "order_id"
+      ]
+    }
+  },
+  {
+    "name": "check_item_photo",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Reads the customer's photo of the item and returns a condition grade (A unworn, B tried on or cosmetic, C worn, D defective), findings, and whether the photo is consistent with what the customer said.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "return_id"
+      ]
+    }
+  },
+  {
+    "name": "read_reviews_and_fit_votes",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Returns review counts and fit votes for a style, the product page fit guidance, policy §3.4 checks (does at least 20% and at least 10 reviews report the same fit issue without a page warning), outcomes of sizing up or switching to wide, colour and quality mentions, and a few quotes.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "style_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "style_id"
+      ]
+    }
+  },
+  {
+    "name": "search_return_policy",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Searches the return policy and returns the most relevant clauses with their clause numbers (for example §2.1) so you can cite them.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "query": {
+          "type": "string",
+          "description": "Plain words, e.g. \"final sale window fee waiver exchange\""
+        }
+      },
+      "required": [
+        "why",
+        "query"
+      ]
+    }
+  },
+  {
+    "name": "find_exchange_options",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Given the returned style, size, width and the fit issue, returns replacement candidates (other width, half size, similar style, other colour, or same item) with review evidence, the chance of a second return, and stock by location: units available, days to reach the customer region, shipping cost, whether it meets the 5-day promise and weeks of supply (slow sellers first).",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "style_id": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "width": {
+          "type": "string",
+          "description": "regular or wide"
+        },
+        "colour": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "string",
+          "enum": [
+            "too_narrow",
+            "too_wide",
+            "too_small",
+            "too_big",
+            "heel_slips",
+            "colour",
+            "like_for_like"
+          ]
+        },
+        "customer_region": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "style_id",
+        "size",
+        "issue",
+        "customer_region"
+      ]
+    }
+  },
+  {
+    "name": "find_smart_credit_picks",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Returns up to 3 items that pass all three Smart Credit tests (the customer would want it, ALDO needs to move it, it will not come back) with discounts capped at the planned markdown, the in-store bonus, a store in their region to hold them, the chance the credit is used, and whether earlier credit purchases came back.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "customer_id": {
+          "type": "string"
+        },
+        "returned_sku": {
+          "type": "string"
+        },
+        "after_fit_problem": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "why",
+        "customer_id",
+        "returned_sku"
+      ]
+    }
+  },
+  {
+    "name": "score_options",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "The value calculator (code, not the model). For each option returns value to ALDO = margin kept + resale value of the returned pair − label, shipping and processing − incentive cost − chance of a second return × its cost, plus what the customer pays by mail and in store, and keep-it eligibility.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "cost_owner": {
+          "type": "string",
+          "enum": [
+            "carrier",
+            "supplier",
+            "aldo_product",
+            "aldo_warehouse",
+            "customer"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "exchange",
+                  "smart_credit",
+                  "refund",
+                  "keep_it"
+                ]
+              },
+              "sku": {
+                "type": "string"
+              },
+              "source_location": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "cost_owner",
+        "options"
+      ]
+    }
+  },
+  {
+    "name": "request_human_review",
+    "agent": "resolution",
+    "phase": "investigate",
+    "checked_by_policy_engine": false,
+    "description": "Sends the case to a person with your recommendation and the evidence. Use when a person must decide (unclear and over $250, photo contradicts the claim, suspected abuse, or a safety check says APPROVAL_REQUIRED). Returns the review id, the approver and what to tell the customer.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "suspected_abuse": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "reason",
+        "recommendation"
+      ]
+    }
+  },
+  {
+    "name": "check_stock_nearby",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": false,
+    "description": "Returns current stock for one SKU by location (after holds and sales), with days and cost to reach the customer region and whether it meets the 5-day promise. Use it to re-plan after a reservation fails.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "sku": {
+          "type": "string"
+        },
+        "customer_region": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "sku",
+        "customer_region"
+      ]
+    }
+  },
+  {
+    "name": "reserve_pair",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": true,
+    "description": "Places a 48-hour hold on one unit of a SKU at a location. Returns a hold_id. Fails if the unit is no longer available (it may have just sold).",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "sku": {
+          "type": "string"
+        },
+        "location_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "sku",
+        "location_id"
+      ]
+    }
+  },
+  {
+    "name": "create_exchange",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": true,
+    "description": "Creates the exchange order for the held pair. The new pair stays reserved and ships only after the returned pair passes the quality check (R11, R13). Needs the hold_id from reserve_pair. Returns the exchange order id and how many business days delivery takes once it ships.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "new_sku": {
+          "type": "string"
+        },
+        "hold_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "new_sku",
+        "hold_id"
+      ]
+    }
+  },
+  {
+    "name": "issue_store_credit",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": true,
+    "description": "Sets up store credit for the full value (never expires) and an optional in-store bonus (max 10% up to $25, valid up to 30 days). It is added to the account only after the returned pair passes the quality check (R11, R13).",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "in_store_bonus": {
+          "type": "number"
+        },
+        "bonus_valid_days": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "amount"
+      ]
+    }
+  },
+  {
+    "name": "issue_refund",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": true,
+    "description": "Schedules a refund to the original payment method. It is held until the returned pair passes the quality check (R11, R13). timing: on_receipt (default: checked at the distribution centre), at_dropoff (trusted Gold and Silver members: checked at the store counter) or now (keep-it refunds only, with keep_item true, since nothing comes back).",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "timing": {
+          "type": "string",
+          "enum": [
+            "on_receipt",
+            "at_dropoff",
+            "now"
+          ]
+        },
+        "keep_item": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "amount",
+        "timing"
+      ]
+    }
+  },
+  {
+    "name": "create_return_label",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": true,
+    "description": "Creates the return for the original pair: store_dropoff (free, any store) or carrier (QR label). customer_fee is what the customer pays (0 or the $5.95 policy fee). Returns the label id, drop-by date and the best store to drop it at.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "store_dropoff",
+            "carrier"
+          ]
+        },
+        "customer_fee": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "method",
+        "customer_fee"
+      ]
+    }
+  },
+  {
+    "name": "route_returned_item",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": false,
+    "description": "Scores every destination for the customer's returned pair by its expected condition grade: (price − cost) × chance it sells there within 4 weeks − transfer cost. Returns the planned destination and the scores. Confirmed when the pair is graded at drop-off.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "return_id"
+      ]
+    }
+  },
+  {
+    "name": "file_claim",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": true,
+    "description": "Files a cost-recovery claim against the carrier (late or damaged in transit) or the supplier (defect), with evidence.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "return_id": {
+          "type": "string"
+        },
+        "against": {
+          "type": "string",
+          "enum": [
+            "carrier",
+            "supplier"
+          ]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "evidence": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "return_id",
+        "against",
+        "amount"
+      ]
+    }
+  },
+  {
+    "name": "verify_actions",
+    "agent": "resolution",
+    "phase": "act",
+    "checked_by_policy_engine": false,
+    "description": "Re-reads the systems for each id you created (holds, exchange orders, credits, refunds, labels, claims) and reports whether it really exists and its status. Do not trust a success message without this.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "why",
+        "ids"
+      ]
+    }
+  },
+  {
+    "name": "get_return_rate_report",
+    "agent": "prevention",
+    "phase": "prevent",
+    "checked_by_policy_engine": false,
+    "description": "Last 28 days, per footwear style: units sold, fit returns, fit-return rate, category rate, ratio, and a flag (flagged = at least 1.5× the category and at least 15 fit returns; watch = high ratio but too few returns; testing = a fix is being measured; fixed = a fix was measured and kept). Also flags quality spikes (at least 8 quality returns and 3× the baseline).",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        }
+      },
+      "required": [
+        "why"
+      ]
+    }
+  },
+  {
+    "name": "read_return_comments",
+    "agent": "prevention",
+    "phase": "prevent",
+    "checked_by_policy_engine": false,
+    "description": "Returns the last 28 days of returns for one style: sub-reasons, customers' words (most common phrases), which sizes are affected, first and last dates, and production batches mentioned.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "style_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "style_id"
+      ]
+    }
+  },
+  {
+    "name": "get_tryon_scans",
+    "agent": "prevention",
+    "phase": "prevent",
+    "checked_by_policy_engine": false,
+    "description": "Returns in-store try-on scans for a style over 28 days: tries, bought, swapped to another width, sized up and sized down, by width and size band.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "style_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "why",
+        "style_id"
+      ]
+    }
+  },
+  {
+    "name": "draft_product_page_fix",
+    "agent": "prevention",
+    "phase": "prevent",
+    "checked_by_policy_engine": true,
+    "description": "Drafts a short fit note for a product page (for example \"Runs narrow: consider the wide fit\"). It is not published: a merchandiser approves it first. Returns the draft id.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "style_id": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "applies_to_sizes": {
+          "type": "string"
+        },
+        "cause": {
+          "type": "string",
+          "enum": [
+            "width",
+            "sizing",
+            "description"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "why",
+        "style_id",
+        "note",
+        "cause"
+      ]
+    }
+  },
+  {
+    "name": "open_quality_ticket",
+    "agent": "prevention",
+    "phase": "prevent",
+    "checked_by_policy_engine": false,
+    "description": "Opens a ticket for the quality team and the supplier when returns point to a defect. No customer-facing change.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "why": {
+          "type": "string",
+          "description": "One short sentence, shown to the user live: what you are checking or doing, and why."
+        },
+        "style_id": {
+          "type": "string"
+        },
+        "batch": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "why",
+        "style_id"
+      ]
+    }
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "decide": [
+    "look_up_order_and_customer",
+    "check_item_photo",
+    "read_reviews_and_fit_votes",
+    "search_return_policy",
+    "find_exchange_options",
+    "find_smart_credit_picks",
+    "score_options",
+    "request_human_review"
+  ],
+  "act": {
+    "exchange": [
+      "reserve_pair",
+      "check_stock_nearby",
+      "create_exchange",
+      "create_return_label",
+      "route_returned_item",
+      "file_claim",
+      "verify_actions",
+      "request_human_review"
+    ],
+    "smart_credit": [
+      "issue_store_credit",
+      "reserve_pair",
+      "create_return_label",
+      "route_returned_item",
+      "verify_actions",
+      "request_human_review"
+    ],
+    "store_credit": [
+      "issue_store_credit",
+      "create_return_label",
+      "route_returned_item",
+      "verify_actions",
+      "request_human_review"
+    ],
+    "refund": [
+      "create_return_label",
+      "issue_refund",
+      "route_returned_item",
+      "file_claim",
+      "verify_actions",
+      "request_human_review"
+    ],
+    "keep_it": [
+      "issue_refund",
+      "verify_actions",
+      "request_human_review"
+    ]
+  },
+  "nightly": [
+    "get_return_rate_report",
+    "read_return_comments",
+    "read_reviews_and_fit_votes",
+    "get_tryon_scans",
+    "draft_product_page_fix",
+    "open_quality_ticket"
+  ]
+}

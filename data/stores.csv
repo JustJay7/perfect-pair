@@ -1,0 +1,10 @@
+location_id,name,type,city,region,format,inventory_capacity,handling_days
+DC-MTL,Montreal distribution centre,dc,Montreal,Greater Montreal,Distribution centre,40000,1
+S112,Downtown Montreal,store,Montreal,Greater Montreal,Flagship,2400,0
+S118,Laval,store,Laval,Greater Montreal,Mall,1600,0
+S131,Pointe-Claire,store,Pointe-Claire,Greater Montreal,Mall,1400,1
+S140,Brossard,store,Brossard,Greater Montreal,Lifestyle centre,1500,1
+S205,Ottawa Centre,store,Ottawa,Ottawa,Mall,1800,0
+S301,Toronto Downtown,store,Toronto,Toronto,Flagship,2600,0
+S410,Quebec City,store,Quebec City,Quebec City,Mall,1500,0
+OUT1,Mirabel outlet,outlet,Mirabel,Greater Montreal,Outlet,3000,1

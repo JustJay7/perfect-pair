@@ -1,0 +1,9 @@
+order_id,customer_id,order_date,channel,country,store_or_ecom,shipping_method,shipping_cost,fulfilment_location,estimated_delivery_date,delivery_date,line_id,sku,style_id,product,colour,size,width,quantity,selling_price,discount,promotion,final_sale
+O-58213,C-10482,2026-10-04,Online,CA,E-commerce,Standard,0.0,DC-MTL,2026-10-08,2026-10-07,L1,ST-2041-BLK-8-M,ST-2041,Calder ankle boot,Black,8,M,1,130.0,0.0,,False
+O-58199,C-20577,2026-10-05,Online,CA,E-commerce,Standard,0.0,DC-MTL,2026-10-08,2026-10-09,L1,ST-5120-WHT-7-M,ST-5120,Ivo low-top sneaker,White,7,M,1,110.0,0.0,,False
+O-58077,C-31140,2026-09-28,Online,CA,E-commerce,Standard,0.0,DC-MTL,2026-10-02,2026-10-01,L1,ST-3307-TAN-9-M,ST-3307,Mila heeled sandal,Tan,9,M,1,90.0,0.0,,False
+O-58120,C-41022,2026-10-01,Online,CA,E-commerce,Standard,7.95,DC-MTL,2026-10-06,2026-10-05,L1,ST-7012-NUD-7-M,ST-7012,Lyra ballet flat,Nude,7,M,1,35.0,0.0,,False
+O-57940,C-55873,2026-09-24,Online,CA,E-commerce,Express,0.0,DC-MTL,2026-09-29,2026-09-29,L1,ST-4410-BLK-9-M,ST-4410,Thorne knee-high boot,Black,9,M,1,289.0,0.0,,False
+O-58150,C-62019,2026-09-30,Online,CA,E-commerce,Standard,0.0,DC-MTL,2026-10-03,2026-10-08,L1,ST-6020-BLK-7.5-M,ST-6020,Vera pump,Black,7.5,M,1,110.0,0.0,,False
+O-58233,C-70451,2026-10-06,Online,CA,E-commerce,Standard,0.0,DC-MTL,2026-10-10,2026-10-09,L1,ST-5188-WHT-9-M,ST-5188,Pia platform sneaker,White,9,M,1,95.0,0.0,,False
+O-57711,C-80314,2026-09-27,Online,CA,E-commerce,Standard,7.95,DC-MTL,2026-10-02,2026-10-02,L1,ST-3350-GLD-8-M,ST-3350,Sora flat sandal,Gold,8,M,1,45.0,30.0,Final sale clearance,True
