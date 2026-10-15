@@ -114,6 +114,7 @@ function countUp(root) {
 })();
 function renderTab(id) {
   ({ return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  renderDataSource();
 }
 
 /* ---------- trace items ---------- */
@@ -1200,7 +1201,7 @@ function profilesSection() {
 }
 
 /* ---------- Dashboard: returns and money, by day, week, month or year ---------- */
-UI.dash = UI.dash || { gran: 'month', range: '12m', channel: 'all', category: 'all' };
+UI.dash = UI.dash || { src: 'pilot', gran: 'month', range: '12m', channel: 'all', category: 'all' };
 const OUTCOMES = [
   ['refund', 'Refund', 'var(--cat-2)'], ['keep_it', 'Keep-it refund', 'var(--cat-6)'], ['exchange', 'Exchange', 'var(--cat-3)'],
   ['store_credit', 'Store credit', 'var(--cat-1)'], ['store_credit_bonus', 'Credit + bonus', 'var(--cat-4)'], ['smart_credit', 'Smart Credit', 'var(--cat-5)'], ['declined', 'Declined', 'var(--chart-2)'],
@@ -1602,6 +1603,7 @@ const DATASETS = [
   ['decisions', 'Decision log (fairness)', () => DATA.decisions_log],
 ];
 function renderData() {
+  if (UI.dataSource === 'actual') return renderActualData();
   const el = $('#tab-data');
   const [id, label, get] = DATASETS.find(d => d[0] === UI.data.ds) || DATASETS[0];
   const all = get();
@@ -1614,6 +1616,7 @@ function renderData() {
   <div class="tbl-wrap data-scroll"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 200).map(r => `<tr>${cols.map(c => { const v = r[c]; return `<td class="${typeof v === 'number' ? 'num' : ''}">${esc(Array.isArray(v) ? v.join(', ') : typeof v === 'object' && v !== null ? JSON.stringify(v) : v)}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 UI.showSource = src => {
+  if (UI.dataSource === 'actual' && !setDataSource('synthetic', false)) return;
   const s = String(src);
   const map = [[/^orders\//, 'orders'], [/^customers\//, 'customers'], [/^carrier_tracking\//, 'tracking'], [/^product_reviews\//, 'reviews'], [/^product_catalogue\//, 'catalogue'], [/^inventory\//, 'inventory'], [/^product_economics\//, 'economics'], [/^returns_history_28d/, 'returns'], [/^returns\//, 'cases'], [/^tryon_scans\//, 'tryons'], [/^logistics/, 'logistics'], [/^(return_policy\/)?§/, 'policy'], [/^units_sold/, 'returns']];
   const hit = map.find(([re]) => re.test(s));
@@ -1740,6 +1743,7 @@ function wire() {
   document.addEventListener('click', ev => {
     const t = ev.target.closest('button, a');
     if (!t) return;
+    if (t.dataset.source) return setDataSource(t.dataset.source);
     if (t.dataset.tab) return showTab(t.dataset.tab);
     if (t.dataset.go) { ev.preventDefault(); return showTab(t.dataset.go); }
     if (t.dataset.case) { STATE.active = t.dataset.case; UI.sel = {}; return renderReturn(); }
@@ -1755,7 +1759,7 @@ function wire() {
     if (t.dataset.restart) { const id = STATE.active; if (IDX.kase[id].custom) IDX.kase[id].photo.analyzed = false; clearCaseRecords(id); CASES[id] = Object.assign(newCaseState(id), { words: CASES[id].words, runId: CASES[id].runId }); UI.sel = {}; renderTabsBar(); return renderReturn(); }
     if (t.id === 'policy-review-btn') return askPolicyReview(STATE.active);
     if (t.dataset.apopen || t.dataset.apfocus || t.dataset.apback) { const id = t.dataset.apfocus || t.dataset.apopen; UI.apFocus = t.dataset.apback || UI.apFocus === id ? null : id; renderApprovals(); const tp = $('#tab-approvals'); if (tp) window.scrollTo({ top: Math.max(0, tp.getBoundingClientRect().top + window.scrollY - 70) }); return; }
-    if (t.dataset.dsrc) { UI.dash.src = t.dataset.dsrc; return renderDashboard(); }
+    if (t.dataset.dsrc) return setDataSource(t.dataset.dsrc === 'real' ? 'actual' : 'synthetic');
     if (t.dataset.rgran) { UI.rdash.gran = t.dataset.rgran; return renderDashboard(); }
     if (t.dataset.rrange) { UI.rdash.range = t.dataset.rrange; UI.rdash.from = UI.rdash.to = null; return renderDashboard(); }
     if (t.dataset.rclear) { UI.rdash.range = 'all'; UI.rdash.from = UI.rdash.to = null; return renderDashboard(); }
@@ -1892,4 +1896,3 @@ function boot() {
   initPhotoStore();
 }
 UI.onPhotosChanged = () => { if (['approvals', 'store', 'return'].includes(STATE.tab) && !STATE.running) renderTab(STATE.tab); };
-boot();

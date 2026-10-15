@@ -11,9 +11,13 @@
     <div class="brand">
       <div class="wordmark">Perfect Pair</div>
       <div class="barcode" id="barcode" aria-hidden="true"></div>
-      <div class="brand-meta"><b>Team Code Reapers</b><span>BSRM × ALDO Retail Gen AI Hackathon · prototype on synthetic data</span></div>
+      <div class="brand-meta"><b>Team Code Reapers</b><span>BSRM × ALDO Retail Gen AI Hackathon · prototype</span></div>
     </div>
     <div class="controls">
+      <div class="seg" role="group" aria-label="Dataset">
+        <button type="button" data-source="synthetic" aria-pressed="true">Synthetic</button>
+        <button type="button" data-source="actual" aria-pressed="false">Actual</button>
+      </div>
       <div class="seg" role="group" aria-label="Agent mode">
         <button type="button" id="mode-live" aria-pressed="false">Live agent</button>
         <button type="button" id="mode-scripted" aria-pressed="true">Scripted backup</button>
@@ -28,6 +32,7 @@
       <button type="button" class="btn-ghost" id="reset-btn">Reset demo</button>
     </div>
     <div class="livenote" id="livenote"></div>
+    <div class="livenote" id="data-source-note" role="status"></div>
   </div>
 </header>
 
@@ -45,7 +50,7 @@
   <section class="tab-panel" id="tab-how" role="tabpanel" aria-labelledby="tabbtn-how" hidden></section>
   <footer class="foot">
     <b>Perfect Pair</b> · Team Code Reapers · a working prototype for the BSRM × ALDO Retail Gen AI Hackathon, October 2026.
-    Every customer, order, price, review and policy clause here is synthetic. This is not ALDO's system and not ALDO's published return policy.
+    Agent demo customers, orders, prices, reviews and policy clauses are synthetic. Actual mode shows aggregates from the supplied ALDO files in Dashboard and Data. This is not ALDO's system or published return policy.
   </footer>
 </main>
 

@@ -14,7 +14,8 @@ DIST.mkdir(exist_ok=True)
 
 template = (SRC / "index.html").read_text()
 styles = (SRC / "styles.css").read_text()
-scripts = "\n".join((SRC / f).read_text() for f in ("core.js", "agents.js", "queue.js", "photos.js", "charts.js", "chat.js", "ui.js", "dashreal.js"))
+scripts = "\n".join((SRC / f).read_text() for f in ("core.js", "agents.js", "queue.js", "photos.js", "charts.js", "chat.js", "ui.js", "dashreal.js", "data_source.js"))
+scripts += "\nboot();\n"
 
 # Compact the data and make it safe inside <script>: in JSON a "<" can only sit
 # inside a string, so writing it as < can never end the script block early.
@@ -40,6 +41,7 @@ skeleton = ('<!doctype html><html><head><meta charset="utf-8">'
             'body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>'
             '</head><body>')
 (DIST / "test.html").write_text(skeleton + page + "</body></html>")
+(ROOT.parent / "perfect_pair_demo_offline.html").write_text(skeleton + page + "</body></html>")
 
 kb = len(page.encode()) / 1024
 print(f"perfect_pair_demo.html  {kb:,.0f} KB  (data {len(data.encode())/1024:,.0f} KB, scripts {len(scripts.encode())/1024:,.0f} KB, css {len(styles.encode())/1024:,.0f} KB)")
