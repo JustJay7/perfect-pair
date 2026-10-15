@@ -9,7 +9,7 @@
 <details><summary>Where do I find the workshop credentials?</summary><p>Return to the workshop event dashboard where you opened the AWS console. Under <b>AWS account access</b>, choose <b>Get AWS CLI credentials</b> (sometimes called <b>Get AWS Credentials</b>). Copy the values for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN into the matching fields below. Copy only the values, without the export commands or surrounding quotes. Refresh all three together when the session expires.</p></details>
 <form id="connect-form" autocomplete="off">
 <label for="region">AWS region</label><input id="region" name="region" required value="us-east-1" spellcheck="false">
-<label for="modelId">Haiku model or inference profile ID</label><input id="modelId" name="modelId" required value="us.anthropic.claude-haiku-4-5-20251001-v1:0" spellcheck="false"><small>Use the exact profile approved by the organizers.</small>
+<label for="modelId">Model or inference profile ID</label><input id="modelId" name="modelId" required value="us.anthropic.claude-sonnet-5-5" spellcheck="false"><small>Use the exact profile approved by the organizers.</small>
 <label for="accessKeyId">Access key ID</label><input id="accessKeyId" name="accessKeyId" type="password" autocomplete="off" spellcheck="false">
 <label for="secretAccessKey">Secret access key</label><input id="secretAccessKey" name="secretAccessKey" type="password" autocomplete="new-password" spellcheck="false">
 <label for="sessionToken">Session token</label><input id="sessionToken" name="sessionToken" type="password" autocomplete="off" spellcheck="false"><small>All three credential fields are required for a workshop session. Leave all three blank to use credentials already configured locally.</small>

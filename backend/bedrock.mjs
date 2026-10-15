@@ -25,13 +25,13 @@ const validators = new Map(definitions.map(d => [d.name, ajv.compile(d.inputSche
 
 export function publicError(error) {
   if (error.code && error.status) return { code: error.code, message: error.message };
-  if (error.name === 'AccessDeniedException' && /private marketplace eligibility/i.test(error.message || '')) return { code: 'aws_access_denied', message: 'The workshop account’s private Marketplace policy blocks this model’s subscription. Ask the organizers to enable this Haiku model for the account. Its presence in the model catalog does not confirm access.' };
+  if (error.name === 'AccessDeniedException' && /private marketplace eligibility/i.test(error.message || '')) return { code: 'aws_access_denied', message: 'The workshop account’s private Marketplace policy blocks this model’s subscription. Ask the organizers to enable this model for the account. Its presence in the model catalog does not confirm access.' };
   const messages = {
     CredentialsProviderError: ['aws_credentials', 'Connect your workshop AWS session using Connect AWS.'],
     ExpiredTokenException: ['aws_credentials', 'Your workshop credentials expired. Reconnect with fresh temporary credentials.'],
     UnrecognizedClientException: ['aws_credentials', 'AWS did not recognize these credentials. Copy all three workshop credential fields again.'],
     InvalidSignatureException: ['aws_credentials', 'AWS could not validate these credentials. Reconnect your workshop session.'],
-    AccessDeniedException: ['aws_access_denied', 'This AWS role cannot invoke the selected model or inference profile. Ask the organizers to enable it, or select their approved Haiku profile.'],
+    AccessDeniedException: ['aws_access_denied', 'This AWS role cannot invoke the selected model or inference profile. Ask the organizers to enable it, or select their approved model profile.'],
     ValidationException: ['aws_model_config', 'AWS rejected the model configuration or request. Check the approved model/profile ID, region, and supported features.'],
     ResourceNotFoundException: ['aws_model_config', 'AWS could not find the selected model or inference profile in this region.'],
     ThrottlingException: ['rate_limited', 'AWS is throttling requests. Wait briefly before trying again.'],
@@ -44,7 +44,7 @@ export function publicError(error) {
 }
 
 export function readConfig(env = process.env) {
-  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-4-5-20251001-v1:0', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
+  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-5-5', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
 }
 
 export class BedrockService {

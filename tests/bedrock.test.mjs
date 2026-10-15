@@ -47,7 +47,7 @@ test('requires a successful model call before enabling live mode', async () => {
 });
 test('tool results round trip with full signed assistant message, configured model, and usage', async () => {
   const { service, sent } = fixture([answer(), tool(), answer('{"decision":"review"}')]);
-  await service.connect({ region: 'us-east-1', modelId: 'us.anthropic.claude-haiku-4-5-20251001-v1:0' });
+  await service.connect({ region: 'us-east-1', modelId: 'us.anthropic.claude-sonnet-5-5' });
   const first = await start(service);
   assert.equal(first.done, false);
   assert.equal(first.tools[0].name, 'look_up_order_and_customer');
@@ -115,7 +115,7 @@ test('hourly call limit applies to connection tests too', async () => {
 });
 test('model switching selects configured IDs and never accepts a request model override', async () => {
   const { service, sent } = fixture();
-  await service.connect({ modelId: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', thoroughModelId: 'approved.second-model' });
+  await service.connect({ modelId: 'us.anthropic.claude-sonnet-5-5', thoroughModelId: 'approved.second-model' });
   await service.start({ prompt: 'hello', tier: 'default', modelId: 'unapproved' });
   assert.equal(sent[1].modelId, 'approved.second-model');
 });

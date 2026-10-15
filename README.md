@@ -15,8 +15,8 @@ Node runtime when available. For other computers, install Node.js 22 or newer
 (Node.js 24 recommended), then run `npm ci` and `npm start` in the project folder.
 
 1. Open **http://127.0.0.1:8787/connect**.
-2. Enter the organizer-approved region and Haiku model/inference profile ID.
-   The default is `us-east-1` / `us.anthropic.claude-haiku-4-5-20251001-v1:0`.
+2. Enter the organizer-approved region and model/inference profile ID.
+   The default is `us-east-1` / `us.anthropic.claude-sonnet-5-5`.
 3. Enter the workshop's temporary access key ID, secret access key and session
    token in the local form. Do not put credentials in chat, HTML, or GitHub.
    In the workshop event dashboard, look under **AWS account access → Get AWS CLI
@@ -34,7 +34,7 @@ or stop the server to clear them. Reconnect when workshop credentials expire.
 The server listens only on this Mac, and must remain running. Reloading the app
 starts in Scripted backup and Synthetic data; it never starts inference by itself.
 
-Both model-speed options use the same Haiku unless a second model is configured.
+Both model-speed options use the same Sonnet 5.5 unless a second model is configured.
 The selector is disabled when there is only one model. Configure another approved
 model on the connection screen, or use the non-secret settings in `.env.example`.
 An optional `.env` is ignored by Git. Changing models requires another connection
@@ -42,7 +42,7 @@ check and scenario testing; image/tool support and parameters can differ.
 
 If AWS reports **private marketplace eligibility**, the workshop account's
 Marketplace policy blocks the model subscription. Ask the organizers to enable
-the selected Haiku model for the account. Listing a model or an ACTIVE inference
+the selected model for the account. Listing a model or an ACTIVE inference
 profile does not establish invocation access. Even a greeting can succeed while
 AWS attempts subscription in the background and later calls can be denied;
 see [AWS model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html).
@@ -95,7 +95,7 @@ Before a pitch, run a Return investigation and action against the actual worksho
 model, inspect the tool/audit trace, and rerun the scripted scenario evaluations.
 
 AWS references: [Converse API](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html),
-[Haiku model configuration](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-haiku-4-5.html),
+[Sonnet model configuration](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5-5.html),
 [Workshop credentials](https://catalog.us-east-1.prod.workshops.aws/v2/workshops/63320e83-6abc-493d-83d8-f822584fb3cb/en-US/getting-started/aws-hosted),
 [AgentCore Node.js deployment](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-node.html).
 
