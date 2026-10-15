@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import http from 'node:http';
-import { BedrockService, publicError } from '../backend/bedrock.mjs';
+import { BedrockService, publicError, readConfig } from '../backend/bedrock.mjs';
 import { createServer } from '../backend/server.mjs';
 
 const answer = (text = 'Hello', extra = {}) => ({ output: { message: { role: 'assistant', content: [{ text }] } }, stopReason: 'end_turn', usage: { outputTokens: 10 }, ...extra });
@@ -20,6 +20,22 @@ function fixture(responses = [], options = {}) {
 }
 const start = service => service.start({ prompt: 'Check this synthetic return.', tools: ['look_up_order_and_customer'] });
 const results = [{ toolUseId: 't1', status: 'success', result: { order: { order_id: 'O-58213' } } }];
+
+test('region accepts workshop exports while preserving the explicit AWS_REGION override', () => {
+  assert.equal(readConfig({ AWS_DEFAULT_REGION: 'us-west-2' }).region, 'us-west-2');
+  assert.equal(readConfig({ AWS_REGION: 'us-east-1', AWS_DEFAULT_REGION: 'us-west-2' }).region, 'us-east-1');
+});
+test('Marketplace denial after a successful greeting disables live mode and explains the account blocker', async () => {
+  const denied = Object.assign(new Error('Not authorized due to private marketplace eligibility. sensitive-provider-detail'), { name: 'AccessDeniedException' });
+  const { service } = fixture([answer(), denied]);
+  await service.connect();
+  await assert.rejects(start(service), { name: 'AccessDeniedException' });
+  assert.equal(service.status().connected, false);
+  assert.equal(service.status().error.code, 'aws_access_denied');
+  assert.match(service.status().error.message, /private Marketplace policy/);
+  assert.doesNotMatch(JSON.stringify(service.status()), /sensitive-provider-detail/);
+  assert.equal(service.runs.size, 0);
+});
 
 test('requires a successful model call before enabling live mode', async () => {
   const { service } = fixture([Object.assign(new Error('private AWS response'), { name: 'AccessDeniedException' })]);

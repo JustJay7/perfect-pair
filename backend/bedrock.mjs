@@ -25,6 +25,7 @@ const validators = new Map(definitions.map(d => [d.name, ajv.compile(d.inputSche
 
 export function publicError(error) {
   if (error.code && error.status) return { code: error.code, message: error.message };
+  if (error.name === 'AccessDeniedException' && /private marketplace eligibility/i.test(error.message || '')) return { code: 'aws_access_denied', message: 'The workshop account’s private Marketplace policy blocks this model’s subscription. Ask the organizers to enable this Haiku model for the account. Its presence in the model catalog does not confirm access.' };
   const messages = {
     CredentialsProviderError: ['aws_credentials', 'Connect your workshop AWS session using Connect AWS.'],
     ExpiredTokenException: ['aws_credentials', 'Your workshop credentials expired. Reconnect with fresh temporary credentials.'],
@@ -43,7 +44,7 @@ export function publicError(error) {
 }
 
 export function readConfig(env = process.env) {
-  return { region: env.AWS_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-5-5', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
+  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-haiku-5-5', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
 }
 
 export class BedrockService {

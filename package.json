@@ -10,6 +10,7 @@
     "test": "node --test tests/bedrock.test.mjs",
     "test:browser": "node tests/browser_smoke.cjs",
     "test:bedrock-browser": "node tests/bedrock_browser.cjs",
+    "test:bedrock-live": "node tests/bedrock_live.cjs",
     "check:aws": "node backend/check-aws.mjs"
   },
   "dependencies": {

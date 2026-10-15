@@ -40,6 +40,14 @@ model on the connection screen, or use the non-secret settings in `.env.example`
 An optional `.env` is ignored by Git. Changing models requires another connection
 check and scenario testing; image/tool support and parameters can differ.
 
+If AWS reports **private marketplace eligibility**, the workshop account's
+Marketplace policy blocks the model subscription. Ask the organizers to enable
+the selected Haiku model for the account. Listing a model or an ACTIVE inference
+profile does not establish invocation access. Even a greeting can succeed while
+AWS attempts subscription in the background and later calls can be denied;
+see [AWS model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html).
+The connection test alone does not verify a full agent workflow.
+
 ### Architecture and current boundary
 
 Browser interface → local Node backend → Bedrock Converse → requested demo tools
@@ -73,6 +81,12 @@ tunnel. A private GitHub repository does not make a hosted website private.
   a Return investigation, source toggle, expired credentials and disconnect.
 - `npm run check:aws`: one real model request using locally configured AWS
   credentials. It does not share the connection screen's in-memory credentials.
+- `PP_LIVE_TEST=1 npm run test:bedrock-live`: an opt-in real Maya investigation
+  and simulated exchange, using the running app's connected workshop session.
+  This uses paid inference and checks the decision, stock re-planning and held
+  exchange. It stops on failures; it never substitutes a scripted result.
+  Optionally set `PP_LIVE_REPORT` to save synthetic scenario evidence and
+  `PP_BASE_URL` if the local app uses another port.
 - The browser checks require Playwright and Chrome. The local launcher requires
   network access on first run to install dependencies.
 
