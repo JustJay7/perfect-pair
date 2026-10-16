@@ -16,7 +16,7 @@ template = (SRC / "index.html").read_text()
 styles = (SRC / "styles.css").read_text()
 styles += "\n" + (SRC / "experience.css").read_text()
 scripts = "\n".join((SRC / f).read_text() for f in ("core.js", "manager_logic.js", "agents.js", "queue.js", "state.js", "hybrid.js", "photos.js", "charts.js", "chat.js", "ui.js", "dashreal.js", "data_source.js", "bedrock.js", "workspace.js", "history.js"))
-scripts += "\n" + (SRC / "experience.js").read_text() + "\n" + (SRC / "journeys.js").read_text() + "\n" + (SRC / "prevention_scope.js").read_text() + "\n" + (SRC / "manager.js").read_text() + "\nboot();\n"
+scripts += "\n" + (SRC / "experience.js").read_text() + "\n" + (SRC / "journeys.js").read_text() + "\n" + (SRC / "prevention_scope.js").read_text() + "\n" + (SRC / "manager.js").read_text() + "\n" + (SRC / "transactions.js").read_text() + "\nboot();\n"
 
 # Compact the data and make it safe inside <script>: in JSON a "<" can only sit
 # inside a string, so writing it as < can never end the script block early.

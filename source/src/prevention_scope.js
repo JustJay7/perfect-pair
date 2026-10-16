@@ -5,11 +5,11 @@ function preventionKey(){const v=PREVENT_VIEW;return [WORK.history?.dataset_id,v
 function preventionControls(actual,overview) {
   const v=PREVENT_VIEW,banners=overview?.banners||REAL?.banners||['ALDO_CA','ALDO_US'],company=v.banner.split('_')[0],companies=[...new Set(banners.map(b=>b.split('_')[0]))],disabled=anyBusy()?'disabled':'';
   return `<section class="card prevention-scope"><div class="scope-fields">
-    <label>Dataset<select id="prevention-source" ${disabled}><option value="actual" ${actual?'selected':''}>Actual supplied data</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
+    <label>Dataset<select id="prevention-source" ${disabled}><option value="transactions">Actual store & online sales · new</option><option value="actual" ${actual?'selected':''}>Actual OMS return history</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
     <label>Company<select id="prevention-company" ${!actual?'disabled':disabled}>${(actual?companies:['ALDO']).map(c=>`<option value="${esc(c)}" ${actual&&c===company?'selected':''}>${esc(COMPANY_NAMES[c]||c)}</option>`).join('')}</select></label>
     <label>Market<select id="prevention-market" ${!actual?'disabled':disabled}>${actual?banners.filter(b=>b.split('_')[0]===company).map(b=>`<option value="${esc(b)}" ${b===v.banner?'selected':''}>${esc(marketName(b))}</option>`).join(''):'<option>Canada · demo network</option>'}</select></label>
     <label>Analyze<select id="prevention-scope" ${disabled}><option value="all" ${v.scope==='all'?'selected':''}>All products</option><option value="single" ${v.scope==='single'?'selected':''}>One product</option></select></label>
-    </div><p class="small muted">${actual?'Markets come from the supplied files. No verified individual-store breakdown is available.':'Synthetic reviews, stock, customer histories and outcomes support the operational rehearsal. Company and market are fixed to the demo network.'}</p>
+    </div><p class="small muted">${actual?'This view uses the earlier OMS return files. Choose Actual store & online sales for individual locations, recorded sales and margins.':'Synthetic reviews, stock, customer histories and outcomes support the operational rehearsal. Company and market are fixed to the demo network.'}</p>
     ${!actual&&v.scope==='single'?`<label class="scope-product">Product<select id="prevention-style" ${disabled}><option value="">Choose a product…</option>${DATA.catalogue.filter(s=>s.category!=='Accessories').map(s=>`<option value="${esc(s.style_id)}" ${v.styleId===s.style_id?'selected':''}>${esc(s.name)} · ${esc(s.style_id)}${s.hybrid?' · actual context + synthetic assumptions':''}</option>`).join('')}</select></label>`:''}
     </section>`;
 }
@@ -54,7 +54,7 @@ renderPrevention=function(){
 function resetPreventionScope(){const v=PREVENT_VIEW;v.sku=null;v.product=null;v.q='';v.offset=0;v.error=null;v.browserOpen=true;}
 document.addEventListener('change',ev=>{
   const t=ev.target,v=PREVENT_VIEW;if(!t.id.startsWith('prevention-')||anyBusy())return;
-  if(t.id==='prevention-source'){setDataSource(t.value,false);v.error=null;renderPrevention();}
+  if(t.id==='prevention-source'){v.evidence=t.value==='transactions'?'transactions':'returns';setDataSource(t.value==='transactions'?'actual':t.value,false);v.error=null;renderPrevention();}
   if(t.id==='prevention-company'){v.banner=(REAL?.banners||[]).find(b=>b.split('_')[0]===t.value)||'ALDO_CA';resetPreventionScope();renderPrevention();}
   if(t.id==='prevention-market'){v.banner=t.value;resetPreventionScope();renderPrevention();}
   if(t.id==='prevention-scope'){v.scope=t.value;renderPrevention();}

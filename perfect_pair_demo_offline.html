@@ -1131,6 +1131,7 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
 @media(max-width:680px){.manager-options,.routing-inputs{grid-template-columns:1fr}.manager-selector{gap:14px}.manager-selector>label:first-child,.manager-selector select{width:100%;min-width:0}.manager-selector>label:first-child{min-width:0}.manager-alert{padding:18px}.manager-remedies .card-head{align-items:flex-start;flex-direction:column;gap:12px}.manager-next button{width:100%}.manager-option{padding:18px}.routing-summary>div{padding:18px}}
 
 .manager-selector select,.routing-inputs select,.routing-inputs input:not([type="checkbox"]){padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px}.workspace-nav[data-tab="manager"][aria-selected="true"],.workspace-nav[data-tab="routing"][aria-selected="true"]{background:var(--red-soft);color:var(--red-ink)}
+.tx-workspace{gap:20px}.tx-controls select,.tx-workspace input{max-width:100%;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit}.tx-controls .scope-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}.tx-controls label,.tx-workspace form label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:650;min-width:0}.tx-reasons{display:grid;gap:12px}.tx-reasons>div{display:grid;grid-template-columns:minmax(150px,2fr) 3fr 70px;gap:16px;align-items:center}.tx-reasons progress{width:100%;height:12px;accent-color:var(--red)}.tx-reasons b{text-align:right}.tx-metrics{margin:0}.tx-route-table{min-width:900px}.tx-route-table small{display:block;margin-top:6px;color:var(--muted)}.tx-launch{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:20px 0}.tx-workspace .routing-inputs{margin-bottom:16px}.tx-workspace .page-heading{margin-bottom:0}@media(max-width:650px){.tx-reasons>div{grid-template-columns:1fr 80px;gap:6px}.tx-reasons progress{grid-row:2;grid-column:1/-1}.tx-launch{align-items:stretch;flex-direction:column}.tx-controls .scope-fields{grid-template-columns:1fr}.tx-workspace .workspace-toolbar{align-items:stretch;flex-direction:column}}
 
 </style>
 
@@ -7059,7 +7060,7 @@ async function workspaceGet(path) {
   return result;
 }
 function applyWorkspace(s) {
-  restoreCaseWorkspace(s.workspace); WORK.version=s.version; WORK.history=s.history; WORK.historyRuns=s.historyRuns; WORK.job=s.job;
+  restoreCaseWorkspace(s.workspace); WORK.version=s.version; WORK.history=s.history; WORK.transactions=s.transactions; WORK.historyRuns=s.historyRuns; WORK.job=s.job;
   for(const k of Object.values(IDX.kase))if(k.photo?.imageData)k.photo.url=k.photo.imageData;
   WORK.ready=true;WORK.loading=false;WORK.busy=s.busy;
   $('#workspace-stop').hidden=!WORK.busy;
@@ -7442,11 +7443,11 @@ function preventionKey(){const v=PREVENT_VIEW;return [WORK.history?.dataset_id,v
 function preventionControls(actual,overview) {
   const v=PREVENT_VIEW,banners=overview?.banners||REAL?.banners||['ALDO_CA','ALDO_US'],company=v.banner.split('_')[0],companies=[...new Set(banners.map(b=>b.split('_')[0]))],disabled=anyBusy()?'disabled':'';
   return `<section class="card prevention-scope"><div class="scope-fields">
-    <label>Dataset<select id="prevention-source" ${disabled}><option value="actual" ${actual?'selected':''}>Actual supplied data</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
+    <label>Dataset<select id="prevention-source" ${disabled}><option value="transactions">Actual store & online sales · new</option><option value="actual" ${actual?'selected':''}>Actual OMS return history</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
     <label>Company<select id="prevention-company" ${!actual?'disabled':disabled}>${(actual?companies:['ALDO']).map(c=>`<option value="${esc(c)}" ${actual&&c===company?'selected':''}>${esc(COMPANY_NAMES[c]||c)}</option>`).join('')}</select></label>
     <label>Market<select id="prevention-market" ${!actual?'disabled':disabled}>${actual?banners.filter(b=>b.split('_')[0]===company).map(b=>`<option value="${esc(b)}" ${b===v.banner?'selected':''}>${esc(marketName(b))}</option>`).join(''):'<option>Canada · demo network</option>'}</select></label>
     <label>Analyze<select id="prevention-scope" ${disabled}><option value="all" ${v.scope==='all'?'selected':''}>All products</option><option value="single" ${v.scope==='single'?'selected':''}>One product</option></select></label>
-    </div><p class="small muted">${actual?'Markets come from the supplied files. No verified individual-store breakdown is available.':'Synthetic reviews, stock, customer histories and outcomes support the operational rehearsal. Company and market are fixed to the demo network.'}</p>
+    </div><p class="small muted">${actual?'This view uses the earlier OMS return files. Choose Actual store & online sales for individual locations, recorded sales and margins.':'Synthetic reviews, stock, customer histories and outcomes support the operational rehearsal. Company and market are fixed to the demo network.'}</p>
     ${!actual&&v.scope==='single'?`<label class="scope-product">Product<select id="prevention-style" ${disabled}><option value="">Choose a product…</option>${DATA.catalogue.filter(s=>s.category!=='Accessories').map(s=>`<option value="${esc(s.style_id)}" ${v.styleId===s.style_id?'selected':''}>${esc(s.name)} · ${esc(s.style_id)}${s.hybrid?' · actual context + synthetic assumptions':''}</option>`).join('')}</select></label>`:''}
     </section>`;
 }
@@ -7491,7 +7492,7 @@ renderPrevention=function(){
 function resetPreventionScope(){const v=PREVENT_VIEW;v.sku=null;v.product=null;v.q='';v.offset=0;v.error=null;v.browserOpen=true;}
 document.addEventListener('change',ev=>{
   const t=ev.target,v=PREVENT_VIEW;if(!t.id.startsWith('prevention-')||anyBusy())return;
-  if(t.id==='prevention-source'){setDataSource(t.value,false);v.error=null;renderPrevention();}
+  if(t.id==='prevention-source'){v.evidence=t.value==='transactions'?'transactions':'returns';setDataSource(t.value==='transactions'?'actual':t.value,false);v.error=null;renderPrevention();}
   if(t.id==='prevention-company'){v.banner=(REAL?.banners||[]).find(b=>b.split('_')[0]===t.value)||'ALDO_CA';resetPreventionScope();renderPrevention();}
   if(t.id==='prevention-market'){v.banner=t.value;resetPreventionScope();renderPrevention();}
   if(t.id==='prevention-scope'){v.scope=t.value;renderPrevention();}
@@ -7574,6 +7575,102 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button')
   if(t.id==='manager-assess'){await investigate(id);if(!CASES[id].error)await refreshManagerPlan(id);renderManager();}
   if(t.id==='manager-refresh'||t.id==='routing-save'){await refreshManagerPlan(id);renderTab(STATE.tab);toast('Planning scenario saved. No shipment or payment created.');}
   if(t.dataset.managerRecommend){const note=$('#manager-decision-note').value,option=t.dataset.managerRecommend;if(BEDROCK_LOCAL)await workspaceCommand({kind:'manager-decision',caseId:id,option,note,mode:'scripted'});else saveManagerDecision(id,option,note,WORK.role);renderManager();toast('Manager recommendation saved. Customer agreement still required.');}
+ }catch(e){toast(e.message);}
+});
+
+/* Actual sales evidence stays on the server; the browser receives bounded summaries. */
+const TX={catalog:null,catalogPromise:null,routingSource:'synthetic',views:{}};
+function txView(mode){return TX.views[mode]||(TX.views[mode]={banner:'ALDO_CA',site:'',channel:'',from:'',to:'',scope:mode==='routing'?'single':'all',product:null,q:'',offset:0,receiving:'',grade:'A',assumptions:{},inspected:false,shipFromStore:false,seq:0,data:null,loading:false,error:null,dirty:false});}
+const txAmount=n=>n==null?'Not supplied':Number(n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+const txProductLabel=p=>`${p.name||'Style not supplied'} · ${p.color||'Colour not supplied'} · ${p.size?'size '+p.size:'size not supplied'}`;
+const txReason=s=>!s?'Reason not supplied':/^\d+$/.test(s)?`Code ${s} · definition not supplied`:s;
+const txSiteLabel=s=>`${s.city} · ${s.id} · ${s.type||'type not supplied'}`;
+function txScope(v,product=true){return {banner:v.banner,site:v.site,channel:v.channel,from:v.from,to:v.to,...(product&&v.product?{product:v.product.id}:{})};}
+function txRequest(v){return {...txScope(v),site:'',receiving:v.receiving,grade:v.grade,assumptions:{...v.assumptions},inspected:v.inspected,shipFromStore:v.shipFromStore};}
+async function loadTransactions(mode){
+ const v=txView(mode),seq=++v.seq;v.loading=true;v.error=null;v.data=null;renderActualTransactions(mode);
+ try{
+  if(!TX.catalogPromise)TX.catalogPromise=workspaceGet('/api/transactions/catalog').catch(e=>{TX.catalogPromise=null;throw e;});
+  TX.catalog=await TX.catalogPromise;if(seq!==v.seq)return;
+  v.from=v.from||TX.catalog.start.slice(0,7);v.to=v.to||TX.catalog.end.slice(0,7);
+  const scope=txScope(v,mode==='routing'||v.scope==='single'),request=txRequest(v),query=x=>new URLSearchParams(x);
+  const needsProduct=mode==='routing'||v.scope==='single';
+  const [overview,page,plan]=await Promise.all([
+   mode==='prevention'&&(!needsProduct||v.product)?workspaceGet('/api/transactions/overview?'+query(scope)):null,
+   needsProduct?workspaceGet('/api/transactions/products?'+query({...txScope(v,false),q:v.q,offset:v.offset})):null,
+   mode==='routing'&&v.product?bedrockPost('/api/transactions/plan',request):null
+  ]);
+  if(seq===v.seq){v.data={overview,page,plan,scope,request};v.dirty=false;}
+ }catch(e){if(seq===v.seq)v.error=e.message;}
+ finally{if(seq===v.seq){v.loading=false;if(STATE.tab===mode)renderActualTransactions(mode);}}
+}
+function txControls(mode){const v=txView(mode),c=TX.catalog,select=(key,label,options)=>`<label>${label}<select data-tx-field="${key}">${options}</select></label>`,opt=(value,label,current)=>`<option value="${esc(value)}" ${value===current?'selected':''}>${esc(label)}</option>`;
+ return `<section class="card card-pad tx-controls"><div class="scope-fields">
+ ${mode==='prevention'?'<label>Dataset<select id="prevention-source"><option value="transactions" selected>Actual store & online sales · new</option><option value="actual">Actual OMS return history</option><option value="synthetic">Synthetic demo</option></select></label>':''}
+ <label>Company<select disabled><option>ALDO</option></select></label>
+ ${select('banner','Market',['ALDO_CA','ALDO_US'].map(b=>opt(b,marketName(b),v.banner)).join(''))}
+ ${mode==='prevention'?select('site','Location',opt('','All locations',v.site)+(c?.sites||[]).filter(s=>s.banner===v.banner).map(s=>opt(s.id,txSiteLabel(s),v.site)).join('')):''}
+ ${select('channel','Recorded channel',opt('','All channels',v.channel)+['STR','WEB','INSTORE','WCC'].map(x=>opt(x,x==='WEB'?'WEB · e-commerce':x,v.channel)).join(''))}
+ ${select('from','From month',(c?.months||[]).map(m=>opt(m,m,v.from)).join(''))}${select('to','Through month',(c?.months||[]).map(m=>opt(m,m,v.to)).join(''))}
+ ${mode==='prevention'?select('scope','Analyze',opt('all','All products',v.scope)+opt('single','One product variant',v.scope)):''}
+ </div><p class="small muted">${c?`${num(c.source.rows)} supplied transaction lines · ${esc(c.start)} to ${esc(c.end)}. `:''}Amounts remain in the source market’s unspecified currency. No Canada/US monetary totals are combined. STR, INSTORE and WCC remain separate source codes.</p></section>`;
+}
+function txProductBrowser(mode){const v=txView(mode),page=v.data?.page;if(!page)return '';
+ return `<details class="card disclosure" ${v.product?'':'open'}><summary>${v.product?'Change product · '+esc(txProductLabel(v.product)):'Choose a recorded product variant'} <span>Style, colour, size and materials · no SKU supplied</span></summary><div class="card-pad"><form data-tx-search class="workspace-toolbar"><label>Search products<input name="q" type="search" value="${esc(v.q)}" placeholder="Style, colour, size or category"></label><button class="btn secondary" type="submit">Search</button></form><div class="tbl-wrap"><table><thead><tr><th>Product variant</th><th>Sold units</th><th>Return / adjustment units</th><th></th></tr></thead><tbody>${page.products.map(p=>`<tr><td><b>${esc(p.name||'Style not supplied')}</b><br>${esc(p.color)} · ${p.size?'size '+esc(p.size):'size not supplied'}<br><small>${esc(p.category)}</small></td><td>${num(p.sold)}</td><td>${num(p.returned)}</td><td><button class="btn secondary sm" data-tx-product="${p.id}">Select</button></td></tr>`).join('')||'<tr><td colspan="4">No products in this scope match the search.</td></tr>'}</tbody></table></div><div class="dataset-bar"><button class="btn secondary sm" data-tx-page="-1" ${!v.offset?'disabled':''}>Previous</button><span>Up to 25 variants per page</span><button class="btn secondary sm" data-tx-page="1" ${!page.more?'disabled':''}>Next</button></div></div></details>`;
+}
+function txEvidenceButton(e){return `<button class="text-button" data-evidence="${esc(e.citations[0])}">Source totals, method and evidence ${icon('call')}</button>`;}
+function txPreventionResults(e){const t=e.totals,mode='prevention';
+ return `<section class="card card-pad"><div class="eyebrow">Recorded reasons · selected scope</div><h2>Where to investigate next</h2><p>${num(t.returned_units)} return/adjustment units. Numeric codes remain unmapped; a reason does not establish the cause.</p><div class="tx-reasons">${e.reasons.map(r=>`<div><span>${esc(txReason(r.reason))}</span><progress max="${Math.max(1,t.returned_units)}" value="${r.units}"></progress><b>${num(r.units)}</b></div>`).join('')||'<p>No return/adjustment lines in this scope.</p>'}</div><p class="small muted">Up to 12 reasons, ranked by units. Bars use all ${num(t.returned_units)} return/adjustment units as the denominator.</p>${txEvidenceButton(e)}</section>
+ <div class="routing-summary tx-metrics"><div><small>Recorded sold units</small><b>${num(t.sold_units)}</b><span>${num(t.rows)} total transaction lines</span></div><div><small>Return / sale event ratio</small><b>${t.return_to_sales_units==null?'Unavailable':pct(t.return_to_sales_units,1)}</b><span>Period events; not matched purchases or customer history</span></div><div><small>Recorded net gross margin</small><b>${txAmount(t.net_margin)}</b><span>Net sales ${txAmount(t.net_sales)} − net cost ${txAmount(t.net_cost)}</span></div></div>
+ <p class="small muted">${esc(e.period.start)} to ${esc(e.period.end)} · ${num(t.sites)} sites · ${num(t.products)} product variants. ${num(t.anomaly_rows)} inconsistent-sign lines remain in net totals but are excluded from the sales/return comparison. Fees, transport and fulfillment are not included in recorded product gross margin.</p>
+ <section class="card card-pad"><h2>${e.product?esc(txProductLabel(e.product)):'Products with the most return / adjustment units'}</h2>${e.product?`<p>${esc(e.product.category)} · ${esc(e.product.material||'Material not supplied')} · ${esc(e.product.fabric||'Fabric not supplied')}</p><button class="btn secondary" data-tx-route-product="${e.product.id}">Compare locations and online resale</button>`:`<div class="tbl-wrap"><table><thead><tr><th>Top 10 product variants</th><th>Sold units</th><th>Return / adjustment units</th><th></th></tr></thead><tbody>${e.top_products.map(p=>`<tr><td>${esc(txProductLabel(p))}</td><td>${num(p.sold)}</td><td>${num(p.returned)}</td><td><button class="btn secondary sm" data-tx-product="${p.id}">Investigate</button></td></tr>`).join('')}</tbody></table></div>`}</section>`;
+}
+function txRoutingResults(plan){const v=txView('routing'),c=TX.catalog,b=plan.benchmark,candidate=plan.routes.find(r=>r.id===plan.candidate),input=(key,label)=>`<label>${label}<input data-tx-cost="${key}" type="number" min="0" max="100000" step="0.01" value="${v.assumptions[key]??''}" placeholder="Not supplied"></label>`;
+ return `<div class="routing-summary"><div><small>Recorded product</small><b>${esc(plan.product.name)}</b><span>${esc(plan.product.color)} · ${plan.product.size?'size '+esc(plan.product.size):'size not supplied'}</span></div><div><small>Benchmark gross profit / unit</small><b>${txAmount(b.profit)}</b><span>${b.percent==null?'Unknown':pct(b.percent,1)} · price ${txAmount(b.price)} − cost ${txAmount(b.cost)}</span></div><div><small>Recorded sales destinations</small><b>${plan.routes.length}</b><span>${esc(plan.period.start)} to ${esc(plan.period.end)}</span></div></div>
+ <p class="small muted">${esc(b.source)}. This is not a verified original customer order or SKU match. The store address identifies the store, not the customer’s nearest location.</p>
+ <section class="card card-pad"><h2>Receiving store and logistics assumptions</h2><p>Choose a convenient receiving store with the customer. Enter costs in the same currency as this market’s source amounts. Blank means unknown.</p><div class="routing-inputs">
+ <label>Receiving store<select data-tx-field="receiving"><option value="">Choose a physical store…</option>${c.sites.filter(s=>s.banner===v.banner&&/^(REGULAR|OUTLET|ACCESSORIES)/.test(s.type)).map(s=>`<option value="${esc(s.id)}" ${s.id===v.receiving?'selected':''}>${esc(txSiteLabel(s))}</option>`).join('')}</select></label>
+ <label>Scenario condition<select data-tx-field="grade">${['A','B','C','D'].map(g=>`<option ${g===v.grade?'selected':''}>${g}</option>`).join('')}</select></label>
+ ${input('handling','Inspection / handling per pair')}${input('transfer','Transfer to another store per pair')}${input('shipping','Online shipping per pair')}${input('packing','Online packing per pair')}
+ <label class="manager-check"><input type="checkbox" data-tx-flag="inspected" ${v.inspected?'checked':''}> Inspection confirmed in this scenario</label><label class="manager-check"><input type="checkbox" data-tx-flag="shipFromStore" ${v.shipFromStore?'checked':''}> Receiving store can ship online in this scenario</label>
+ </div><details class="inline-disclosure"><summary>Override the comparison benchmark</summary><p>Optional scenario inputs. These do not become a verified original order.</p><div class="routing-inputs">${input('benchmarkPrice','Benchmark selling price per unit')}${input('benchmarkCost','Benchmark product cost per unit')}</div></details><button class="btn secondary" data-tx-recalculate>Recalculate comparison</button><span class="small muted" id="tx-dirty">${v.dirty?' Inputs changed. Recalculate to update the comparison.':''}</span><p class="small muted">The transfer estimate applies uniformly to other stores. Actual route quotes, current stock, capacity and delivery times still need validation. No live online order is connected.</p></section>
+ <section class="manager-alert ${candidate?'positive':''}"><div class="eyebrow">Financial scenario · operational checks remain</div><h2>${candidate?'A historical candidate meets the benchmark':'No verified margin-preserving route'}</h2><p>${candidate?`${esc(txSiteLabel(candidate.site))} meets the entered dollar and percentage benchmark. Inspect the breakdown and remaining checks before any real decision.`:'Enter the missing logistics inputs or review routes below the benchmark. No stock, order or shipment has been created.'}</p></section>
+ <section class="card card-pad"><h2>Store, outlet and online comparison</h2><p class="small muted">Recorded weighted-average prices and product costs. Selling pace is units per calendar week, not sell-through probability. Grade B permits outlet scenarios only; Grades C/D have no resale-as-new candidate. Online rows model shipping from the receiving store using recorded online sales evidence.</p><div class="tbl-wrap"><table class="tx-route-table"><thead><tr><th>Historical destination</th><th>Units / week</th><th>Avg price / cost</th><th>Contribution after entered costs</th><th>Margin / gap to benchmark</th><th></th></tr></thead><tbody>${plan.routes.slice(0,v.routeLimit||12).map(r=>`<tr data-tx-route-row="${r.id}"><td><b>${r.online?'Online resale from receiving store':esc(r.site.city)+' · '+esc(r.site.id)}</b><small>${esc(r.site.type||'Unclassified site')} · ${esc(r.channels)}</small></td><td>${r.weekly_units.toFixed(2)}<small>${num(r.sold_units)} sold units</small></td><td>${txAmount(r.price)} / ${txAmount(r.cost)}</td><td>${txAmount(r.contribution)}<small>${r.marginPass?'Meets financial benchmark':!r.conditionOK?'Condition unsuitable':r.contribution==null?'Missing logistics inputs':'Below benchmark'}</small></td><td>${r.marginPct==null?'—':pct(r.marginPct,1)}<small>${r.gap==null?'Gap unknown':txAmount(r.gap)+' vs benchmark'}</small></td><td><button class="btn secondary sm" data-tx-detail="${r.id}">Breakdown</button></td></tr>`).join('')||'<tr><td colspan="6">No qualifying positive sale observations for this product and scope.</td></tr>'}</tbody></table></div><div class="dataset-bar"><span class="small muted">Showing ${Math.min(v.routeLimit||12,plan.routes.length)} of ${plan.routes.length} recorded destinations</span>${plan.routes.length>(v.routeLimit||12)?'<button class="btn secondary sm" data-tx-more-routes>Show more destinations</button>':''}</div>${txEvidenceButton(plan)}<p class="small muted">Historical margins cannot guarantee the original order’s profit after a refund. A replacement transfer still needs the correct replacement SKU and live stock; this file does not supply either.</p></section>`;
+}
+function renderActualTransactions(mode){
+ const el=$('#tab-'+mode),v=txView(mode),routing=mode==='routing';
+ const sourceSelect=routing?`<div class="dataset-bar"><label>Routing evidence<select id="routing-source"><option value="transactions" selected>Actual store & online sales</option><option value="synthetic">Synthetic demo</option></select></label></div>`:'';
+ el.innerHTML=`<div class="tx-workspace stack" data-tx-mode="${mode}">${pageHeading(routing?'Compare actual resale destinations.':'Prevent returns with store-level evidence.',routing?'Recorded selling pace and margins, with separate logistics assumptions.':'Choose a market, location and product. Investigate recorded sales and return events.','Actual ALDO transactions')}${sourceSelect}${txControls(mode)}<div class="tx-content"></div></div>`;
+ const dest=el.querySelector('.tx-content');
+ if(!BEDROCK_LOCAL||!WORK.ready||!WORK.transactions){dest.innerHTML='<section class="card card-pad"><h2>Transaction history is not connected</h2><p>Use the local server and import the new transaction CSV. Existing actual OMS analytics and the synthetic demo remain available.</p></section>';return;}
+ if(v.loading){dest.innerHTML='<p role="status">Loading recorded transactions for this selection…</p>';return;}
+ if(v.error){dest.innerHTML=`<p role="alert">${esc(v.error)}</p><button class="btn secondary" data-tx-recalculate>Try again</button>`;return;}
+ if(!v.data){loadTransactions(mode);return;}
+ const e=routing?v.data.plan:v.data.overview;
+ dest.innerHTML=`<div class="stack">${txProductBrowser(mode)}${e?(routing?txRoutingResults(e):txPreventionResults(e)):'<section class="card card-pad"><h2>Select a product above</h2><p>Choose the recorded colour and size. Missing sizes stay unknown. No synthetic case is automatically matched to a real product.</p></section>'}</div>`;
+ if(e){const matching=WORK.historyRuns.filter(r=>r.source==='transactions'&&r.agent===mode&&r.dataset_id===WORK.transactions.dataset_id&&JSON.stringify(r.scope)===JSON.stringify(e.scope));dest.insertAdjacentHTML('beforeend',`<section class="card card-pad tx-launch"><div><h2>${routing?'Explain this comparison':'Investigate this scope'}</h2><p>${STATE.mode==='live'?'Live agent':'Scripted analysis'} · source-linked findings and saved replay. No financial or inventory actions.</p></div><button id="tx-run" class="btn" data-tx-run ${anyBusy()||v.dirty||(!routing&&!e.totals.rows)?'disabled':''}>${routing?'Save / explain comparison':'Run Prevention analysis'}</button></section><section class="stack">${matching.slice(0,3).map(historyRunHTML).join('')}</section>`);}
+}
+const txBasePrevention=renderPrevention;
+renderPrevention=function(){if(UI.dataSource==='actual'&&PREVENT_VIEW.evidence==='transactions')return renderActualTransactions('prevention');txBasePrevention();};
+const txBaseRouting=renderRouting;
+renderRouting=function(){if(TX.routingSource==='transactions')return renderActualTransactions('routing');txBaseRouting();$('#tab-routing').insertAdjacentHTML('afterbegin','<div class="dataset-bar"><label>Routing evidence<select id="routing-source"><option value="synthetic" selected>Synthetic demo</option><option value="transactions">Actual store & online sales · new</option></select></label></div>');};
+document.addEventListener('change',ev=>{
+ const t=ev.target;if(t.id==='routing-source'){TX.routingSource=t.value;renderRouting();return;}
+ const mode=t.closest('[data-tx-mode]')?.dataset.txMode;if(!mode)return;const v=txView(mode);
+ if(t.dataset.txCost||t.dataset.txFlag||['receiving','grade'].includes(t.dataset.txField)){if(t.dataset.txCost)v.assumptions[t.dataset.txCost]=t.value===''?null:Number(t.value);else if(t.dataset.txFlag)v[t.dataset.txFlag]=t.checked;else v[t.dataset.txField]=t.value;v.dirty=true;t.closest('[data-tx-mode]').querySelector('#tx-dirty').textContent=' Inputs changed. Recalculate to update the comparison.';t.closest('[data-tx-mode]').querySelector('#tx-run').disabled=true;return;}
+ if(t.dataset.txField){const key=t.dataset.txField;v[key]=t.value;v.offset=0;if(key==='banner'){v.site=v.receiving='';v.product=null;}if(key==='site')v.product=null;if(key==='scope'&&v.scope==='all')v.product=null;loadTransactions(mode);}
+});
+document.addEventListener('submit',ev=>{const form=ev.target;if(!form.hasAttribute('data-tx-search'))return;ev.preventDefault();const mode=form.closest('[data-tx-mode]').dataset.txMode,v=txView(mode);v.q=new FormData(form).get('q');v.offset=0;loadTransactions(mode);});
+document.addEventListener('click',async ev=>{
+ const t=ev.target.closest('button'),mode=t?.closest('[data-tx-mode]')?.dataset.txMode;if(!mode)return;const v=txView(mode);
+ try{
+  if(t.dataset.txProduct){const p=[...(v.data.page?.products||[]),...(v.data.overview?.top_products||[])].find(x=>x.id===t.dataset.txProduct);if(!p)return;v.product=p;v.scope='single';v.offset=0;await loadTransactions(mode);}
+  if(t.hasAttribute('data-tx-more-routes')){v.routeLimit=(v.routeLimit||12)+12;renderActualTransactions(mode);}
+  if(t.dataset.txPage){v.offset=Math.max(0,v.offset+25*Number(t.dataset.txPage));await loadTransactions(mode);}
+  if(t.hasAttribute('data-tx-recalculate')){const invalid=[...t.closest('[data-tx-mode]').querySelectorAll('input')].find(x=>!x.checkValidity());if(invalid){invalid.reportValidity();return;}await loadTransactions(mode);}
+  if(t.hasAttribute('data-tx-run')){if(anyBusy()||v.dirty)return;await workspaceCommand({kind:'transactions',agent:mode,dataset_id:WORK.transactions.dataset_id,scope:mode==='routing'?v.data.request:v.data.scope});}
+  if(t.dataset.txRouteProduct){const p=v.data.overview.product,r=txView('routing');Object.assign(r,{banner:v.banner,site:'',channel:v.channel,from:v.from,to:v.to,product:p,data:null,error:null,receiving:'',assumptions:{}});TX.routingSource='transactions';showTab('routing');}
+  if(t.dataset.txDetail){const p=v.data.plan,r=p.routes.find(x=>x.id===t.dataset.txDetail);if(r)evidenceDialog(r.online?'Online resale scenario':txSiteLabel(r.site),`<p>Recorded product observations · ${esc(txProductLabel(p.product))}</p>${tableView(['Component','Per unit · source currency'],[['Recorded weighted selling price',txAmount(r.price)],['Recorded weighted product cost',txAmount(r.cost)],['Recorded gross margin',txAmount(r.recorded_unit_margin)],['Assumed handling',txAmount(r.handling)],['Assumed transfer',txAmount(r.transfer)],['Assumed online packing + shipping',txAmount(r.fulfillment)],['Scenario contribution',txAmount(r.contribution)],['Benchmark gross profit',txAmount(p.benchmark.profit)],['Gap to benchmark',txAmount(r.gap)]]).replace('<details class="tv"','<details open class="tv"')}<h3>Before fulfillment</h3><ul>${r.checks.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p>${esc(p.method)}</p>${txEvidenceButton(p)}`);}
  }catch(e){toast(e.message);}
 });
 

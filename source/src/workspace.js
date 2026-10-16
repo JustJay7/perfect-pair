@@ -8,7 +8,7 @@ async function workspaceGet(path) {
   return result;
 }
 function applyWorkspace(s) {
-  restoreCaseWorkspace(s.workspace); WORK.version=s.version; WORK.history=s.history; WORK.historyRuns=s.historyRuns; WORK.job=s.job;
+  restoreCaseWorkspace(s.workspace); WORK.version=s.version; WORK.history=s.history; WORK.transactions=s.transactions; WORK.historyRuns=s.historyRuns; WORK.job=s.job;
   for(const k of Object.values(IDX.kase))if(k.photo?.imageData)k.photo.url=k.photo.imageData;
   WORK.ready=true;WORK.loading=false;WORK.busy=s.busy;
   $('#workspace-stop').hidden=!WORK.busy;

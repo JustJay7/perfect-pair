@@ -86,6 +86,27 @@ The latest manager layout was developed with a completed `us.anthropic.claude-op
 
 To rehearse: open **Store Manager → Customer review**, choose Maya, run the return assessment if needed, then expand **Record a customer comment → Use a synthetic example** and save it. Record the manager's reason and recommendation. Open **Return routing**, expand **Planning inputs**, and compare normal forecast demand with an assumed exact matching online order. Save / explain records the scenario; Live mode adds a bounded model explanation whose route/remedy IDs must pass server checks.
 
+### New transaction data: individual stores and online sales
+
+The additional `Transaction_Detail_ALDO_CA_US_2025.csv` is integrated separately from OMS history. It contains **8,701,520 lines**, February 2, 2025 through January 31, 2026, for **303 site IDs** across ALDO Canada and ALDO US. Sites include regular stores, outlets, e-commerce, customer service and unclassified locations. All rows are imported; no sample is substituted for the full totals. The earlier six files are byte-identical to the previous delivery.
+
+- **Customer Service → Prevention agent → Dataset → Actual store & online sales**: select market, individual location, recorded channel and months, then all products or one descriptive variant. Recorded reasons appear first. Sales, signed net amounts, recorded gross margins and period return-to-sale event ratios follow. These ratios are not matched-purchase or customer return rates. Numeric reason codes have no supplied dictionary and remain unmapped. Top products/reasons are explicitly ranked subsets.
+- **Store Manager → Return routing → Routing evidence → Actual store & online sales**: choose the real product's colour/size and a convenient receiving store. Compare recorded sales per calendar week, weighted selling prices, product costs and margins by store/outlet and online site. Enter handling, transfer, packing and shipping assumptions, then recalculate. Blank costs remain unknown. The transfer estimate applies uniformly to other stores; it is not a route quote. Online rows model fulfillment from the receiving store using historical online demand evidence.
+- The default financial benchmark is the selected product/period/channel's recorded weighted-average sale, **not a verified original customer order**. Optional benchmark overrides are assumptions. A financial candidate must preserve benchmark gross-profit dollars and margin percentage after entered costs. Condition constraints apply, but inspection, current demand/capacity, shipping capability, delivery times and exact product identification still need verification. No operational recommendation, shipment, reservation or financial action is created.
+- Product identity includes market, brand, style, colour, size, category and materials. No explicit SKU or width is supplied. No automatic join is made to synthetic customers or the older OMS returns, preventing false matches and double-counting. Store postal codes are not customer addresses. Missing size stays unknown. Customer GUIDs are absent on 97.48% of source lines and are not used to construct customer histories.
+- Costs and margins are recorded historical product amounts, not full logistics profit. Amounts stay in one market's unspecified source currency; there is no FX conversion or Canada/US monetary total. Consistent positive sale and negative return/adjustment lines supply comparison measures. **1,145 inconsistent-sign lines** remain in net totals and are excluded from these comparison measures. Source sales minus cost reconciles to margin within one cent per row.
+- **Run Prevention analysis / Save & explain comparison** saves findings, exact scope and observed evidence. Scripted mode is deterministic. Live mode uses the configured Bedrock model with a read-only, server-bound transaction tool and requires valid source citations. Saved replays retain the original observations. Actual logistics and replacement stock are not inferred from this historical file.
+
+Import on each teammate's computer (Python dependencies from `source/requirements-data.txt`):
+
+```sh
+python3 -m pip install -r source/requirements-data.txt
+npm run import:transactions -- "/path/to/Transaction_Detail_ALDO_CA_US_2025.csv"
+npm start
+```
+
+The importer creates `local_data/transactions.sqlite` atomically, verifies source totals, retains a source SHA-256 and builds indexed summaries. Restart an already-running server after importing. `PP_TRANSACTIONS_PATH` can select another database. The raw 3.1 GB CSV and local database are excluded from Git and never sent wholesale to Bedrock or the browser. Standalone HTML keeps the synthetic demo and prior OMS aggregates; the new full transaction views require the local server/database. This computer already has the complete import.
+
 ### Architecture and current boundary
 
 Browser → local Node server → Resolution / Prevention workflow → Bedrock Converse
@@ -134,6 +155,8 @@ customer handoffs are saved server-side with the submitted conversation excerpt.
   actions, roles, source joins, scoped investigations and replay integrity. AWS
   responses are mocked; no inference costs.
 - `npm run test:manager-browser`: separate customer/inspection/routing pages, customer-chat service flags, saved staff decisions, exact-SKU and margin checks, inspection locks and mobile layouts.
+- `npm run test:transactions-import`: chunk consolidation, full-source reconciliation, original preservation and atomic failure checks.
+- `npm run test:transactions-browser`: actual market/location/product filters, saved analyses/replay, margin assumptions, source evidence, synthetic switching and mobile layouts. Backend tests include fixed-scope mocked live transaction tools.
 - `npm run test:insights-browser`: independently recomputed actual filter totals and reason shares, no-data and zero-quantity cases, date ranges, reset and mobile layouts.
 - `npm run test:journeys-browser`: scenario selection, customer status and history cards, heatmap ordering, actual market/product isolation, synthetic product scoping and mobile layouts.
 - `npm run test:experience-browser`: three role views, guarded navigation, a

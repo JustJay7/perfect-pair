@@ -12,6 +12,7 @@ const definitions = JSON.parse(vm.runInContext('JSON.stringify(Object.values(TOO
 const extra = (name, description, properties, required = []) => ({ name, description, inputSchema: { type: 'object', properties, required } });
 const str = { type: 'string' };
 definitions.push(
+  extra('transaction_evidence', 'Read fixed-scope recorded store and online sales, costs and margins, with separately labeled planning assumptions. No operational actions.', {}),
   extra('history_overview', 'Read the supplied history for the server-bound banner. Counts are not return rates.', {}),
   extra('history_product', 'Read recorded reasons and source rows for the server-bound product. No invented attributes.', {}),
   extra('history_return', 'Read the selected historical return and its uncertain joins. This does not execute a refund.', {}),
