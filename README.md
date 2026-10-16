@@ -8,6 +8,22 @@ An agentic returns prototype: a Return agent that turns returns into exchanges o
 ## Open the demo
 Double-click `perfect_pair_demo_offline.html` and open it in Chrome. The **Scripted backup** runs with no internet. For Amazon Bedrock, use the local app below. Claude-hosted pages can still use the original Claude connection.
 
+## Three focused workspaces
+
+Use **Viewing as** in the top right. The selected workspace is remembered on this browser; each reload opens its dashboard.
+
+| Workspace | Pages |
+|---|---|
+| Customer | Dashboard and My return. A single customer journey, with options, progress and Help. |
+| Store Manager | Dashboard, Store returns and Approvals filtered to store inspection exceptions. |
+| Customer Service | Dashboard, Cases, Return agent, Prevention agent, Approvals and Insights. |
+
+Customer Service can select a case and use **View as customer** to preview that customer's journey. Browsing other cases as staff does not change the selected customer. **Cases → Store handoffs** opens inspections; **Insights** contains analytics, actual investigations, data, audit, evaluations and the architecture explanation. Both agent pages also link directly to actual evidence.
+
+Agent activity, financials, source assumptions and replays expand on demand. **Demo settings** contains Synthetic / Actual, Live / Scripted, model speed, stock-conflict rehearsal, reset and AWS setup. Dashboard counts describe saved simulated operations; actual historical analytics stay in Insights.
+
+The dropdown previews user workspaces, **not authenticated access control**. Service approval authority is selected within Approvals; product changes require the Merchandiser authority. Existing server action and role checks remain enforced. Real sign-in and multi-user authorization would be a separate deployment step.
+
 ## Connect Amazon Bedrock
 
 On this Mac, double-click **Start Perfect Pair.command**. It uses the bundled
@@ -25,8 +41,8 @@ Node runtime when available. For other computers, install Node.js 24 or newer, t
    local server.
 4. Click **Connect and test**. This makes one small paid model request. The page
    only says Connected after Bedrock returns a complete text response.
-5. Open **http://127.0.0.1:8787**, then select **Live agent**. Start with Maya's
-   Return scenario. Switching the dataset does not switch the AI model.
+5. Open **http://127.0.0.1:8787**, choose **Customer Service**, then open
+   **Demo settings → Live agent**. Close settings and open **Return agent** for Maya's scenario. Switching the dataset does not switch the AI model.
 
 The connection screen holds entered credentials in server memory only. Disconnect
 or stop the server to clear them. Reconnect when workshop credentials expire.
@@ -83,8 +99,8 @@ The model receives only the current prompt, relevant tool results and any photo,
 not the complete raw dataset. Raw files are not directly served by the backend.
 
 All refunds, reservations, exchanges and published notes remain simulations.
-The **Demo staff role** selector exercises server role checks but is not user
-identity verification. Shared hosting and authenticated teammate roles have not
+The workspace dropdown and Approvals authority selector exercise demo role
+checks but are not user identity verification. Shared hosting and authenticated teammate roles have not
 been deployed. SQLite persistence is local to this computer, not shared through
 GitHub. Standalone HTML retains browser-only simulation without persistence or
 server action guarantees. The customer/policy chat assistants remain read-only;
@@ -95,6 +111,9 @@ customer handoffs are saved server-side with the submitted conversation excerpt.
 - `npm test`: transport, access checks, durable cases, concurrency, duplicate
   actions, roles, source joins, scoped investigations and replay integrity. AWS
   responses are mocked; no inference costs.
+- `npm run test:experience-browser`: three role views, guarded navigation, a
+  customer exchange, store inspection, specialist approval, saved workspace and
+  customer selection, expandable evidence, mobile pages and dark mode.
 - `npm run test:workspace-browser`: both historical agents, source evidence, a
   hybrid refund, saved-case search, inspection after refresh, replay and mobile layout.
 - `npm run test:bedrock-browser`: browser flow through a mocked AWS SDK, including
@@ -120,9 +139,9 @@ AWS references: [Converse API](https://docs.aws.amazon.com/bedrock/latest/APIRef
 [AgentCore Node.js deployment](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-node.html).
 
 ## Choose the dataset
-The header's **Synthetic / Actual** toggle switches Dashboard and Data together.
+The **Demo settings → Synthetic / Actual** toggle switches Insights analytics and Data together.
 Every page load starts in Synthetic mode. Selecting Actual from an agent screen
-opens the actual Dashboard. Switching back preserves saved cases.
+opens the actual Analytics page in Insights. Switching back preserves saved cases.
 
 Actual mode uses all rows of the five supplied CSVs to build return, order,
 product, final-sale, restocking-fee and exchange aggregates. Data also shows
@@ -145,9 +164,9 @@ simulation assumption, not an inference about the historical source currency.
 
 Use **Saved cases** to search and reopen work. In a case, **Save recorded replay**
 preserves a read-only demonstration. Prevention and historical runs also have
-replay controls. Staff handoffs go through Approvals or Store counter; choose the
-appropriate demo staff role before deciding. This selector does not authenticate
-an actual staff member.
+replay controls. Staff handoffs go through Approvals or Store returns; choose the
+Store Manager workspace for inspections, or the appropriate **Approval authority**
+in Customer Service before deciding. These controls do not authenticate an actual staff member.
 
 Import source records for investigations (Python 3.11+, standard library only):
 ```sh
@@ -192,6 +211,7 @@ dashboard suppresses cross-banner monetary totals. `Book.xlsx` is empty and supp
 | `source/import_evidence.py` | Full source-record SQLite importer with source hashes; local database excluded from Git |
 | `source/src/workspace.js`, `history.js`, `state.js`, `hybrid.js` | Saved-case interface, source investigations, shared snapshots and labelled synthetic supplementation |
 | `source/gen_real.py` | Rebuilds `src/real.json` from the five supplied CSVs, with source hashes and join coverage |
+| `source/src/experience.js`, `experience.css` | Three workspace views, focused dashboards, navigation, progressive disclosure and responsive layout |
 | `source/src/data_source.js` | Synthetic / Actual selection and the actual-data explorer |
 | `data/` | The synthetic tables as CSV, for loading into DynamoDB / S3 / Athena |
 | `agent/` | `tools.json` (original tool schemas for a possible AgentCore/Lambda deployment), `tool_sets.json`, `prompts/`, `safety_rules.md` (rules R1 to R13 and the Cedar policies) |

@@ -13,9 +13,13 @@ const { chromium } = require('playwright');
     page.on('pageerror', error => errors.push(error.message));
     await page.route('https://**/*', route => route.abort());
     await page.goto(base);
-    await page.waitForFunction(() => STATE.live.checked);
+    await page.waitForFunction(() => STATE.live.checked && WORK.ready);
     assert.equal(await page.evaluate(() => STATE.live.available), true, 'Connect the workshop session before testing.');
+    await page.locator('#workspace-role').selectOption('customer_service');
+    await page.locator('#settings-open').click();
     await page.locator('#mode-live').click();
+    await page.locator('#settings-close').click();
+    await page.locator('#tabbtn-return').click();
     report.phase = 'investigate';
     const investigation = await page.evaluate(async () => {
       const decision = await investigate('maya', { mode: 'live', throwOnError: true });

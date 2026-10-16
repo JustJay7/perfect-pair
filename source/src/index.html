@@ -6,64 +6,55 @@
 /*STYLES*/
 </style>
 
-<header class="mast">
-  <div class="wrap">
-    <div class="brand">
-      <div class="wordmark">Perfect Pair</div>
-      <div class="barcode" id="barcode" aria-hidden="true"></div>
-      <div class="brand-meta"><b>Team Code Reapers</b><span>BSRM × ALDO Retail Gen AI Hackathon · prototype</span></div>
-    </div>
-    <div class="controls">
-      <div class="seg" role="group" aria-label="Dataset">
-        <button type="button" data-source="synthetic" aria-pressed="true">Synthetic</button>
-        <button type="button" data-source="actual" aria-pressed="false">Actual</button>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a href="#home" class="app-brand" data-tab="home" aria-label="Perfect Pair dashboard"><span class="brand-symbol" aria-hidden="true">pp</span><span>Perfect Pair<small>Care beyond the purchase</small></span></a>
+    <div class="nav-caption" id="nav-caption">YOUR SPACE</div>
+    <nav aria-label="Workspace pages"><div id="tabs" role="tablist" aria-orientation="vertical"></div></nav>
+    <div class="sidebar-bottom"><span class="sidebar-mark">BSRM × ALDO</span><small>Team Code Reapers<br>Hackathon prototype</small></div>
+  </aside>
+  <div class="app-body">
+    <header class="app-topbar">
+      <span class="workspace-label" id="workspace-label">Customer workspace</span>
+      <div class="topbar-actions">
+        <span id="agent-status" class="connection-status" role="status"></span>
+        <button class="btn secondary sm" id="workspace-stop" hidden>Stop current run</button>
+        <button class="icon-button" id="theme-btn" aria-label="Switch to dark mode"></button>
+        <button class="btn secondary sm" id="settings-open" hidden>Demo settings</button>
+        <label class="role-switch"><span>Viewing as</span><select id="workspace-role" aria-label="Workspace"><option value="customer">Customer</option><option value="store_manager">Store Manager</option><option value="customer_service">Customer Service</option></select></label>
       </div>
-      <div class="seg" role="group" aria-label="Agent mode">
-        <button type="button" id="mode-live" aria-pressed="false">Live agent</button>
-        <button type="button" id="mode-scripted" aria-pressed="true">Scripted backup</button>
-      </div>
-      <label class="sr-only" for="tier">Model speed</label>
-      <select id="tier" title="Model speed for the live agent">
-        <option value="quick">Fast model</option>
-        <option value="default">Thorough model</option>
-      </select>
-      <label class="switch" title="Makes the first reservation fail, so the agent has to re-plan"><input type="checkbox" id="failsw" checked> Pair sells mid-reservation</label>
-      <button type="button" class="btn-ghost theme-btn" id="theme-btn" aria-label="Switch to dark mode" title="Switch light and dark mode"></button>
-      <button type="button" class="btn-ghost" id="reset-btn">Reset demo</button>
-      <a class="btn-ghost" id="aws-connect" href="/connect" target="_blank" rel="noopener" hidden>Connect AWS</a>
-    </div>
-    <div class="workspace-toolbar" id="agent-navigation">
-      <button class="btn secondary sm" data-tab="return">1 · Resolution — help one customer</button>
-      <button class="btn secondary sm" data-tab="prevention">2 · Prevention — propose product fixes</button>
-      <button class="btn secondary sm" data-tab="history">Investigate actual evidence</button>
-      <label>Demo staff role <select id="workspace-role"><option value="customer">Customer</option><option value="service_lead">Service lead</option><option value="supervisor">Supervisor</option><option value="store_associate">Store associate</option><option value="store_manager">Store manager</option><option value="merchandiser">Merchandiser</option></select></label>
-      <span class="small muted">Role rehearsal, not staff authentication</span>
-      <button class="btn secondary sm" id="workspace-stop" hidden>Stop current run</button>
-    </div>
-    <div class="livenote" id="livenote"></div>
-    <div class="livenote" id="data-source-note" role="status"></div>
+    </header>
+    <main id="main-content" class="app-main" tabindex="-1">
+      <div id="page-context"></div>
+      <section class="tab-panel" id="tab-home" role="tabpanel" aria-label="Dashboard" hidden></section>
+      <section class="tab-panel" id="tab-history" role="tabpanel" aria-label="Actual investigations" hidden></section>
+      <section class="tab-panel" id="tab-inbox" role="tabpanel" aria-label="Saved cases" hidden></section>
+      <section class="tab-panel" id="tab-return" role="tabpanel" aria-label="Return agent" hidden></section>
+      <section class="tab-panel" id="tab-store" role="tabpanel" aria-label="Store returns" hidden></section>
+      <section class="tab-panel" id="tab-approvals" role="tabpanel" aria-label="Approvals" hidden></section>
+      <section class="tab-panel" id="tab-dashboard" role="tabpanel" aria-label="Analytics" hidden></section>
+      <section class="tab-panel" id="tab-prevention" role="tabpanel" aria-label="Prevention agent" hidden></section>
+      <section class="tab-panel" id="tab-evals" role="tabpanel" aria-label="Evaluations" hidden></section>
+      <section class="tab-panel" id="tab-audit" role="tabpanel" aria-label="Audit and fairness" hidden></section>
+      <section class="tab-panel" id="tab-data" role="tabpanel" aria-label="Data" hidden></section>
+      <section class="tab-panel" id="tab-how" role="tabpanel" aria-label="How it works" hidden></section>
+      <footer class="app-foot">Perfect Pair · ALDO hackathon prototype · All operational actions are simulated.</footer>
+    </main>
   </div>
-</header>
-
-<nav class="tabs" aria-label="Screens"><div class="wrap" id="tabs" role="tablist"></div></nav>
-
-<main class="wrap">
-  <section class="tab-panel" id="tab-history" role="tabpanel" aria-labelledby="tabbtn-history" hidden></section>
-  <section class="tab-panel" id="tab-inbox" role="tabpanel" aria-labelledby="tabbtn-inbox" hidden></section>
-  <section class="tab-panel" id="tab-return" role="tabpanel" aria-labelledby="tabbtn-return" hidden></section>
-  <section class="tab-panel" id="tab-store" role="tabpanel" aria-labelledby="tabbtn-store" hidden></section>
-  <section class="tab-panel" id="tab-approvals" role="tabpanel" aria-labelledby="tabbtn-approvals" hidden></section>
-  <section class="tab-panel" id="tab-dashboard" role="tabpanel" aria-labelledby="tabbtn-dashboard" hidden></section>
-  <section class="tab-panel" id="tab-prevention" role="tabpanel" aria-labelledby="tabbtn-prevention" hidden></section>
-  <section class="tab-panel" id="tab-evals" role="tabpanel" aria-labelledby="tabbtn-evals" hidden></section>
-  <section class="tab-panel" id="tab-audit" role="tabpanel" aria-labelledby="tabbtn-audit" hidden></section>
-  <section class="tab-panel" id="tab-data" role="tabpanel" aria-labelledby="tabbtn-data" hidden></section>
-  <section class="tab-panel" id="tab-how" role="tabpanel" aria-labelledby="tabbtn-how" hidden></section>
-  <footer class="foot">
-    <b>Perfect Pair</b> · Team Code Reapers · a working prototype for the BSRM × ALDO Retail Gen AI Hackathon, October 2026.
-    Actual investigations cite supplied historical records. Simulated new cases fill missing customer, inventory, cost and policy inputs synthetically and label those assumptions. All operational actions are simulations; the local server saves their state. The standalone file is an offline rehearsal. This is not ALDO's system or published return policy.
-  </footer>
-</main>
+</div>
+<dialog id="demo-settings" class="settings-dialog" aria-labelledby="settings-title">
+  <div class="card-head"><div><div class="eyebrow">Presentation controls</div><h2 id="settings-title">Demo settings</h2></div><button class="btn secondary sm" id="settings-close">Close</button></div>
+  <p class="small muted">Workspace views preview different users. They are not sign-in or access control.</p>
+  <div class="setting-row"><div><b>Analytics dataset</b><p>Keep synthetic rehearsals and supplied history available.</p></div><div class="seg" role="group" aria-label="Dataset"><button type="button" data-source="synthetic" aria-pressed="true">Synthetic</button><button type="button" data-source="actual" aria-pressed="false">Actual</button></div></div>
+  <div id="data-source-note" class="setting-note" role="status"></div>
+  <div class="setting-row"><div><b>Agent mode</b><p>Live reasoning or a scripted rehearsal.</p></div><div class="seg" role="group" aria-label="Agent mode"><button type="button" id="mode-live" aria-pressed="false">Live agent</button><button type="button" id="mode-scripted" aria-pressed="true">Scripted backup</button></div></div>
+  <div id="livenote" class="setting-note"></div>
+  <div class="setting-row"><label for="tier">Model speed</label><select id="tier"><option value="quick">Fast model</option><option value="default">Thorough model</option></select></div>
+  <div class="setting-row"><label for="failsw">Rehearse a stock conflict<p>A pair sells during reservation, so the agent must re-plan.</p></label><input type="checkbox" id="failsw" checked></div>
+  <div class="settings-actions"><a class="btn secondary" id="aws-connect" href="/connect" target="_blank" rel="noopener" hidden>Connect AWS</a><button type="button" class="btn secondary" id="reset-btn">Reset demo</button></div>
+  <details><summary>About this prototype</summary><p class="small muted">Actual investigations cite supplied historical records. Simulated new cases fill missing customer, inventory, cost and policy inputs synthetically. Financial estimates are labelled assumptions. The local server saves cases; the standalone file is an offline rehearsal. This is not ALDO's system or published return policy.</p></details>
+</dialog>
 
 <script type="application/json" id="pp-data">/*DATA*/</script>
 <script>

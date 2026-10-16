@@ -66,27 +66,16 @@ function renderMast() {
     ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['return', 'Resolution agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store counter'], ['approvals', 'Approvals'], ['dashboard', 'Dashboard'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['home', 'Dashboard'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
-function renderTabsBar() {
-  const n = pendingReviews().length;
-  $('#tabs').innerHTML = TABS.map(([id, label]) => `<button class="tab-btn" role="tab" id="tabbtn-${id}" aria-controls="tab-${id}" aria-selected="${STATE.tab === id}" data-tab="${id}">${label}${id === 'approvals' ? ` <span class="count" data-zero="${n === 0}">${n}</span>` : ''}</button>`).join('') + '<span class="tab-ink" aria-hidden="true"></span>';
-  moveInk(false);
-}
-let INK_X = null;
-function moveInk(animate = true) {
-  const bar = $('#tabs'), ink = bar && bar.querySelector('.tab-ink'), btn = bar && bar.querySelector('[aria-selected="true"]');
-  if (!ink || !btn) return;
-  const x = btn.offsetLeft, w = btn.offsetWidth;
-  if (INK_X != null && animate !== false) { ink.style.transition = 'none'; ink.style.transform = `translateX(${INK_X.x}px)`; ink.style.width = INK_X.w + 'px'; ink.getBoundingClientRect(); ink.style.transition = ''; }
-  ink.style.transform = `translateX(${x}px)`; ink.style.width = w + 'px';
-  INK_X = { x, w };
-}
+function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
+  if (!workspaceCanAccess(id)) id = 'home';
   STATE.tab = id;
-  if(id==='history'&&REAL)setDataSource('actual',false);
+  if (EXPERIENCE.role === 'customer') ensureCustomerCase();
+  if (id === 'history' && REAL) setDataSource('actual', false);
   for (const [t] of TABS) $('#tab-' + t).hidden = t !== id;
-  renderTabsBar(); moveInk(true);
+  renderTabsBar();
   renderTab(id);
   countUp($('#tab-' + id));
   window.scrollTo({ top: 0, behavior: 'auto' });
@@ -116,8 +105,9 @@ function countUp(root) {
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.matches(SEL)) scan(n.parentNode); else scan(n); } }).observe(main, { childList: true, subtree: true });
 })();
 function renderTab(id) {
-  ({ history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
-  renderDataSource();
+  rememberDisclosures($('#tab-'+id));
+  ({ home: renderWorkspaceHome, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  renderDataSource(); renderPageContext();
 }
 
 /* ---------- trace items ---------- */
@@ -192,18 +182,22 @@ UI.onCaseChanged = id => {
   if (STATE.tab === 'return') { renderScenarioBar(); if (id === STATE.active) { renderPhone(); renderConsoleHead(); renderDecisionArea(); } }
   if (STATE.tab === 'store') renderStore();
   renderTabsBar();
+  if (STATE.tab === 'home') renderWorkspaceHome();
+  if (STATE.tab === 'return' && EXPERIENCE.role !== 'customer') renderCaseSummary();
   tickTimer();
 };
 UI.onApprovalsChanged = () => {
   if (STATE.sandbox) return;
   renderTabsBar();
   if (STATE.tab === 'dashboard') renderDashboard();
+  if (STATE.tab === 'home') renderWorkspaceHome();
   if (STATE.tab === 'approvals') renderApprovals();
   if (STATE.tab === 'prevention') renderPrevention();
   if (STATE.tab === 'store') renderStore();
 };
 UI.onAuditChanged = () => { if (STATE.tab === 'audit') renderAudit(); };
 UI.onRunning = () => {
+  renderMast();
   if (STATE.tab === 'return') { renderConsoleHead(); renderPhone(); }
   if (STATE.tab === 'prevention') renderPrevHead();
   if (STATE.tab === 'evals') renderEvals();
@@ -218,32 +212,21 @@ function tickTimer() {
 
 /* ---------- Return tab ---------- */
 function renderReturn() {
+  rememberDisclosures($('#tab-return'));
+  if (EXPERIENCE.role === 'customer') return renderCustomerReturn();
   const el = $('#tab-return');
   if (STATE.active === '__new' || !CASES[STATE.active]) { if (STATE.active !== '__new') STATE.active = 'maya'; else return renderNewCustomer(); }
-  el.innerHTML = `
-  <div class="scenario-bar" id="scenario-bar"></div>
-  <div class="workbench">
-    <div class="device-wrap">
-      <div class="view-tag cust-view">${icon('user')}What the customer sees</div>
-      <section class="phone device" aria-label="Customer's returns page (what the customer sees)">
-        <div class="dev-status" aria-hidden="true"><span class="dev-time">${new Date().toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' }).replace(/\s?[ap]\.?m\.?/i, '')}</span><span class="dev-island"></span><span class="dev-icons"><i class="sig"><b></b><b></b><b></b><b></b></i><i class="wifi"></i><i class="bat"><b></b></i></span></div>
-        <div class="phone-top"><span class="app-mark" aria-hidden="true">PP</span><div><b>Returns</b><span class="small">Easy returns, made for you</span></div><span class="app-lock" aria-hidden="true">${icon('shield')}</span></div>
-        <div class="phone-body" id="phone"></div>
-        <div class="dev-home" aria-hidden="true"></div>
-        ${custChatShell(STATE.active)}
-      </section>
-      <p class="device-note small">Only this screen reaches the customer: no costs, margins or safety checks.</p>
-    </div>
-    <section class="card console staff-panel" aria-label="Resolution agent (staff and judges only)">
-      <div class="view-tag staff-view">${icon('flag')}Staff and judges only · not shown to the customer</div>
-      <div class="console-head" id="console-head"></div>
-      <div class="stages" id="stages"></div>
-      <ol class="trace" id="trace-return" aria-live="polite"></ol>
-      <div class="console-foot"><div class="legend-row"><span><i style="background:var(--ink)"></i>Tool call</span><span><i style="background:var(--kraft)"></i>Reflect</span><span><i style="background:var(--ok)"></i>Safety check</span><span><i style="background:var(--warn)"></i>Re-plan or a person</span><span><i style="background:var(--red)"></i>Next action</span></div><span>Plan → tool call → observe → reflect → next action</span></div>
-    </section>
-  </div>
-  <div class="decision-area" id="decision-area"></div>`;
-  renderScenarioBar(); renderPhone(); renderConsoleHead(); renderTrace(); renderDecisionArea(); renderCustChat(STATE.active);
+  el.innerHTML = `${pageHeading('Return agent', 'Resolve one return at a time. Review the customer’s options, then open the evidence when you need it.', 'Customer service')}
+    <div class="scenario-bar" id="scenario-bar"></div>
+    <div class="return-workspace">
+      <section class="card customer-surface"><div class="surface-head"><h3>Customer return</h3><button class="btn secondary sm" data-preview-customer="${esc(STATE.active)}">View as customer</button></div><div class="phone-body" id="phone"></div>${custChatShell(STATE.active)}</section>
+      <aside class="return-details">
+        <section class="card card-pad" id="case-summary"></section>
+        <details class="card disclosure" data-disclosure="return-trace"><summary>Agent activity <span>Reasoning, tools and checks</span></summary><section class="console" aria-label="Return agent activity"><div class="console-head" id="console-head"></div><div class="stages" id="stages"></div><ol class="trace" id="trace-return" aria-live="polite"></ol></section></details>
+        <details class="card disclosure" data-disclosure="return-value"><summary>Financials & routing <span>Estimates and decision evidence</span></summary><div class="decision-area" id="decision-area"></div></details>
+      </aside>
+    </div>`;
+  renderScenarioBar(); renderPhone(); renderConsoleHead(); renderTrace(); renderDecisionArea(); renderCustChat(STATE.active); renderCaseSummary(); restoreDisclosures(el);
 }
 function caseDot(id) {
   const s = CASES[id].status;
@@ -251,8 +234,7 @@ function caseDot(id) {
 }
 function renderScenarioBar() {
   const el = $('#scenario-bar'); if (!el) return;
-  el.innerHTML = `<span class="eyebrow">Test customers</span>` + DATA.cases.map(k => `<button type="button" class="sc-chip${k.custom ? ' custom' : ''}" data-case="${k.case_id}" aria-pressed="${STATE.active === k.case_id}" title="${esc(k.headline)}"><span class="tg">${esc(k.tag)}</span>${esc(k.label)}<span class="st" data-s="${caseDot(k.case_id)}"></span></button>`).join('')
-    + `<button type="button" class="sc-chip add" data-newcase="1" aria-pressed="${STATE.active === '__new'}">${icon('camera')}New customer</button>`;
+  el.innerHTML = `<label for="case-picker">Case</label><select id="case-picker">${Object.values(IDX.kase).filter(k=>CASES[k.case_id]).map(k => `<option value="${esc(k.case_id)}" ${STATE.active === k.case_id ? 'selected' : ''}>${esc(caseName(k.case_id))} · ${esc(k.headline)}</option>`).join('')}${STATE.active==='__new'?'<option value="__new" selected>New customer</option>':''}</select><button type="button" class="btn secondary sm" data-newcase="1">New case</button>`;
 }
 function setHTML(el, html) { if (el && el.__html !== html) { el.innerHTML = html; el.__html = html; } }
 function headSlots(el) {
@@ -344,7 +326,7 @@ function renderPhoneInner() {
       <div class="attach">${icon('camera')}<span>${k.custom && !k.photo.url ? 'No photo attached' : `${casePhotos(id).length} photo${casePhotos(id).length > 1 ? 's' : ''} attached`}</span></div>${photoStrip(id, { small: true })}
       ${cs.error ? `<div class="msg" role="alert"><b>${esc(cs.error.copy)}</b></div>` : ''}
       <button type="button" class="btn full" id="start-btn" ${disabledStart ? 'disabled' : ''}>Find my options</button>
-      <p class="note">The agent sees a customer ID, never a name, email or phone number. ${STATE.mode === 'live' ? 'Edit the message to test the live agent.' : 'Switch to the live agent to try your own wording.'}</p>`;
+      <p class="note">${EXPERIENCE.role === 'customer' ? 'Review the available options before confirming. Need a person? Open Help below.' : 'Simulated case. The agent uses a customer ID; names and contact details stay outside its tools.'}</p>`;
     return;
   }
   if (cs.status === 'investigating') {
@@ -391,7 +373,7 @@ function renderPhoneInner() {
       <ol class="timeline">${(cs.timeline || []).map(t => `<li><span><b>${esc(t.when)}</b><br>${esc(t.what)}</span></li>`).join('')}</ol>
       ${basis ? `<p class="note">Why it's free: ${esc(basis.customer.charAt(0).toUpperCase() + basis.customer.slice(1))}.</p>` : ''}
       ${rc ? `<div class="msg"><b>Received at ${esc(IDX.loc[rc.store].name)}.</b> ${rc.released ? 'The store checked the pair, so your return is complete.' : rc.held ? 'A manager is taking a quick look at the store check before we complete it.' : ''}</div>` : ''}
-      <button type="button" class="btn secondary full" data-restart="1">Run this return again</button>`;
+      ${EXPERIENCE.role!=='customer'&&!BEDROCK_LOCAL?'<button type="button" class="btn secondary full" data-restart="1">Run this return again</button>':''}`;
     return;
   }
   const waitMsg = {
@@ -401,8 +383,8 @@ function renderPhoneInner() {
   }[cs.status] || '';
   el.innerHTML = `${who}${itemTag(id)}<div class="msg agent">${esc(waitMsg)}</div>
     ${cs.status === 'not_eligible' ? `<button type="button" class="btn secondary full" id="policy-review-btn">Ask a person to review</button>` : ''}
-    ${['review', 'awaiting_approval'].includes(cs.status) ? `<p class="note">For the demo, decide as the ${esc((pendingReviews().find(r => r.case_id === id) || {}).approver || 'approver')} on the <a href="#approvals" data-go="approvals">Approvals</a> tab.</p>` : ''}
-    <button type="button" class="btn secondary full" data-restart="1">Start this return again</button>`;
+    ${EXPERIENCE.role !== 'customer' && ['review', 'awaiting_approval'].includes(cs.status) ? `<p class="note">For the demo, decide as the ${esc((pendingReviews().find(r => r.case_id === id) || {}).approver || 'approver')} on the <a href="#approvals" data-go="approvals">Approvals</a> tab.</p>` : ''}
+    ${EXPERIENCE.role!=='customer'&&!BEDROCK_LOCAL?'<button type="button" class="btn secondary full" data-restart="1">Start this return again</button>':''}`;
 }
 function renderDecisionArea() {
   const el = $('#decision-area'); if (!el) return;
@@ -520,23 +502,11 @@ const IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 function canReadPhotos() { return STATE.mode === 'live' && STATE.live.available && !!STATE.live.images; }
 function renderNewCustomer() {
   const el = $('#tab-return');
-  el.innerHTML = `
-  <div class="scenario-bar" id="scenario-bar"></div>
-  <div class="workbench">
-    <section class="phone" aria-label="New customer's returns page"><div class="phone-top"><b>Returns</b><span class="small muted">Perfect Pair prototype</span></div><div class="phone-body" id="phone-new"></div></section>
-    <section class="card card-pad nc-explain">
-      <div class="eyebrow">Try it live</div>
-      <h2>A brand-new customer</h2>
-      <p>Pick what they bought, attach any photo of the item and describe the problem in your own words. The agent has never seen this case.</p>
-      <ol class="nc-steps">
-        <li><b>Claude reads the photo.</b> What it shows, its condition from A (unworn) to D (defective), and whether it matches the order and the description.</li>
-        <li><b>The Resolution agent takes over</b> with the same tools, rules and safety checks as the test customers, and cites what it used.</li>
-        <li><b>A person steps in</b> when the photo doesn't show the ordered item, or doesn't support the claim on anything over $75. Nobody is accused: the customer gets a neutral message.</li>
-      </ol>
-      <div class="nc-modes small"><div><span class="pill ${canReadPhotos() ? 'ok' : 'neutral'}">Live agent</span> Claude reads the photo. Each run uses your Claude usage.</div><div><span class="pill neutral">Scripted backup</span> Claude can't read photos here, so you choose the condition grade yourself.</div></div>
-      <p class="note">Good photos to try: a shoe with a broken heel, a scuffed box, a worn sole, an unworn pair in its box, or something that isn't a shoe at all. The photo stays in this tab; it goes to Claude only when you start the return, and it isn't stored.</p>
-    </section>
-  </div>`;
+  el.innerHTML = `${pageHeading('Create a demo return','Choose an item, attach a photo and describe the problem. This creates a new simulated customer case.','Return agent')}
+    <div class="scenario-bar" id="scenario-bar"></div><div class="return-workspace">
+      <section class="card customer-surface" aria-label="New customer case"><div class="phone-body" id="phone-new"></div></section>
+      <aside class="card card-pad"><div class="eyebrow">How this case works</div><h2 style="margin:12px 0">Your photo. A fresh investigation.</h2><p>In Live mode, the agent reads the photo, checks the order and return policy, and recommends available options.</p><p>In Scripted mode, choose the condition grade to rehearse the same workflow.</p><p class="small muted">Customer, order, stock, prices and policy are synthetic. ${BEDROCK_LOCAL?'The local server saves this case and its photo.':'This offline case stays in this session.'}</p></aside>
+    </div>`;
   renderScenarioBar(); renderNewForm();
 }
 function renderNewForm() {
@@ -625,7 +595,7 @@ function startNewCustomer() {
 /* ---------- Store counter ---------- */
 function renderStore() {
   const el = $('#tab-store');
-  const expected = DATA.cases.filter(k => Object.values(SYS.labels).some(l => l.case_id === k.case_id));
+  const expected = Object.values(IDX.kase).filter(k => CASES[k.case_id] && Object.values(SYS.labels).some(l => l.case_id === k.case_id));
   if (UI.counter.caseId && !expected.some(k => k.case_id === UI.counter.caseId)) UI.counter = { caseId: null };
   if (!UI.counter.caseId && expected.length) UI.counter = { caseId: expected[0].case_id, store: null, grade: null };
   const sel = UI.counter.caseId;
@@ -834,8 +804,8 @@ function apMatches(r, f) {
 }
 function renderApprovals() {
   const el = $('#tab-approvals');
-  const all = Object.values(SYS.reviews).filter(r => r.status !== 'superseded');
-  for (const r of all) if (!UI.apSeen.has(r.id)) { UI.apSeen.add(r.id); if (!r.queue && r.status === 'pending') UI.apFocus = r.id; }
+  const all = workspaceReviews().filter(r => r.status !== 'superseded');
+  for (const r of all) UI.apSeen.add(r.id);
   const urgency = r => r.status === 'pending' ? slaInfo(r).left : Infinity;
   all.sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || urgency(a) - urgency(b) || b.requested_at - a.requested_at);
   const pend = all.filter(r => r.status === 'pending'), esc8 = pend.filter(r => slaInfo(r).escalated), soon = pend.filter(r => !slaInfo(r).escalated && slaInfo(r).left < 3600000);
@@ -1405,7 +1375,7 @@ function renderFindings() {
       const cp = causePill[f.cause] || causePill.unclear;
       return `<article class="card find-card"><div class="row" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>${esc(f.product)}</h3><span><span class="pill ${cp[0]}">${cp[1]}</span> <span class="pill neutral">${esc(f.confidence)} confidence</span></span></div>
         ${f.evidence.length ? `<ul class="evi">${f.evidence.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-        ${dr ? `<div><span class="page-note">${esc(dr.note)}</span> <span class="small muted">${esc(dr.status)}</span></div>${rv && rv.status === 'pending' ? `<div class="ap-actions"><button type="button" class="btn sm" data-review="${rv.id}" data-choice="approve">Approve and publish</button><button type="button" class="btn secondary sm" data-review="${rv.id}" data-choice="reject">Reject</button><span class="small muted" style="align-self:center">You're the merchandiser (R10, §7.3)</span></div>` : ''}` : ''}
+        ${dr ? `<div><span class="page-note">${esc(dr.note)}</span> <span class="small muted">${esc(dr.status)}</span></div>${rv && rv.status === 'pending' ? `<div class="ap-actions"><button type="button" class="btn sm" data-home-review="${rv.id}">Review proposed change</button><span class="small muted" style="align-self:center">Merchandiser approval required</span></div>` : ''}` : ''}
         ${f.ticket_id ? `<div class="small"><span class="pill bad">${esc(f.ticket_id)}</span> Sent to the quality team and the supplier. The product page doesn't change for a defect.</div>` : ''}
       </article>`;
     }).join('');
@@ -1849,7 +1819,6 @@ function wire() {
   document.addEventListener('focusin', ev => { const t = ev.target.closest && ev.target.closest('[data-tip]'); if (t) { const r = t.getBoundingClientRect(); show(t, r.left + r.width / 2, r.top); } });
   document.addEventListener('focusout', () => { tip.hidden = true; });
   window.addEventListener('scroll', () => { tip.hidden = true; }, { passive: true });
-  window.addEventListener('resize', () => moveInk(false));
 }
 async function downloadAudit(id) {
   const r = STATE.audit.find(a => a.id === id); if (!r || !UI.downloads) return;
@@ -1883,9 +1852,9 @@ function boot() {
   try { const t = localStorage.getItem('pp-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) { /* storage unavailable */ }
   renderBarcode(); wire(); renderThemeBtn();
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeBtn); } catch (e) { /* old browser */ }
-  // Every load starts fresh on the Return tab; a link ending in #prevention (or any tab id) opens that tab.
+  // Deep links are checked against the selected workspace before rendering.
   const hash = (location.hash || '').replace('#', '');
-  const tab = TABS.some(t => t[0] === hash) ? hash : 'return';
+  const tab = TABS.some(t => t[0] === hash) ? hash : 'home';
   renderMast(); showTab(tab);
   const use = window.claude && typeof window.claude.use === 'function' ? n => window.claude.use(n) : () => Promise.resolve(null);
   getLiveSample().then(async s => {

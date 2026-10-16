@@ -35,7 +35,7 @@ async function followWorkspaceJob(id) {
 async function workspaceCommand(command) {
   if(!WORK.ready)throw new Error('The saved workspace is not connected. Reload the app.');
   if(WORK.busy)throw new Error('Wait for the current workflow to finish.');
-  WORK.busy=true;
+  WORK.busy=true; renderMast();
   try {
     const {job}=await bedrockPost('/api/workflow',{mode:STATE.mode,tier:STATE.tier,failureSwitch:STATE.failureSwitch,role:WORK.role,...command,version:WORK.version});
     WORK.job=job;return await followWorkspaceJob(job.id);
@@ -48,7 +48,7 @@ investigate=async function(id,opts={}){
   try{await workspaceCommand({kind:'investigate',caseId:id,words:CASES[id].words,mode:opts.mode||STATE.mode});return CASES[id].decision;}catch(e){if(opts.throwOnError)throw e;return null;}
 };
 act=async function(id,opts={}){if(!BEDROCK_LOCAL)return localAct(id,opts);try{await workspaceCommand({kind:'act',caseId:id,choice:CASES[id].chosen,confirmed:true,mode:opts.mode||STATE.mode});}catch{}};
-decideReview=async function(id,choice){if(!BEDROCK_LOCAL)return localReview(id,choice);try{await workspaceCommand({kind:'review',reviewId:id,choice});}catch{}};
+decideReview=async function(id,choice){if(!BEDROCK_LOCAL)return localReview(id,choice);try{await workspaceCommand({kind:'review',reviewId:id,choice,role:EXPERIENCE.role==='customer_service'?EXPERIENCE.approver:WORK.role});}catch{}};
 gradeAtCounter=async function(id,store,grade){if(!BEDROCK_LOCAL)return localReceipt(id,store,grade);try{return await workspaceCommand({kind:'receipt',caseId:id,store,grade});}catch{}};
 askPolicyReview=async function(id){if(!BEDROCK_LOCAL)return localPolicyReview(id);try{return await workspaceCommand({kind:'policy-review',caseId:id});}catch{}};
 runPrevention=async function(opts={}){if(!BEDROCK_LOCAL)return localPrevention(opts);try{await workspaceCommand({kind:'prevention',caseId:IDX.kase[STATE.active]?.hybrid?STATE.active:null,mode:opts.mode||STATE.mode});}catch{}};
@@ -72,15 +72,18 @@ boot=function(){baseBoot();initWorkspace();};
 
 function workspaceStatusLabel(c){return c.received?'Inspection recorded':({new:'Not started',options:'Waiting for customer choice',review:'Human review needed',awaiting_approval:'Waiting for approval',done:'Awaiting inspection',acting:'Resolving',investigating:'Investigating',needs_person:'Stopped — review or resume',not_eligible:'Policy review available'})[c.status]||c.status;}
 function renderInbox(){
+  rememberDisclosures($('#tab-inbox'));
   const el=$('#tab-inbox');
-  if(!BEDROCK_LOCAL||!WORK.ready){el.innerHTML='<div class="empty"><b>Saved cases need the local server.</b>Open Perfect Pair through its local server to save, resume and replay work.</div>';return;}
+  if(!BEDROCK_LOCAL||!WORK.ready){el.innerHTML=pageHeading('Saved cases','Reopen a return with its choices, approvals and inspection progress.')+'<div class="empty"><b>Saved cases need the local server.</b>Open Perfect Pair through its local server to save, resume and replay work.</div>';return;}
   const f=WORK.inbox,all=Object.values(CASES).filter(c=>IDX.kase[c.id]),q=f.q.toLowerCase();
   const rows=all.filter(c=>(f.status==='all'||c.status===f.status)&&[c.id,caseName(c.id),IDX.kase[c.id].order_id,IDX.kase[c.id].headline,c.words].join(' ').toLowerCase().includes(q));
   f.offset=Math.min(f.offset,Math.max(0,Math.floor((rows.length-1)/20)*20));
-  el.innerHTML=`<div class="section-head"><div><div class="eyebrow">Saved on this server · simulated operations</div><h2>Cases and recorded runs</h2><p>Reopen a case with its choice, approvals and inspection progress. Opening a case does not run an agent.</p></div><button class="btn secondary" data-refresh-work>Refresh</button></div>
-    <div class="dataset-bar"><label>Search <input id="inbox-q" type="search" value="${esc(f.q)}" placeholder="Case, order, product or concern"></label><label>Status <select id="inbox-status"><option value="all">All statuses</option>${[...new Set(all.map(c=>c.status))].sort().map(s=>`<option value="${s}" ${f.status===s?'selected':''}>${esc(workspaceStatusLabel({status:s}))}</option>`).join('')}</select></label><span>${rows.length} matching cases</span></div>
-    <div class="stack">${rows.slice(f.offset,f.offset+20).map(c=>`<article class="card card-pad"><div class="card-head"><div><h3>${esc(IDX.kase[c.id].headline)}</h3><p class="small muted">${esc(c.id)} · ${esc(workspaceStatusLabel(c))} · ${IDX.kase[c.id].hybrid?'Actual context + synthetic assumptions':'Synthetic demo'}</p><p>${esc(c.words.slice(0,160))}</p></div><button class="btn" data-open-case="${esc(c.id)}">Open case</button></div>${c.events.length?`<button class="btn secondary sm" data-save-replay="${esc(c.id)}">Save recorded replay</button>`:''}</article>`).join('')||'<p>No matching cases.</p>'}</div>
-    <div class="dataset-bar"><button class="btn secondary sm" data-inbox-page="-1" ${f.offset?'':'disabled'}>Previous</button><span>${rows.length?f.offset+1:0}–${Math.min(rows.length,f.offset+20)}</span><button class="btn secondary sm" data-inbox-page="1" ${f.offset+20<rows.length?'':'disabled'}>Next</button></div><section class="card card-pad"><h3>Recorded replays</h3><p class="small muted">Original observations and policy snapshots. No model call or action is made when replaying.</p><div id="replay-list">Loading…</div></section>`;
+  el.innerHTML=`${pageHeading('Every case, in one place.','Search, reopen and continue. Customer choices and staff decisions are saved on this server.','Saved cases')}
+    <div class="dataset-bar"><label>Search <input id="inbox-q" type="search" value="${esc(f.q)}" placeholder="Case, order, product or concern"></label><label>Status <select id="inbox-status"><option value="all">All statuses</option>${[...new Set(all.map(c=>c.status))].sort().map(s=>`<option value="${s}" ${f.status===s?'selected':''}>${esc(workspaceStatusLabel({status:s}))}</option>`).join('')}</select></label><button class="btn secondary sm" data-refresh-work>Refresh</button><span class="small muted">${rows.length} matching cases</span></div>
+    <div class="tbl-wrap inbox-table"><table><thead><tr><th>Customer & order</th><th>Return</th><th>Status</th><th></th></tr></thead><tbody>${rows.slice(f.offset,f.offset+20).map(c=>`<tr><td><b>${esc(caseName(c.id))}</b><br><span class="small muted">${esc(IDX.kase[c.id].order_id)}</span></td><td><b>${esc(IDX.kase[c.id].headline)}</b><br><span class="small muted">${esc(c.id)} · ${IDX.kase[c.id].hybrid?'Actual context + synthetic assumptions':'Synthetic demo'}</span></td><td><span class="pill neutral">${esc(workspaceStatusLabel(c))}</span></td><td><button class="btn secondary sm" data-open-case="${esc(c.id)}">Open case</button></td></tr>`).join('')||'<tr><td colspan="4">No matching cases. Try another search or status.</td></tr>'}</tbody></table></div>
+    <div class="dataset-bar"><button class="btn secondary sm" data-inbox-page="-1" ${f.offset?'':'disabled'}>Previous</button><span>${rows.length?f.offset+1:0}–${Math.min(rows.length,f.offset+20)}</span><button class="btn secondary sm" data-inbox-page="1" ${f.offset+20<rows.length?'':'disabled'}>Next</button></div>
+    <details class="card disclosure" data-disclosure="replay-library"><summary>Recorded replays <span>Original evidence · no model calls or repeated actions</span></summary><div class="card-pad" id="replay-list">Loading…</div></details>`;
+  restoreDisclosures(el);
   workspaceGet('/api/replays').then(r=>{const dest=$('#replay-list');if(dest)dest.innerHTML=r.replays.map(x=>`<p><button class="btn secondary sm" data-replay="${x.id}">${esc(x.label)}</button> <span class="small muted">${esc(x.mode)} · ${esc(x.at)}</span></p>`).join('')||'<p>No recorded replays saved yet.</p>';}).catch(e=>toast(e.message));
 }
 function evidenceDialog(title,html){let d=$('#evidence-dialog');if(d)d.remove();d=document.createElement('dialog');d.id='evidence-dialog';d.className='evidence-dialog';d.innerHTML=`<div class="card-head"><h2>${esc(title)}</h2><button class="btn secondary sm" data-close-evidence>Close</button></div>${html}`;document.body.appendChild(d);d.showModal();}
@@ -92,12 +95,9 @@ async function openReplay(id){try{const r=await workspaceGet('/api/replays/'+id)
 function caseProvenancePanel(id){const k=IDX.kase[id];if(!k?.hybrid)return '';const p=k.provenance,{line,ec}=caseCtx(id),r=k.evidence.record;
   return `<section class="card card-pad provenance-panel"><div class="eyebrow">Actual data + synthetic assumptions · simulated new case</div><h3>Where this case’s inputs come from</h3><div class="grid2"><div><b>Supplied history</b><p>SKU ${esc(r.sku)} · ${esc(r.banner)} · ${esc(r.reason)}<br>Recorded refund: ${r.refund==null?'Not supplied':(r.refund/100).toFixed(2)} (source currency unknown).</p><button class="btn secondary sm" data-evidence="${esc(k.evidence.citations[0])}">Open original source row</button></div><div><b>Simulation assumptions</b><p>New-case price ${money(line.selling_price)} · estimated cost ${money(ec.estimated_cost)} · processing ${money(ec.processing_cost)}. CAD is assumed.</p><p class="small muted">${esc(p.price_basis)}</p></div></div><details><summary>All supplied and assumed inputs</summary><p><b>Supplied:</b> ${esc(p.supplied.join('; '))}.</p><p><b>Synthetic:</b> ${esc(p.assumed.join('; '))}.</p><p>Financial options below are modelled estimates under these assumptions. They are not measured ALDO savings. The original historical return is unchanged.</p></details></section>`;
 }
-const workspacePreventionBase=renderPrevention;
-renderPrevention=function(){workspacePreventionBase();if(BEDROCK_LOCAL&&STATE.prevention.events.length)$('#tab-prevention').insertAdjacentHTML('afterbegin','<div class="workspace-toolbar"><button class="btn secondary sm" data-save-replay="__prevention">Save Prevention replay</button></div>');};
+
 const originalShowSource=UI.showSource;
 UI.showSource=ref=>ref.startsWith('history:')?workspaceGet('/api/history/evidence?ref='+encodeURIComponent(ref)).then(x=>evidenceDialog('Original supplied evidence',sourceJSON(x))).catch(e=>toast(e.message)):originalShowSource(ref);
-const workspaceReturnBase=renderReturn;
-renderReturn=function(){workspaceReturnBase();if(BEDROCK_LOCAL)document.querySelectorAll('[data-restart]').forEach(b=>b.remove());const id=STATE.active;if(CASES[id]){const el=$('#tab-return');el.insertAdjacentHTML('afterbegin',caseProvenancePanel(id));if(BEDROCK_LOCAL&&CASES[id].events.length)el.insertAdjacentHTML('afterbegin',`<div class="workspace-toolbar">${CASES[id].status==='needs_person'&&CASES[id].chosen?`<button class="btn sm" data-resume-case="${esc(id)}">Resume saved choice</button>`:''}<button class="btn secondary sm" data-save-replay="${esc(id)}">Save recorded replay</button><button class="btn secondary sm" data-tab="inbox">Saved cases</button><button class="btn secondary sm" data-store-handoff="${esc(id)}">Handoff to store inspection</button></div>`);}};
 document.addEventListener('click',async ev=>{const t=ev.target.closest('button');if(!t)return;
   if(t.id==='workspace-stop')stopRun();
   if(t.dataset.storeHandoff){UI.counter={caseId:t.dataset.storeHandoff,store:null,grade:null};showTab('store');}
@@ -111,5 +111,5 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button')
   if(t.dataset.saveReplay||t.dataset.saveHistory)try{await bedrockPost('/api/replays',{caseId:t.dataset.saveReplay,historyId:t.dataset.saveHistory});toast('Recorded replay saved');if(STATE.tab==='inbox')renderInbox();}catch(e){toast(e.message);}
   if(t.dataset.evidence)try{evidenceDialog('Original supplied evidence',sourceJSON(await workspaceGet('/api/history/evidence?ref='+encodeURIComponent(t.dataset.evidence))));}catch(e){toast(e.message);}
 });
-document.addEventListener('change',ev=>{if(ev.target.id==='workspace-role')WORK.role=ev.target.value;if(ev.target.id==='inbox-status'){WORK.inbox.status=ev.target.value;WORK.inbox.offset=0;renderInbox();}});
+document.addEventListener('change',ev=>{if(ev.target.id==='inbox-status'){WORK.inbox.status=ev.target.value;WORK.inbox.offset=0;renderInbox();}});
 document.addEventListener('input',ev=>{if(ev.target.id==='inbox-q'){WORK.inbox.q=ev.target.value;WORK.inbox.offset=0;clearTimeout(WORK.qTimer);WORK.qTimer=setTimeout(()=>{renderInbox();const q=$('#inbox-q');q?.focus();q?.setSelectionRange(q.value.length,q.value.length);},180);}});
