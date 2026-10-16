@@ -96,3 +96,5 @@
 .inspection-breakdown th,.inspection-breakdown td{white-space:normal;vertical-align:top;padding:10px;min-width:100px}.inspection-breakdown .receipt-equation{font-size:13px}.inspection-breakdown{margin:16px 0}.ap-grid>*{min-width:0}
 
 .ap-counter>.econ{grid-column:1/-1}.ap-counter>.ap-main{grid-column:1/-1}.ap-counter .opt-rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ap-counter .opt-rules li{margin:0}@media(max-width:700px){.ap-counter .opt-rules{grid-template-columns:1fr}}
+
+.inspection-cost-details{margin:14px 0;border:1px solid var(--line);border-radius:12px;padding:14px}.inspection-cost-details>summary{cursor:pointer;font-weight:600}.analysis-sections{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:20px 0}.analysis-recommendations{background:var(--paper);border:1px solid var(--line);padding:20px;border-radius:12px}.analysis-recommendations li{margin:12px 0}.analysis-summary{font-size:18px;font-weight:600}.analysis-finding{margin-bottom:20px}.tx-analysis-results{margin:20px 0}@media(max-width:700px){.analysis-sections{grid-template-columns:1fr}}

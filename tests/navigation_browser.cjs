@@ -11,7 +11,7 @@ const assert=require('node:assert/strict'),{mkdtempSync,rmSync,mkdirSync}=requir
   await page.goto('http://127.0.0.1:'+server.address().port);await ready();await check('return');await page.locator('#tabbtn-scenarios').click();await check('scenarios');
   await role('store_manager');await check('manager');assert.equal(await page.locator('#tabs [role=tab]').count(),2);await shot('store-work-queue');
   await page.locator('#tab-manager [data-home-review]').first().click();
-  const receipt=page.locator('#tab-approvals .inspection-breakdown');assert.equal(await receipt.isVisible(),true);
+  const receipt=page.locator('#tab-approvals .inspection-breakdown');assert.equal(await receipt.isVisible(),false);assert.equal(await page.locator('#tab-approvals [data-choice="decline_return"]').isVisible(),true);await page.locator('.inspection-cost-details>summary').click();assert.equal(await receipt.isVisible(),true);
   assert.match(await receipt.textContent(),/estimated product cost/);assert.match(await receipt.textContent(),/70% prior/);
   const values=await page.evaluate(()=>{const co=counterOptions('q7');return co.options.filter(o=>o.value!=null).map(o=>({key:o.key,value:o.value,sum:r2(Object.entries(o.breakdown).reduce((n,[k,v])=>n+(BREAK_COST.includes(k)?-v:v),0))}));});
   for(const o of values){assert.equal(o.sum,o.value,'Displayed components reconcile for '+o.key);assert.equal(await page.locator('#tab-approvals [data-choice="'+o.key+'"]').count(),1,'Only one decision button per option');}

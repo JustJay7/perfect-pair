@@ -927,7 +927,7 @@ function inspectionPanel(r) {
   const pending = r.status === 'pending';
   return `<div class="econ">${groupHead('ret', 'Updated decision after the store check', `Valued at the grade the store found (${co.found}), not the photo grade`)}
     <p class="small"><b>Assessment:</b> ${esc(co.why)}</p>
-    ${inspectionBreakdown(id,co)}
+    <details class="inspection-cost-details"><summary>View price breakdown & assumptions</summary>${inspectionBreakdown(id,co)}</details>
     <div class="eyebrow" style="margin-top:12px">${pending ? 'Pick an option: every one is allowed by the rule shown' : 'The options and the rule that allows each'}</div>
     <ul class="opt-rules">${co.options.map(o => { const inner = `<span class="or-top"><b>${o.best ? '★ ' : ''}${esc(o.label)}</b>${o.value != null ? ` <span class="mono small">${money(o.value)}</span>` : ''}${pending ? `<span class="or-go">${o.best ? 'Choose the recommended option' : 'Choose'} →</span>` : ''}</span><span class="small">${esc(o.note)}</span><span class="small muted">${esc(o.rule)}</span>`;
       return `<li>${pending ? `<button type="button" class="or-btn${o.best ? ' best' : ''}" data-review="${r.id}" data-choice="${o.key}">${inner}</button>` : `<div class="or-btn static${r.decision === o.key ? ' chosen' : ''}">${inner}${r.decision === o.key ? '<span class="pill ok">Chosen</span>' : ''}</div>`}</li>`; }).join('')}</ul>

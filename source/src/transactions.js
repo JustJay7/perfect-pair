@@ -69,6 +69,13 @@ function renderActualTransactions(mode){
  const e=routing?v.data.plan:v.data.overview;
  dest.innerHTML=`<div class="stack">${txProductBrowser(mode)}${e?(routing?txRoutingResults(e):txPreventionResults(e)):'<section class="card card-pad"><h2>Select a product above</h2><p>Choose the recorded colour and size. Missing sizes stay unknown. No synthetic case is automatically matched to a real product.</p></section>'}</div>`;
  if(e){const matching=WORK.historyRuns.filter(r=>r.source==='transactions'&&r.agent===mode&&r.dataset_id===WORK.transactions.dataset_id&&(routing?r.observations?.[0]?.result?.citations?.[0]===e.citations[0]:JSON.stringify(r.scope)===JSON.stringify(e.scope)));dest.insertAdjacentHTML('beforeend',`<section class="card card-pad tx-launch"><div><h2>${routing?'Explain this comparison':'Investigate this scope'}</h2><p>${STATE.mode==='live'?'Live agent':'Scripted analysis'} · source-linked findings and saved replay. No financial or inventory actions.</p></div><button id="tx-run" class="btn" data-tx-run ${anyBusy()||v.dirty||(!routing&&!e.totals.rows)?'disabled':''}>${routing?'Save / explain comparison':'Run Prevention analysis'}</button></section><section class="stack">${matching.slice(0,3).map(historyRunHTML).join('')}</section>`);}
+ if(!routing&&e){
+  const launch=dest.querySelector('.tx-launch'),runs=launch.nextElementSibling;
+  dest.prepend(runs);dest.prepend(launch);
+  runs.classList.add('tx-analysis-results');
+  if(!runs.children.length)runs.innerHTML='<section class="card card-pad"><h2>Analysis results</h2><p>Run Prevention analysis to get findings and recommended next steps for the selected scope. Recorded data below is available before an agent run.</p></section>';
+  else if(runs.children.length>1){const older=document.createElement('details');older.className='card disclosure';older.innerHTML='<summary>Previous analyses for this selection</summary>';while(runs.children.length>1)older.append(runs.children[1]);runs.append(older);}
+ }
  if(v.dirty)dest.insertAdjacentHTML('afterbegin','<p class="manager-alert tx-stale" role="status">Inputs changed. Figures below are the previous calculation. Recalculate before using this comparison.</p>');
  if(routing&&e){
   const stack=dest.querySelector('.stack'),alert=stack.querySelector('.manager-alert'),setup=stack.querySelector('.tx-routing-setup'),shortlist=stack.querySelector('.destination-shortlist');
