@@ -19,16 +19,17 @@ function customerAssessment(id) {
   if(cs.error||['error','needs_person'].includes(cs.status))return {tone:'warn',label:'Assessment incomplete',detail:'The run needs attention. Do not interpret an incomplete investigation as a clear assessment.'};
   if(['investigating','acting'].includes(cs.status))return {tone:'info',label:'Assessment in progress',detail:'Wait for the agent’s completed findings.'};
   if(cs.serviceConcern?.status==='pending')return {tone:'warn',label:'Service follow-up needed',detail:'A customer service comment needs personal follow-up. This does not change return eligibility and is not an abuse finding.'};
+  if(reviews.some(r=>['approved','rejected'].includes(r.status)))return {tone:'neutral',label:'Review completed',detail:'A staff review was completed. See the recorded decision and its evidence; this does not label the customer as abusive.'};
   if(!cs.decision)return {tone:'neutral',label:'Not assessed',detail:'The agent has not completed this case. History alone has not flagged the customer.'};
   return {tone:'ok',label:'No review flag raised',detail:'The completed investigation raised no customer evidence flag. Eligibility and item checks still apply.'};
 }
-function managerCustomerCard(id) {
+function managerCustomerCard(id, compact = false) {
   if(!id||!CASES[id]||EXPERIENCE.role==='customer')return '';
   const {c,k}=caseCtx(id),cs=CASES[id],assessment=customerAssessment(id),isNew=c.lifetime_orders<=1;
   const history=IDX.histByCust[c.customer_id]||[], prior=history.filter(r=>r.outcome!=='return in progress');
   const trusted=trustedForEarlyRefund(c), d=cs.decision;
   const rows=prior.slice().sort((a,b)=>b.order_date.localeCompare(a.order_date)).slice(0,5);
-  return `<section class="card customer-first" data-customer-profile="${esc(id)}">
+  return `<section class="card customer-first${compact?' approval-profile':''}" data-customer-profile="${esc(id)}">
     <div class="customer-first-head"><div><div class="eyebrow">Customer overview · ${k.hybrid?'synthetic profile, actual product context':'synthetic demo history'}</div><h2>${esc(caseName(id))}</h2><span class="small muted">${esc(c.customer_id)} · ${esc(c.region)}</span></div><div class="customer-badges"><span class="pill ${isNew?'info':'neutral'}">${isNew?'New customer':'Returning customer'}</span><span class="pill ${assessment.tone}" data-assessment>${esc(assessment.label)}</span><span class="pill neutral">${esc(workspaceStatusLabel(cs))}</span></div></div>
     <div class="customer-key-facts">
       ${customerFact('Membership status', c.loyalty_status || 'Not recorded', 'Loyalty tier · demo profile', membershipTone(c.loyalty_status))}
@@ -38,10 +39,10 @@ function managerCustomerCard(id) {
       ${customerFact('Customer since', tenureWords(c.customer_tenure_months), 'Time with the brand')}
       ${customerFact('Damage claims · 90 days', num(c.damage_claims_90d), 'Claim count · not an abuse finding')}
     </div>
-    <details class="agent-treatment inline-disclosure"><summary>Agent reasoning & policy details</summary><div class="eyebrow">How the agent handles this case ${cs.mode?'· '+esc(cs.mode):''}</div><p>${esc(assessment.detail)}</p>${assessment.review?`<p><b>Reason:</b> ${esc(assessment.review.reason)}<br><b>Next step:</b> ${esc(assessment.review.recommendation)}</p>`:d?`<p><b>Current decision:</b> ${esc(d.summary)}${d.recommended?`<br><b>Recommended option:</b> ${esc(d.recommended.replaceAll('_',' '))}`:''}</p>`:''}
+    <div class="customer-profile-details"><details class="agent-treatment inline-disclosure"><summary>Agent reasoning & policy details</summary><div class="eyebrow">How the agent handles this case ${cs.mode?'· '+esc(cs.mode):''}</div><p>${esc(assessment.detail)}</p>${assessment.review?`<p><b>Reason:</b> ${esc(assessment.review.reason)}<br><b>Next step:</b> ${esc(assessment.review.recommendation)}</p>`:d?`<p><b>Current decision:</b> ${esc(d.summary)}${d.recommended?`<br><b>Recommended option:</b> ${esc(d.recommended.replaceAll('_',' '))}`:''}</p>`:''}
     ${cs.chosen?`<p><b>Customer chose:</b> ${esc(cs.chosen.option.replaceAll('_',' '))}</p>`:''}<p class="small muted">${isNew?'No prior history: assess the order, item condition and policy; newness is not grounds for refusal.':'Return history provides context; the return rate alone never refuses a return.'} ${trusted?'This profile meets the demo’s early-refund rule (Gold/Silver and return rate ≤20%): an eligible refund can be released after the store checks the pair at drop-off.':'This profile does not meet the demo’s early-refund rule: an eligible standard refund waits for receipt and inspection.'} ${assessment.label.startsWith('Flag')?'A supervisor must review flagged financial actions (R8). ':''}Item evidence, eligibility and approval controls still determine the final output (§3.1, §7.2, R11/R13).</p></details>
     <details class="inline-disclosure" data-disclosure="customer-history-${esc(id)}"><summary>Recent customer history & agent evidence</summary>${rows.length?tableView(['Date','Product','Outcome','Reason'],rows.map(r=>[r.order_date,r.product,r.outcome.replaceAll('_',' '),r.return_reason?.replaceAll('_',' ')||'—'])).replace('<details','<details open'):'<p>No earlier completed orders in the demo history.</p>'}<p class="small muted">Showing up to five completed orders. The profile return rate uses the saved lifetime profile; the table is a recent-history view.</p>${assessment.review?.evidence?.length?`<ul>${assessment.review.evidence.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</details>
-  </section>`;
+    </div></section>`;
 }
 document.addEventListener('click',ev=>{const t=ev.target.closest('[data-demo-case]');if(t)selectDemoCustomer(t.dataset.demoCase);});
 document.addEventListener('change',ev=>{if(ev.target.id==='demo-case-picker'&&ev.target.value)selectDemoCustomer(ev.target.value);});

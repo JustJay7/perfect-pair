@@ -17,7 +17,14 @@ const {chromium} = require('playwright');
     await page.route('https://**/*', route => route.abort());
     await page.goto(url);
     await page.locator('#workspace-role').selectOption('customer_service');
-    const go = async id => { if (['home','return','prevention','approvals','dashboard','inbox'].includes(id)) return page.locator('#tabbtn-'+id).click(); await page.locator('#tabbtn-'+(id==='store'?'inbox':'dashboard')).click(); await page.locator('#page-context [data-tab="'+id+'"]').click(); };
+    const go = async id => {
+      await page.locator('#workspace-role').selectOption(id==='store'?'store_manager':'customer_service');
+      if(id==='store'||['prevention','dashboard','inbox'].includes(id))return page.locator('#tabbtn-'+id).click();
+      if(id==='return'){await page.locator('#workspace-role').selectOption('customer');return page.locator('#tabbtn-return').click();}
+      // Standalone component check; persisted staff navigation is covered by server journey tests.
+      if(id==='approvals')return page.evaluate(()=>showTab('approvals'));
+      await page.locator('#tabbtn-dashboard').click();await page.locator('#workspace-tool').selectOption(id);
+    };
     const toggle = page.getByRole('group', {name: 'Dataset', exact: true, includeHidden: true});
     const source = async name => { await page.locator('#settings-open').click(); await toggle.getByRole('button', {name,exact:true}).click(); await page.locator('#settings-close').click(); };
     assert.equal(await toggle.getByRole('button', {name: 'Synthetic', exact: true, includeHidden: true}).getAttribute('aria-pressed'), 'true');

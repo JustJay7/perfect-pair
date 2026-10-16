@@ -28,6 +28,7 @@ function changeWorkspace(role, destination='home') {
   if (!Object.hasOwn(WORKSPACES,role)) return;
   if (anyBusy()) { $('#workspace-role').value = EXPERIENCE.role; return toast('Finish or stop the current run before switching workspaces.'); }
   EXPERIENCE.role = role; WORK.role = WORKSPACES[role].role;
+  if (destination==='home') MANAGER_UI.reviewId=null;
   UI.apFocus=null; UI.apFilter='all'; UI.apQuery=''; UI.sel={}; CHAT.appr.open=false;
   $('#evidence-dialog')?.remove(); $('#demo-settings').close(); $('#appr-chat')?.replaceChildren();
   document.querySelectorAll('.tab-panel').forEach(el=>el.replaceChildren());

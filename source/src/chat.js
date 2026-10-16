@@ -260,7 +260,7 @@ function renderApprChat() {
   let d = document.getElementById('appr-chat');
   const show = ['approvals', 'dashboard'].includes(STATE.tab);
   let fab = document.getElementById('appr-fab');
-  if (!fab) { fab = document.createElement('button'); fab.type = 'button'; fab.id = 'appr-fab'; fab.className = 'appr-fab'; fab.dataset.apprchat = 'toggle'; fab.innerHTML = `${icon('shield')}<span>Ask the policy assistant</span>`; document.body.appendChild(fab); }
+  if (!fab) { fab = document.createElement('button'); fab.type = 'button'; fab.id = 'appr-fab'; fab.className = 'appr-fab'; fab.dataset.apprchat = 'toggle'; fab.innerHTML = `${icon('shield')}<span>Policy help</span>`; fab.setAttribute('aria-label','Ask the policy assistant'); (document.querySelector('.topbar-actions')||document.body).prepend(fab); }
   if (!d) { d = document.createElement('aside'); d.id = 'appr-chat'; d.className = 'appr-chat'; d.setAttribute('aria-label', 'Policy assistant for approvers'); document.body.appendChild(d); }
   fab.hidden = !show || CHAT.appr.open; d.hidden = !show || !CHAT.appr.open;
   if (d.hidden) return;

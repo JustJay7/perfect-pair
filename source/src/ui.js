@@ -600,7 +600,7 @@ function renderStore() {
   if (!UI.counter.caseId && expected.length) UI.counter = { caseId: expected[0].case_id, store: null, grade: null };
   const sel = UI.counter.caseId;
   const head = `<div class="section-head"><div><div class="eyebrow">Store associate · counter screen</div><h2>Drop-offs and grading</h2><p>When a customer drops off a pair, grade it here. The agent confirms where it goes: back on this shelf, another store, the outlet or the supplier.</p></div></div>`;
-  if (!expected.length) { el.innerHTML = head + `<div class="empty"><b>No drop-offs expected yet.</b>Finish a return on the Return tab (Maya's is a good start) and it will appear here.</div>`; return; }
+  if (!expected.length) { el.innerHTML = head + `<div class="empty"><b>No drop-offs expected yet.</b>A customer’s confirmed store drop-off will appear here automatically. For a rehearsal, open Customer → Demo use cases and complete Maya’s return.</div>`; return; }
   const cs = CASES[sel], { k } = caseCtx(sel);
   const label = Object.values(SYS.labels).find(l => l.case_id === sel);
   const plan = SYS.routes[sel];
@@ -608,8 +608,8 @@ function renderStore() {
   const storeId = UI.counter.store || label.store || (cs.chosen && cs.chosen.dropStore) || stores[0].location_id;
   const g = UI.counter.grade;
   const rc = cs.received;
-  el.innerHTML = head + `<div class="counter-context"><b>${esc(caseName(sel))}</b> · ${esc(k.return_id)}<button class="btn secondary sm" data-manager-case="${esc(sel)}">Needs attention</button><button class="btn secondary sm" data-routing-case="${esc(sel)}">Item destination</button></div>` + `<div class="grid2 g-side">
-    <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
+  el.innerHTML = head + `<div class="counter-context"><b>${esc(caseName(sel))}</b> · ${esc(k.return_id)}<button class="btn secondary sm" data-manager-case="${esc(sel)}">Customer details</button>${managerAttentionReasons(sel).length?'<span class="pill warn">Review needed</span>':''}<button class="btn secondary sm" data-routing-case="${esc(sel)}">Item destination</button></div>` + `<div class="grid2 g-side">
+    <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Inspection recorded' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
     <div class="card card-pad stack">
       ${itemTag(sel)}
       <div class="grid2"><div><div class="eyebrow">Photo suggested</div><b>Grade ${esc(k.photo.grade)}</b> · <span class="small">${esc(GRADE[k.photo.grade])}</span></div><div><div class="eyebrow">Agent's plan</div>${plan ? `<b>${esc(IDX.loc[plan.plan]?.name || plan.scores[0].name)}</b>` : '<span class="muted">No plan yet</span>'}</div></div>
@@ -624,11 +624,11 @@ function counterResultHTML(id, rc) {
   const here = rc.keepHere;
   const rule = rc.rule;
   const rv = rc.review && SYS.reviews[rc.review];
-  return `<div class="msg"><b>${here ? `Keep it here at ${esc(IDX.loc[rc.store].name)}` : `Send it to ${esc(dest.name)}`}.</b> ${esc(dest.why)}.${here ? ' Put it back on the shelf.' : ` Transfer cost ${money(dest.transfer_cost)}, ${dest.carbon_kg} kg CO₂e.`}</div>
+  const held=rv&&['pending','more_info'].includes(rv.status),declined=rv?.status==='rejected'&&rv.decision==='decline_return';
+  return `<div class="msg"><b>${declined?'Return the pair to the customer':held?'Keep the item on hold for review':here ? `Keep it here at ${esc(IDX.loc[rc.store].name)}` : `Send it to ${esc(dest.name)}`}.</b> ${declined?'The manager declined the return. Arrange the promised shipment back; do not resell this pair.':held?'Resolve the inspection exception before moving or reselling the pair.':esc(dest.why)+'.'}${held||declined?'':here ? ' Put it back on the shelf.' : ` Transfer cost ${money(dest.transfer_cost)}, ${dest.carbon_kg} kg CO₂e.`}</div>
     ${rule ? `<div class="inspect-res ${rule.auto ? 'auto' : 'held'}"><span class="pill ${rule.auto ? 'ok' : 'warn'}">R13 ${esc(rule.id)} · ${rule.auto ? 'Decided automatically' : 'Sent to the store manager'}</span><div class="small">${esc(rule.text)}</div>
-      ${(rc.releasedList || []).length ? `<div class="small"><b>Released after the check:</b> ${esc(rc.releasedList.join('; '))}.</div>` : ''}${rc.held ? `<div class="small"><b>On hold</b> (${esc(rc.held)}): nothing is paid or shipped until the manager decides${rv ? ` (${esc(rv.id)} in Approvals)` : ''}.</div>` : ''}${rc.claim ? `<div class="small"><b>Supplier claim ${esc(rc.claim)}</b> opened for the defect.</div>` : ''}</div>` : ''}
-    ${rv && rv.status === 'pending' ? (() => { const co = counterOptions(id); return `<div class="reco"><div class="eyebrow">${icon('check')}Recommended for the store manager</div><div class="reco-main"><b>★ ${esc(co.best.label)}</b>${co.best.value != null ? `<span>ALDO keeps <b>${money(co.best.value)}</b> on this return.</span>` : ''}</div><p class="small" style="margin:0">${esc(co.why)}</p>
-      <div class="ap-actions">${co.options.map(o => `<button type="button" class="btn ${o.best ? '' : 'secondary '}sm" data-review="${rv.id}" data-choice="${o.key}">${o.best ? '★ ' : ''}${esc(o.label)}</button>`).join('')}</div><p class="small muted" style="margin:0">Or decide later from Approvals, with the packing, customer and store photos side by side.</p></div>`; })() : rv && rv.decision && !rv.auto ? `<div class="small"><span class="pill ok">Decided</span> ${esc(rv.decided_by)} ${esc(REVIEW_WORD[rv.decision] || rv.decision)}.</div>` : ''}
+      ${(rc.releasedList || []).length ? `<div class="small"><b>Released after the check:</b> ${esc(rc.releasedList.join('; '))}.</div>` : ''}${rc.held && held ? `<div class="small"><b>On hold</b> (${esc(rc.held)}): nothing is paid or shipped until the manager decides${rv ? ` (${esc(rv.id)})` : ''}.</div>` : ''}${rc.claim ? `<div class="small"><b>Supplier claim ${esc(rc.claim)}</b> opened for the defect.</div>` : ''}</div>` : ''}
+    ${held ? `<div class="reco"><b>Inspection exception needs a manager</b><p class="small">Review the customer history, photos and agent recommendation in one place.</p><button class="btn" data-home-review="${esc(rv.id)}">Review inspection exception</button></div>` : rv && rv.decision && !rv.auto ? `<div class="small"><span class="pill ok">Decided</span> ${esc(rv.decided_by)} ${esc(REVIEW_WORD[rv.decision] || rv.decision)}.</div>` : ''}
     <div class="staff-photos"><div class="eyebrow">Store photos of the pair</div><p class="small muted" style="margin:2px 0 8px">Add photos of the pair as it arrived. They go with the return to Approvals, next to the photos from packing and from the customer.</p>
       <div class="staff-slots">${casePhotos(id, 'store').map((p, i) => `<div class="staff-slot"><button type="button" class="ph" data-photo="${esc(id)}" data-pset="store" data-pi="${i}" aria-label="${esc(p.title)}"><span class="ph-img">${p.img ? `<img src="${esc(p.img)}" alt="">` : p.svg}${p.real ? '<span class="ph-real">Photo</span>' : ''}</span></button>
         <label class="btn secondary sm"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-realphoto="${esc(photoKey(id, 'store', i))}" hidden>${p.real ? 'Replace' : 'Add photo'}</label></div>`).join('')}</div></div>`;
@@ -897,8 +897,8 @@ function apIds(r) {
     ['Paid', `${money(line.selling_price)}${line.discount ? ` after ${money(line.discount)} off` : ''}${line.promotion ? ` · ${line.promotion}` : ''}${line.final_sale ? ' · final sale' : ''}`],
     ['Shipping', `${o.shipping_method || 'Standard'}${o.shipping_cost ? ` · ${money(o.shipping_cost)}` : ' · free'}${o.fulfilment_location ? ` · from ${o.fulfilment_location}` : ''}`],
   ] : [];
-  return `<div class="ap-ids">${ids.map(([l, v]) => `<div class="ap-id"><em>${esc(l)}</em><span><b class="mono">${esc(v)}</b><button type="button" class="ap-copy" data-copy="${esc(v)}" aria-label="Copy ${esc(l.toLowerCase())} ${esc(v)}" title="Copy">${icon('copy')}</button></span></div>`).join('')}</div>
-    ${facts.length ? `<details class="ap-order"><summary><span class="eyebrow">Order ${esc(k.order_id)}</span><span class="small muted">${esc(facts[0][1])} · ${esc(facts[3][1])}</span></summary><dl class="kv">${facts.map(([l, v]) => `<dt>${esc(l)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>` : ''}`;
+  return `<details class="approval-identifiers inline-disclosure"><summary>Order details & reference numbers</summary><div class="ap-ids">${ids.map(([l, v]) => `<div class="ap-id"><em>${esc(l)}</em><span><b class="mono">${esc(v)}</b><button type="button" class="ap-copy" data-copy="${esc(v)}" aria-label="Copy ${esc(l.toLowerCase())} ${esc(v)}" title="Copy">${icon('copy')}</button></span></div>`).join('')}</div>
+    ${facts.length ? `<dl class="kv">${facts.map(([l, v]) => `<dt>${esc(l)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}</details>`;
 }
 /** Packed → customer's photo → store check, as three grade chips. */
 function gradeJourney(caseId, compact) {
@@ -912,7 +912,7 @@ function photoCompare(caseId) {
   const col = (set, grade, who, sub) => `<div class="pc-col"><div class="pc-head"><span class="eyebrow">${esc(PHOTO_SETS[set])}</span><b class="gr gr-${grade}">${grade}</b></div><div class="small muted">${esc(who)}</div>${photoStrip(caseId, { set, small: true })}<div class="small">${esc(sub)}</div></div>`;
   return `<section class="ap-photos">${groupHead('ret', 'Photos: packing, customer and store', 'The same pair three times. Click any photo to look closer; the grade is in the corner of each column.')}
     <div class="pc-grid">${col('packing', 'A', 'Distribution centre quality check, before shipping', 'Unworn, sole bond and stitching checked.')}${col('customer', k.photo.grade, `Sent by the customer with the return (${k.photo.file})`, (k.photo.findings || []).join('; '))}${col('store', rc.grade, `Taken by store staff at ${IDX.loc[rc.store]?.name || 'the store'}`, GRADE[rc.grade])}</div>
-    <div class="pc-verdict">${gradeJourney(caseId)}<span class="small">${rc.grade > k.photo.grade ? `The pair got worse between the customer's photo and the store check: grade ${k.photo.grade} → ${rc.grade}.` : 'The store check matches the photo.'}</span></div></section>`;
+    <div class="pc-verdict">${gradeJourney(caseId)}<span class="small">${rc.grade > k.photo.grade ? `Photo grade ${k.photo.grade} differs from store grade ${rc.grade}. Review both records; the difference alone does not establish when or why the condition changed.` : 'The store check matches the photo.'}</span></div></section>`;
 }
 /** What the approver can do after a store-check mismatch, valued, with the best one recommended. */
 function inspectionBreakdown(id,co){
@@ -920,18 +920,31 @@ function inspectionBreakdown(id,co){
  const parts=[['margin_kept','Margin retained / expected credit margin',1],['returned_pair_resold','Net recovery from returned pair',1],['label','Return or send-back label',-1],['processing','Processing',-1],['outbound_shipping','Replacement shipping',-1],['incentive_cost','Expected bonus cost',-1],['second_return_risk','Expected second-return cost',-1]];
  return `<section class="inspection-breakdown"><h3>Price and decision breakdown</h3><p><b>Price paid ${money(e.price)} − estimated product cost ${money(e.cost)} = original gross margin ${money(e.margin)} (${pct(e.margin_pct)}).</b></p><p class="small muted">Synthetic demo inputs · CAD. These are scenario decision values, not audited profit or guaranteed savings. Original product cost is reflected in the gross margin; it is not deducted a second time below.</p><div class="tbl-wrap"><table><thead><tr><th>Component</th>${valued.map(o=>`<th>${esc(o.label)}</th>`).join('')}</tr></thead><tbody>${parts.map(([key,label,sign])=>`<tr><th>${label}</th>${valued.map(o=>`<td>${sign<0?'−':'+'}${money(o.breakdown?.[key]||0)}</td>`).join('')}</tr>`).join('')}<tr><th>Estimated decision value</th>${valued.map(o=>`<td><b>${money(o.value)}</b></td>`).join('')}</tr></tbody></table></div><p class="small"><b>Credit assumption:</b> ${pct(e.credit_use)} expected redemption × ${money(e.margin)} original margin = ${money(r2(e.credit_use*e.margin))} expected credit margin before recovery and costs. Redemption is estimated from synthetic customer credit history with a 70% prior; it is not guaranteed revenue.</p><p class="small">Recovery uses the store's grade ${esc(co.found)} and the best simulated route's net recovery. Refunds retain no original margin. Declining retains the original margin but includes sending the pair back. Refund face value is the customer payout, not an additional deduction from this decision-value model.</p>${valued.map(o=>`<p class="small receipt-equation"><b>${esc(o.label)}:</b> ${parts.map(([key,,sign],i)=>`${i?(sign<0?' − ':' + '):''}${money(o.breakdown?.[key]||0)}`).join('')} = <b>${money(o.value)}</b></p>`).join('')}<p class="small muted">Eligibility and evidence control the decision; the largest value does not establish that a return should be declined.</p></section>`;
 }
+function approvalOptionLabel(label) { return String(label).replace(/\s*\(§[\d.]+\)/g, ''); }
 function inspectionPanel(r) {
+  if (r.status !== 'pending') {
+    const cs=CASES[r.case_id],waiting=r.status==='more_info';
+    const labels={decline_return:'Return declined · send the pair back',ask_customer:'Customer contacted · waiting for their reply',release_refund:'Refund released',release_credit:'Store credit released',ship_exchange:'Exchange released for shipping',credit_no_bonus:'Store credit released without the bonus',convert_credit:'Store credit issued instead',accept:'Pair accepted',auto_release:'Approved automatically after inspection',auto_accept:'Pair accepted automatically after inspection'};
+    const outcome=waiting?'The request remains open. Payment and shipment stay on hold while the customer provides more information.':r.decision==='decline_return'?'The held return remedy was cancelled. Send the pair back to the customer at no charge; the customer can appeal.':r.status==='approved'?'This inspection review is complete. The recorded outcome below replaces the earlier proposed options.':'This review is closed. See the saved decision and evidence below.';
+    return `<section class="econ approval-decision approval-recorded" data-recorded-decision="${esc(r.decision||r.status)}">${groupHead('ret',waiting?'Waiting for the customer':'Recorded decision',`Store inspection: grade ${esc(cs.received?.grade||'not recorded')}`)}
+      <p><span class="pill ${waiting?'warn':r.status==='approved'?'ok':'neutral'}">${esc(labels[r.decision]||approvalOptionLabel(REVIEW_WORD[r.decision]||r.status))}</span></p>
+      <p>${outcome}</p><p class="small muted">${esc(r.decided_by||r.approver||'Recorded review')}${r.decided_at?' · '+esc(fmtWhen(r.decided_at)):''}</p>
+      ${!waiting&&r.status==='approved'&&cs.received?.releasedList?.length?`<ul class="small">${cs.received.releasedList.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+      <details class="inline-disclosure"><summary>Original review & financial record</summary><p><b>Reason for review:</b> ${esc(r.reason)}</p><p class="small muted">A financial calculation snapshot was not saved with this decision. The original price breakdown is unavailable; recalculating after payment or cancellation would show different options. Source evidence remains available below.</p></details>
+    </section>`;
+  }
   const co = counterOptions(r.case_id), id = r.case_id;
   const valued = co.options.filter(o => o.value != null);
   const rows = valued.map(o => ({ label: o.label, value: o.value, hl: o.best, tip: [`${money(o.value)} to ALDO`, o.label].concat(breakLines(o.breakdown)).join('\n') }));
   const pending = r.status === 'pending';
-  return `<div class="econ">${groupHead('ret', 'Updated decision after the store check', `Valued at the grade the store found (${co.found}), not the photo grade`)}
-    <p class="small"><b>Assessment:</b> ${esc(co.why)}</p>
-    <details class="inspection-cost-details"><summary>View price breakdown & assumptions</summary>${inspectionBreakdown(id,co)}</details>
-    <div class="eyebrow" style="margin-top:12px">${pending ? 'Pick an option: every one is allowed by the rule shown' : 'The options and the rule that allows each'}</div>
-    <ul class="opt-rules">${co.options.map(o => { const inner = `<span class="or-top"><b>${o.best ? '★ ' : ''}${esc(o.label)}</b>${o.value != null ? ` <span class="mono small">${money(o.value)}</span>` : ''}${pending ? `<span class="or-go">${o.best ? 'Choose the recommended option' : 'Choose'} →</span>` : ''}</span><span class="small">${esc(o.note)}</span><span class="small muted">${esc(o.rule)}</span>`;
+  const assessment = co.why.replace(/the wear happened after the photo\./i, 'the condition evidence differs; confirm the cause with the customer.');
+  return `<div class="econ approval-decision">${groupHead('ret', pending?'Choose the next step':'Recorded decision', `Store inspection: grade ${co.found} · ${pending?'your decision is required':'review completed'}`)}
+    <p class="small approval-reason"><b>Why approval is needed:</b> ${esc(r.reason)}</p>
+    <ul class="opt-rules">${co.options.map(o => { const inner = `<span class="or-top"><b>${o.best ? '★ ' : ''}${esc(approvalOptionLabel(o.label))}</b>${o.value != null ? ` <span class="mono small">${money(o.value)} estimated value</span>` : ''}${pending ? `<span class="or-go">${o.best ? 'Choose recommended option' : 'Choose'} →</span>` : ''}</span><span class="small">${esc(o.note)}</span><span class="small muted">${esc(o.rule)}</span>`;
       return `<li>${pending ? `<button type="button" class="or-btn${o.best ? ' best' : ''}" data-review="${r.id}" data-choice="${o.key}">${inner}</button>` : `<div class="or-btn static${r.decision === o.key ? ' chosen' : ''}">${inner}${r.decision === o.key ? '<span class="pill ok">Chosen</span>' : ''}</div>`}</li>`; }).join('')}</ul>
     ${co.held ? `<p class="small" style="margin:8px 0 0"><span class="pill warn">On hold: ${esc(co.held.what)}</span> Nothing is paid or shipped until someone decides (R11, R13).</p>` : ''}
+    <details class="inline-disclosure approval-assessment"><summary>Agent assessment & policy explanation</summary><p class="small">${esc(assessment)}</p><p class="small muted">The photos and inspection grades show a mismatch; they do not establish why it happened. Confirm context before deciding. Estimated financial value does not determine eligibility.</p></details>
+    <details class="inspection-cost-details"><summary>View price breakdown & assumptions</summary>${inspectionBreakdown(id,co)}</details>
   </div>`;
 }
 function approvalDetail(r) {
@@ -940,7 +953,7 @@ function approvalDetail(r) {
   if (r.status === 'pending') {
     if (r.kind === 'case') {
       const co = r.case_id && IDX.kase[r.case_id] ? creditOptions(r.case_id).options : [{ key: 'approve_credit', label: 'Store credit' }];
-      actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="approve_refund">Approve refund ${money(r.amount)}</button>${co.map(o => `<button type="button" class="btn secondary sm${o.best ? ' best' : ''}" data-review="${r.id}" data-choice="${o.key}">${o.best ? '★ ' : ''}Offer ${esc(o.label.replace(/^Store credit/, 'store credit'))}</button>`).join('')}<button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="decline">Decline: item is worn (§2.4)</button><button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="more_info">Ask for more photos</button>`;
+      actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="approve_refund">Approve refund ${money(r.amount)}</button>${co.map(o => `<button type="button" class="btn secondary sm${o.best ? ' best' : ''}" data-review="${r.id}" data-choice="${o.key}">${o.best ? '★ ' : ''}Offer ${esc(o.label.replace(/^Store credit/, 'store credit'))}</button>`).join('')}<button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="decline">Decline: item is worn</button><button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="more_info">Ask for more photos</button>`;
     }
     else if (r.kind === 'action') actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="approve">Approve</button><button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="reject">Reject</button>`;
     else if (r.kind === 'policy') actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="uphold">Uphold the policy</button><button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="exception">Make an exception: refund</button>`;
@@ -949,34 +962,34 @@ function approvalDetail(r) {
     else if (r.kind === 'counter') actions = ''; // One decision control per option in inspectionPanel.
   }
   const k0 = r.case_id && IDX.kase[r.case_id];
-  const decisionCol = `${k0 ? managerCustomerCard(r.case_id) : ''}<div class="stack ap-main">
-      ${r.case_id && IDX.kase[r.case_id] ? apIds(r) : ctxLine ? `<div class="small mono muted">${esc(ctxLine)}</div>` : ''}
-      ${k0 && k0.words ? `<div><div class="eyebrow">The customer said</div><blockquote class="ap-words">${esc(k0.words)}</blockquote></div>` : ''}
-      <div><div class="eyebrow">Why it's here</div><div>${esc(r.reason)}</div></div>
-      ${r.kind!=='counter'?`<div><div class="eyebrow">${esc(r.requested_by || 'Agent')} recommends</div><div>${esc(r.recommendation)}</div></div>`:''}
-      ${r.evidence && r.evidence.length ? `<div><div class="eyebrow">Evidence</div><ul class="evi">${r.evidence.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+  const profile = k0 ? managerCustomerCard(r.case_id,true) : '';
+  const supporting = `<div class="approval-supporting">${k0?apIds(r):ctxLine?`<p class="small mono muted">${esc(ctxLine)}</p>`:''}
+      ${k0?.words||r.evidence?.length?`<details class="inline-disclosure approval-evidence"><summary>Customer statement & handoff evidence</summary>${k0?.words?`<blockquote class="ap-words">${esc(k0.words)}</blockquote>`:''}${r.evidence?.length?`<ul class="evi">${r.evidence.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</details>`:''}</div>`;
+  const decisionCol = `<div class="stack ap-main">
+      <div><div class="eyebrow">Why approval is needed</div><div>${esc(r.reason)}</div></div>
+      <div><div class="eyebrow">${esc(r.requested_by || 'Agent')} recommends</div><div>${esc(r.recommendation)}</div></div>
       ${r.kind === 'page_fix' && r.draft_id ? `<div><span class="page-note">${esc(SYS.drafts[r.draft_id].note)}</span></div>` : ''}
       ${r.decision ? `<div class="small"><b>Decision:</b> ${esc(r.decided_by || r.approver)} ${esc(REVIEW_WORD[r.decision] || String(r.decision).replace(/_/g, ' '))}</div>` : ''}
       ${actions ? `<div class="ap-actions">${actions}</div>` : ''}</div>`;
-  if (!k0) return decisionCol;
+  if (!k0) return `<div class="approval-detail">${decisionCol}${supporting}</div>`;
   const { k } = caseCtx(r.case_id);
   const prof = customerProfile(k.customer_id);
   const sum = prof.past.length ? `${prof.c.loyalty_status} · ${prof.orders} orders · net ${money(prof.net)} · rank ${prof.rank} of ${prof.of}` : `${prof.c.loyalty_status} · first order`;
-  const credit = r.kind === 'case' ? creditPanel(r) : '';
-  if (r.kind === 'counter') return `<div class="ap-grid ap-counter">${decisionCol}${inspectionPanel(r)}</div>
+  const credit = r.kind === 'case' ? creditPanel(r,false) : '';
+  if (r.kind === 'counter') return `<div class="approval-detail">${profile}<div class="ap-grid ap-counter">${inspectionPanel(r)}</div>${supporting}
     ${photoCompare(r.case_id)}
     <details class="ap-sec"><summary>${groupHead('prod', `${caseCtx(r.case_id).line.product}, across all customers`, 'Why people send this style back, and how often compared with similar styles')}</summary>${productPanel(r.case_id)}</details>
-    <details class="ap-sec ap-cust"><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details>`;
-  return `<div class="ap-grid">${decisionCol}${econPanel(r)}</div>
+    <details class="ap-sec ap-cust"><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details></div>`;
+  return `<div class="approval-detail">${profile}${decisionCol}${supporting}<details class="inline-disclosure approval-financial"><summary>Compare financial options & assumptions</summary>${econPanel(r)}</details>
     <section class="ap-photos">${groupHead('ret', 'Photos the customer sent', k.photo.grade ? `Photo check: grade ${k.photo.grade}${k.photo.consistent === false ? ", and the photos don't match what the customer said" : ''}. Click a photo to look closer.` : 'Click a photo to look closer.')}${photoStrip(r.case_id, { empty: 'No photo was attached to this return.' })}</section>
     <div class="ap-pair${credit ? '' : ' one'}">${credit}${resalePanel(r.case_id)}</div>
     <details class="ap-sec"><summary>${groupHead('prod', `${caseCtx(r.case_id).line.product}, across all customers`, 'Why people send this style back, and how often compared with similar styles')}</summary>${productPanel(r.case_id)}</details>
-    <details class="ap-sec ap-cust"><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details>`;
+    <details class="ap-sec ap-cust"><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details></div>`;
 }
 const REASON_WORD = { fit: 'Fit', change_of_mind: 'Changed their mind', quality: 'Quality problem', expectations: 'Not as expected', damage: 'Arrived damaged', late: 'Arrived late' };
 const reasonWord = k => REASON_WORD[k] || String(k).replace(/_/g, ' ');
 /** Store credit variants, valued, with the best one recommended. */
-function creditPanel(r) {
+function creditPanel(r, allowAction = true) {
   const id = r.case_id, co = creditOptions(id), best = co.best;
   const rows = co.options.map(o => ({ label: o.label, value: o.value, hl: o.best, sub: `${pct(o.use)} likely spent${o.best ? ' · best' : ''}`,
     tip: [`${money(o.value)} to ALDO`, o.label, `${signed(o.vs_refund)} vs a refund`].concat(breakLines(o.breakdown)).join('\n') }))
@@ -985,7 +998,7 @@ function creditPanel(r) {
   const reco = `<div class="reco"><div class="eyebrow">${icon('check')}Recommended if you offer credit</div>
     <div class="reco-main"><b>★ ${esc(best.label)}</b><span>ALDO expects to make <b>${money(best.value)}</b> on this return, <b class="${best.vs_refund >= 0 ? 'up' : 'down'}">${signed(best.vs_refund)}</b> compared with a refund.</span></div>
     <p class="small" style="margin:0">${esc(best.note)}</p>
-    ${pending ? `<button type="button" class="btn sm" data-review="${r.id}" data-choice="${best.key}">Offer ${esc(best.label.replace(/^Store credit/, 'store credit'))}</button>` : ''}</div>`;
+    ${pending && allowAction ? `<button type="button" class="btn sm" data-review="${r.id}" data-choice="${best.key}">Offer ${esc(best.label.replace(/^Store credit/, 'store credit'))}</button>` : ''}</div>`;
   return `<section class="ap-col">${groupHead('ret', 'Store credit options', 'Instead of a refund: what each kind of credit is likely to earn ALDO')}
     ${vizCard(`cr:${id}`, 'Expected profit to ALDO, by credit option', '', catForms(rows, { heatCol: 'Profit to ALDO' }).filter(f => f.id !== 'heat').concat([
       { id: 'scatter', render: () => scatterSVG(co.options.map(o => ({ x: o.use, y: o.value, label: o.label, hl: o.best, tip: `${o.label}\n${pct(o.use)} likely spent · ${money(o.value)} to ALDO` })), { x: { label: 'Share of the credit likely to be spent', fmt: v => pct(v), zero: false }, y: { label: 'Profit to ALDO', fmt: compactMoney } }), note: 'Scatter: further right means more of the credit gets spent; higher means more profit. A bonus moves a point right but costs money.' },

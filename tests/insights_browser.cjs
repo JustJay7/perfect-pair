@@ -11,7 +11,7 @@ const {chromium} = require('playwright');
   let date = Date.parse(data.start);
   const records = data.cube.n.map((quantity, i) => {
     date += data.cube.day[i] * 86400000;
-    return {date: new Date(date).toISOString().slice(0, 10), quantity,
+    return {date: new Date(date).toISOString().slice(0, 10), quantity, cents:data.cube.cents[i], fee:data.cube.fee[i], failed:data.cube.failc[i],
       banner: data.banners[data.cube.b[i]], channel: data.channels[data.cube.c[i]], reason: data.groups[data.cube.g[i]]};
   });
   const bannerNames = {ALDO_CA:'ALDO Canada', ALDO_US:'ALDO US', CIS_CA:'Call It Spring Canada', SPERRY_CA:'Sperry Canada', SPERRY_US:'Sperry US'};
@@ -27,7 +27,8 @@ const {chromium} = require('playwright');
     await page.locator('#tabbtn-dashboard').click();
     await page.locator('[data-dsrc="real"]').click();
     const heat = page.locator('[data-vizkey="r:heat"]');
-    const tile = i => page.locator('#tab-dashboard .dash-tiles .stat .v').nth(i);
+    const tile = key => page.locator(`#tab-dashboard [data-insight-stat="${key}"] .v`);
+    const money = cents => (cents/100).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
     const shot = async name => {
       if (!process.env.PP_SCREENSHOTS) return;
       fs.mkdirSync(process.env.PP_SCREENSHOTS, {recursive:true});
@@ -47,8 +48,27 @@ const {chromium} = require('playwright');
       const quantity = filtered.reduce((sum, r) => sum + r.quantity, 0);
       const group = reason === 'all' ? 'fit' : reason;
       const numerator = scope.filter(r => r.reason === group).reduce((sum,r) => sum+r.quantity, 0);
-      assert.equal(await tile(0).textContent(), quantity.toLocaleString('en-CA'));
-      assert.equal(await tile(2).textContent(), total ? percentage(numerator, total) : '—');
+      assert.equal(await tile('returned').textContent(), quantity.toLocaleString('en-CA'));
+      assert.equal(await tile('reason').textContent(), total ? percentage(numerator, total) : '—');
+      assert.doesNotMatch(await page.locator('#tab-dashboard').textContent(), /Select (?:a|one) (?:banner|brand)/i);
+      if (banner === 'all') {
+        const moneyBanners = data.banners.filter(b=>filtered.some(r=>r.banner===b));
+        assert.deepEqual(await page.locator('.insights-money-overview [data-money-banner]').evaluateAll(rows=>rows.map(row=>row.dataset.moneyBanner)), moneyBanners);
+        for (const b of moneyBanners) {
+          const group=filtered.filter(r=>r.banner===b), line=page.locator(`.insights-money-overview [data-money-banner="${b}"]`);
+          const sum=key=>group.reduce((total,r)=>total+r[key],0);
+          assert.equal(await line.locator('[data-amount="refund"]').textContent(), money(sum('cents')));
+          assert.equal(await line.locator('[data-amount="fee"]').textContent(), money(sum('fee')));
+          assert.equal(await line.locator('[data-amount="failed"]').textContent(), money(sum('failed')));
+          assert.equal(await line.locator('[data-amount="claims"]').textContent(), money(group.filter(r=>['carrier','no_merch'].includes(r.reason)).reduce((total,r)=>total+r.cents,0)));
+        }
+        assert.equal(await page.locator('#tab-dashboard .dash-tiles .stat').count(), 4);
+        assert.equal(await page.locator('[data-vizkey="r:money"]').count(), 0, 'No chart adds monetary amounts from different markets');
+        assert.match(await page.locator('.insights-money-overview').textContent(), /no conversion or combined total/);
+      } else {
+        assert.equal(await page.locator('.insights-money-overview').count(), 0);
+        assert.equal(await tile('refunds').textContent(), (filtered.reduce((s,r)=>s+r.cents,0)/100).toLocaleString('en-CA',{maximumFractionDigits:0}));
+      }
       const expectedBanners = data.banners.filter(b => scope.some(r => r.banner === b && r.quantity > 0));
       assert.deepEqual(await heat.locator('.heat-lab').allTextContents(), expectedBanners.map(b => bannerNames[b]));
       const groups = reason === 'all' ? data.groups : [reason];
@@ -70,10 +90,13 @@ const {chromium} = require('playwright');
     };
 
     await check();
+    await shot('insights-all-initial');
     assert.equal(await page.locator('.insights-context').getAttribute('open'), null);
     assert.match(await page.locator('.insights-context').textContent(), /dashboard filters do not apply/);
     const results = [];
     for (const filters of [
+      {channel:'CCC', reason:'no_merch'},
+      {channel:'Web', reason:'fit', from:'2025-04-01', to:'2025-06-30'},
       {banner:'CIS_CA', channel:'CCC', reason:'no_merch'},
       {banner:'CIS_CA', channel:'CCC', reason:'fit'},
       {banner:'CIS_CA', channel:'HappyReturnBar', reason:'fit'},
@@ -103,15 +126,26 @@ const {chromium} = require('playwright');
     assert.equal(await page.locator('[data-rfilter="channel"]').inputValue(), 'all');
     assert.equal(await page.locator('[data-rfilter="group"]').inputValue(), 'all');
     assert.equal(await page.locator('[data-rdate="from"]').inputValue(), data.start);
-    assert.equal(await tile(0).textContent(), data.totals.items.toLocaleString('en-CA'));
+    assert.equal(await tile('returned').textContent(), data.totals.items.toLocaleString('en-CA'));
     await shot('insights-all');
+    assert.equal(await page.locator('[data-rscenario]').getAttribute('open'), null);
+    await page.locator('[data-rscenario]>summary').click();
+    await page.locator('[data-rtarget="0.1"]').click();
+    assert.notEqual(await page.locator('[data-rscenario]').getAttribute('open'), null, 'Scenario stays open while changing an assumption');
+    assert.equal(await page.locator('[data-rscenario] tbody tr').count(), data.banners.length);
+    await page.locator('[data-rscenario]>summary').click();
     await page.setViewportSize({width:390, height:844});
+    await check();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390));
+    assert.ok(await page.locator('.insights-money-overview .tbl-wrap').evaluate(el=>el.scrollWidth<=el.clientWidth), 'All financial columns fit without sideways scrolling on mobile');
+    await page.locator('.insights-money-overview').evaluate(el=>el.scrollIntoView({block:'start'}));
+    await shot('insights-all-mobile');
     await check({banner:'ALDO_CA', channel:'InStore', reason:'fit'});
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390));
     await shot('insights-mobile');
     await page.locator('#theme-btn').click();
     await shot('insights-dark-mobile');
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({filters:results, zeroReason:'passed', reset:'passed', mobile:'passed', browserErrors:0}, null, 2));
+    console.log(JSON.stringify({filters:results, moneyByBrand:'verified from source cents across filters', zeroReason:'passed', reset:'passed', mobile:'passed', browserErrors:0}, null, 2));
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });

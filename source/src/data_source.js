@@ -1,5 +1,6 @@
 /* Dataset choice controls analytics; each investigation and case also displays its provenance. */
 UI.dataSource = 'synthetic';
+try { if(REAL && localStorage.getItem('pp-data-source')==='actual') { UI.dataSource='actual'; UI.dash.src='real'; UI.data={ds:'actual-returns',q:''}; } } catch {}
 UI.dataViews = {};
 
 function renderDataSource() {
@@ -20,6 +21,7 @@ function setDataSource(source, navigate = true) {
   if (anyBusy()) { toast('Wait for the current run to finish before switching datasets'); return false; }
   UI.dataViews[UI.dataSource] = UI.data;
   UI.dataSource = source;
+  try { localStorage.setItem('pp-data-source',source); } catch {}
   UI.dash.src = source === 'actual' ? 'real' : 'pilot';
   UI.data = UI.dataViews[source] || { ds: source === 'actual' ? 'actual-returns' : 'orders', q: '' };
   renderDataSource();
@@ -50,7 +52,7 @@ function actualDatasets() {
 function actualCoverage() {
   const q = REAL.quality;
   if (!q) return '';
-  return `<p class="small muted">Original-order matches: ${num(q.matched_order_lines)} of ${num(q.return_lines)} return lines (${pct(q.matched_order_lines / q.return_lines, 1)}). Final-sale flag matches: ${num(q.matched_flag_lines)} (${pct(q.matched_flag_lines / q.return_lines, 1)}). Missing flags stay unknown; ${num(q.zero_quantity_lines)} zero-quantity lines remain zero. ${num(q.missing_fee_orders)} return orders have no fee record. ${esc(q.currency)}</p>`;
+  return `<p class="small muted">Original-order matches: ${num(q.matched_order_lines)} of ${num(q.return_lines)} return lines (${pct(q.matched_order_lines / q.return_lines, 1)}). Final-sale flag matches: ${num(q.matched_flag_lines)} (${pct(q.matched_flag_lines / q.return_lines, 1)}). Missing flags stay unknown; ${num(q.zero_quantity_lines)} zero-quantity lines remain zero. ${num(q.missing_fee_orders)} return orders have no fee record. Source amounts are shown separately by brand and market; currency is not supplied.</p>`;
 }
 
 function renderActualData() {

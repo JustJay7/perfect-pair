@@ -1,11 +1,13 @@
-const PREVENT_VIEW={banner:'ALDO_CA',scope:'all',browserOpen:true,sku:null,product:null,styleId:null,q:'',offset:0,cache:new Map(),pending:new Set(),error:null};
+function preventionPreferences(){try{return JSON.parse(localStorage.getItem('pp-prevention-v1')||'{}')||{};}catch{return {};}}
+function savePreventionPreferences(key,value){try{localStorage.setItem('pp-prevention-v1',JSON.stringify({...preventionPreferences(),[key]:value}));}catch{}}
+const PREVENT_VIEW={banner:(REAL?.banners||[]).includes(preventionPreferences().oms?.banner)?preventionPreferences().oms.banner:'ALDO_CA',evidence:preventionPreferences().evidence==='transactions'?'transactions':'returns',scope:preventionPreferences().oms?.scope==='single'?'single':'all',browserOpen:true,sku:null,product:null,styleId:null,q:'',offset:0,cache:new Map(),pending:new Set(),error:null};
 const COMPANY_NAMES={ALDO:'ALDO',CIS:'Call It Spring',SPERRY:'Sperry',GLOBO:'Globo',GHBASS:'G.H. Bass'};
 const marketName=b=>b.endsWith('_CA')?'Canada':b.endsWith('_US')?'United States':b.split('_').at(-1);
 function preventionKey(){const v=PREVENT_VIEW;return [WORK.history?.dataset_id,v.banner,v.q,v.offset].join('|');}
 function preventionControls(actual,overview) {
   const v=PREVENT_VIEW,banners=overview?.banners||REAL?.banners||['ALDO_CA','ALDO_US'],company=v.banner.split('_')[0],companies=[...new Set(banners.map(b=>b.split('_')[0]))],disabled=anyBusy()?'disabled':'';
   return `<section class="card prevention-scope"><div class="scope-fields">
-    <label>Dataset<select id="prevention-source" ${disabled}><option value="transactions">Actual store & online sales · new</option><option value="actual" ${actual?'selected':''}>Actual OMS return history</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
+    <label>Dataset<select id="prevention-source" ${disabled}><option value="transactions">Actual · store & online sales</option><option value="actual" ${actual?'selected':''}>Actual · OMS returns</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
     <label>Company<select id="prevention-company" ${!actual?'disabled':disabled}>${(actual?companies:['ALDO']).map(c=>`<option value="${esc(c)}" ${actual&&c===company?'selected':''}>${esc(COMPANY_NAMES[c]||c)}</option>`).join('')}</select></label>
     <label>Market<select id="prevention-market" ${!actual?'disabled':disabled}>${actual?banners.filter(b=>b.split('_')[0]===company).map(b=>`<option value="${esc(b)}" ${b===v.banner?'selected':''}>${esc(marketName(b))}</option>`).join(''):'<option>Canada · demo network</option>'}</select></label>
     <label>Analyze<select id="prevention-scope" ${disabled}><option value="all" ${v.scope==='all'?'selected':''}>All products</option><option value="single" ${v.scope==='single'?'selected':''}>One product</option></select></label>
@@ -39,26 +41,31 @@ renderPrevention=function(){
     return;
   }
   const data=v.cache.get(preventionKey());
-  el.innerHTML=pageHeading('Prevent the next return.','Choose a company and market. Investigate the whole assortment or focus on a single product.','Prevention agent')+preventionControls(true,data?.overview);
+  el.innerHTML=pageHeading('Prevention agent','Start with all products in the selected market, or choose a product for a closer look.','Actual OMS returns')+preventionControls(true,data?.overview);
   if(!BEDROCK_LOCAL||!WORK.ready||!WORK.history){el.insertAdjacentHTML('beforeend','<section class="card card-pad"><h2>Connect the supplied records</h2><p>Actual investigations need the local server with the source files imported. The synthetic demo and actual aggregate Insights are still available.</p></section>');return;}
   if(!data){el.insertAdjacentHTML('beforeend',`<p role="status">${esc(v.error||'Loading the selected market…')}</p>${v.error?'<button class="btn secondary" id="prevention-retry">Try again</button>':''}`);if(!v.error)loadPreventionEvidence(preventionKey());return;}
   const {overview,page}=data,selected=v.scope==='single'?v.product:overview,valid=!!selected;
   if(v.scope==='single')el.insertAdjacentHTML('beforeend',`<details class="card disclosure" ${v.browserOpen?'open':''} id="prevention-products"><summary>${v.product?'Change product · '+esc(v.product.name||v.product.sku):'Choose a product'} <span>Search the selected market’s ${num(overview.products)} products</span></summary><div class="card-pad"><label for="prevention-query">Product name or SKU</label><input id="prevention-query" type="search" value="${esc(v.q)}" placeholder="Search supplied products" ${anyBusy()?'disabled':''}><div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Return records</th><th></th></tr></thead><tbody>${page.products.map(p=>`<tr><td>${esc(p.name||'Name not supplied')}<br><span class="small mono">${esc(p.sku)}</span></td><td>${num(p.rows)}</td><td><button class="btn secondary sm" data-prevention-product="${esc(p.sku)}" ${anyBusy()?'disabled':''}>Select product</button></td></tr>`).join('')||'<tr><td colspan="3">No matching products.</td></tr>'}</tbody></table></div><div class="dataset-bar"><button class="btn secondary sm" data-prevention-page="-1" ${anyBusy()||!v.offset?'disabled':''}>Previous</button><span>${page.total?v.offset+1:0}–${Math.min(v.offset+25,page.total)} of ${num(page.total)}</span><button class="btn secondary sm" data-prevention-page="1" ${anyBusy()||v.offset+25>=page.total?'disabled':''}>Next</button></div></div></details>`);
   if(selected)el.insertAdjacentHTML('beforeend',preventionProblem(selected,v.scope==='all'));
   const scopeLabel=v.scope==='all'?`${BANNER_WORD[v.banner]||v.banner} · all products`:v.product?`${BANNER_WORD[v.banner]||v.banner} · ${v.product.name||v.sku} (${v.sku})`:'Select a product above';
-  el.insertAdjacentHTML('beforeend',`<section class="card card-pad prevention-launch"><div><div class="eyebrow">02 · Investigate the evidence</div><h2>${esc(scopeLabel)}</h2><p class="small muted">${STATE.mode==='live'?'Live agent':'Scripted demonstration'} · findings link back to the original source. Historical analysis proposes next steps; it does not change product pages or create refunds.</p></div><button class="btn" id="prevention-investigate" ${!valid||anyBusy()?'disabled':''}>${v.scope==='all'?'Analyze all products':'Analyze this product'} ${icon('play')}</button></section>`);
-  const runs=WORK.historyRuns.filter(r=>r.agent==='prevention'&&r.dataset_id===WORK.history.dataset_id&&r.banner===v.banner&&(r.sku||null)===(v.scope==='single'?v.sku:null));
-  el.insertAdjacentHTML('beforeend',`<section class="stack prevention-results"><div class="eyebrow">03 · Review findings</div>${runs.length?runs.slice(0,5).map(historyRunHTML).join(''):'<div class="card card-pad"><h3>Ready to investigate</h3><p>Run the analysis to see evidence, uncertainties and proposed next steps for this selection.</p></div>'}</section>`);
+  el.insertAdjacentHTML('beforeend',`<section class="card card-pad prevention-launch"><div><div class="eyebrow">Selected for analysis</div><h2>${esc(scopeLabel)}</h2><p class="small muted">${STATE.mode==='live'?'Live agent':'Scripted demonstration'} · findings link back to the original source. Findings stay attached to this exact selection.</p>${v.runError?`<p role="alert">${esc(v.runError)}</p>`:''}</div><button class="btn" id="prevention-investigate" ${!valid||anyBusy()?'disabled':''}>${v.running?'Analyzing…':v.scope==='all'?'Analyze all products':'Analyze this product'} ${v.running?'':icon('play')}</button></section>`);
+  const runs=WORK.historyRuns.filter(r=>r.source!=='transactions'&&r.agent==='prevention'&&r.dataset_id===WORK.history.dataset_id&&r.banner===v.banner&&(r.sku||null)===(v.scope==='single'?v.sku:null));
+  el.insertAdjacentHTML('beforeend',`<section class="stack prevention-results" aria-live="polite">${historyRunList(runs)}</section>`);
+  const launch=el.querySelector('.prevention-launch'),results=el.querySelector('.prevention-results');
+  el.querySelector('.prevention-scope').after(launch);launch.after(results);
+  const problem=el.querySelector('.prevention-problem');
+  if(problem){const details=document.createElement('details');details.className='card disclosure';details.open=!runs.length;details.innerHTML='<summary>Recorded return reasons <span>Source counts for this selection</span></summary>';problem.replaceWith(details);details.append(problem);}
   restoreDisclosures(el);
 };
-function resetPreventionScope(){const v=PREVENT_VIEW;v.sku=null;v.product=null;v.q='';v.offset=0;v.error=null;v.browserOpen=true;}
+function resetPreventionScope(){const v=PREVENT_VIEW;v.sku=null;v.product=null;v.q='';v.offset=0;v.error=null;v.runError=null;v.browserOpen=true;}
 document.addEventListener('change',ev=>{
   const t=ev.target,v=PREVENT_VIEW;if(!t.id.startsWith('prevention-')||anyBusy())return;
-  if(t.id==='prevention-source'){v.evidence=t.value==='transactions'?'transactions':'returns';setDataSource(t.value==='transactions'?'actual':t.value,false);v.error=null;renderPrevention();}
+  if(t.id==='prevention-source'){v.evidence=t.value==='transactions'?'transactions':'returns';savePreventionPreferences('evidence',v.evidence);resetPreventionScope();if(typeof TX!=='undefined'&&TX.views.prevention){TX.views.prevention.product=null;TX.views.prevention.data=null;}setDataSource(t.value==='transactions'?'actual':t.value,false);v.error=null;v.runError=null;renderPrevention();}
   if(t.id==='prevention-company'){v.banner=(REAL?.banners||[]).find(b=>b.split('_')[0]===t.value)||'ALDO_CA';resetPreventionScope();renderPrevention();}
   if(t.id==='prevention-market'){v.banner=t.value;resetPreventionScope();renderPrevention();}
-  if(t.id==='prevention-scope'){v.scope=t.value;renderPrevention();}
+  if(t.id==='prevention-scope'){v.runError=null;v.scope=t.value;renderPrevention();}
   if(t.id==='prevention-style'){v.styleId=t.value||null;renderPrevention();}
+  if(['prevention-company','prevention-market','prevention-scope'].includes(t.id))savePreventionPreferences('oms',{banner:v.banner,scope:v.scope});
 });
 document.addEventListener('click',async ev=>{
   const t=ev.target.closest('button');if(!t)return;const v=PREVENT_VIEW;
@@ -70,7 +77,7 @@ document.addEventListener('click',async ev=>{
     if(t.id==='prevention-retry'){v.error=null;renderPrevention();}
     if(t.dataset.preventionProduct){const banner=v.banner,sku=t.dataset.preventionProduct;const product=await workspaceGet('/api/history/product?'+new URLSearchParams({banner,sku}));if(v.banner!==banner||STATE.tab!=='prevention'||UI.dataSource!=='actual')return;v.sku=sku;v.product=product;v.browserOpen=false;renderPrevention();}
     if(t.dataset.preventionPage){v.offset=Math.max(0,v.offset+Number(t.dataset.preventionPage)*25);v.error=null;renderPrevention();}
-    if(t.id==='prevention-investigate'){if(anyBusy()||(v.scope==='single'&&!v.product))return;const command={kind:'history',agent:'prevention',banner:v.banner,sku:v.scope==='single'?v.sku:null,dataset_id:WORK.history.dataset_id};const pending=workspaceCommand(command);renderPrevention();await pending;}
+    if(t.id==='prevention-investigate'){if(anyBusy()||(v.scope==='single'&&!v.product))return;const command={kind:'history',agent:'prevention',banner:v.banner,sku:v.scope==='single'?v.sku:null,dataset_id:WORK.history.dataset_id};v.running=true;v.runError=null;const pending=workspaceCommand(command);renderPrevention();try{await pending;}catch(e){v.runError=e.message;}finally{v.running=false;if(STATE.tab==='prevention'){renderPrevention();$('#tab-prevention .analysis-result')?.scrollIntoView({block:'start',behavior:'smooth'});}}}
   }catch(e){toast(e.message);}
 },true);
 document.addEventListener('input',ev=>{

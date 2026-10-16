@@ -52,11 +52,19 @@ function realAgg(rows) {
 }
 const srcSwitch = cur => `<div class="seg dseg dsrc" role="group" aria-label="Dashboard data source"><button type="button" data-dsrc="pilot" aria-pressed="${cur === 'pilot'}">Synthetic</button><button type="button" data-dsrc="real" aria-pressed="${cur === 'real'}">Actual</button></div>`;
 
+const realMoney = n => Number(n).toLocaleString('en-CA', {minimumFractionDigits:2,maximumFractionDigits:2});
+function realFinancialOverview(rows, total) {
+  const brands = REAL.banners.map(b => ({b, rows:rows.filter(r=>r.b===b)})).filter(x=>x.rows.length).map(x=>({...x, a:realAgg(x.rows)}));
+  return `<section class="card insights-money-overview" aria-labelledby="recorded-money-title"><div class="insights-money-heading"><div><h3 id="recorded-money-title">Recorded amounts by brand</h3><p>All brands, shown separately. Currency is not supplied; no conversion or combined total.</p></div></div>
+    ${brands.length ? `<div class="tbl-wrap"><table class="insights-money-table"><thead><tr><th scope="col">Brand / market</th><th scope="col" class="num">Recorded refunds</th><th scope="col" class="num">Restocking fees</th><th scope="col" class="num">Carrier / no-item</th><th scope="col" class="num">Failed refunds</th></tr></thead><tbody>${brands.map(({b,a})=>`<tr data-money-banner="${esc(b)}"><th scope="row">${esc(BANNER_WORD[b]||b)}</th><td class="num" data-label="Recorded refunds"><strong data-amount="refund">${realMoney(a.amt)}</strong><small>${a.n ? realMoney(a.amt/a.n)+' average / item' : 'No returned items'}</small></td><td class="num" data-label="Restocking fees" data-amount="fee">${realMoney(a.fee)}</td><td class="num" data-label="Carrier / no-item" data-amount="claims">${realMoney((a.byGamt.carrier||0)+(a.byGamt.no_merch||0))}</td><td class="num" data-label="Failed refunds" data-amount="failed">${realMoney(a.failamt)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small muted">No recorded amounts match these filters.</p>'}
+    <div class="insights-money-notes"><span><b>${num(total.fn)}</b> orders charged a fee</span><span><b>${num(total.fs)}</b> final-sale returned items</span><span><b>${num(total.unknown_fs)}</b> items with no final-sale flag</span></div><p class="insights-money-definition">Recorded refunds include open and failed records. Carrier / no-item and failed amounts are subsets, not extra amounts to add.</p></section>`;
+}
+
 function renderRealDashboard(el) {
   const f = UI.rdash, { start, end, len } = realRange();
   const monetary = f.banner !== 'all';
-  const money = n => monetary ? Number(n).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2}) : 'Select a banner';
-  const whole = n => monetary ? Number(n).toLocaleString('en-CA',{maximumFractionDigits:0}) : 'Select a banner';
+  const money = realMoney;
+  const whole = n => Number(n).toLocaleString('en-CA',{maximumFractionDigits:0});
   const pool = realFilter(REAL.rows);
   const rows = pool.filter(r => r.dn >= start && r.dn <= end), prev = pool.filter(r => r.dn >= start - len && r.dn < start);
   const A = realAgg(rows), P = realAgg(prev), hasPrev = start - len >= REAL.d0;
@@ -78,35 +86,37 @@ function renderRealDashboard(el) {
   const exRate = A.insRo ? A.ex / A.insRo : 0, pExRate = P.insRo ? P.ex / P.insRo : 0;
   const tiles = [
     ['Items returned', num(A.n), delta(A.n, P.n, true), `${num(A.ro)} return orders · ${num(A.n / Math.max(1, len))} a day`],
-    ['Refund worth', whole(A.amt), monetary ? delta(A.amt, P.amt, true) : '', `${money(A.amt / (A.n || 1))} average per item`],
+    ['Recorded refunds', whole(A.amt), monetary ? delta(A.amt, P.amt, true) : '', `${money(A.amt / (A.n || 1))} average per item`],
     [`${GROUP_WORD[shareGroup]} · share of returns`, reasonShare === null ? '—' : pct(reasonShare, 1), reasonShare === null || priorReasonShare === null ? '' : delta(reasonShare, priorReasonShare, true), `${num(A.byG[shareGroup] || 0)} of ${num(reasonBase.n)} returned items across all reasons · same brand, channel and dates`],
     ['In-store returns linked to exchanges', A.insRo ? pct(exRate, 1) : '—', delta(exRate, pExRate), A.insRo ? `${num(A.ex)} of ${num(A.insRo)} in-store return orders, since ${fmtY(REAL.ex_start)}` : `Exchange data starts ${fmtY(REAL.ex_start)}`],
     ['Restocking fees', whole(A.fee), monetary ? delta(A.fee, P.fee) : '', `${num(A.fn)} orders charged · ${pct(A.fn / (A.ro || 1))} of return orders`],
     ['Carrier / no-item refund amounts', whole(claimAmt), monetary ? delta(claimAmt, P.byGamt ? (P.byGamt.no_merch || 0) + (P.byGamt.carrier || 0) : 0, true) : '', `${num(claimN)} items with carrier or no-merchandise reasons`],
-    ['Refunds that failed', num(A.fail), delta(A.fail, P.fail, true), `${whole(A.failamt)} stuck · still open: ${num(A.op)}`],
+    ['Refunds that failed', num(A.fail), delta(A.fail, P.fail, true), monetary ? `${money(A.failamt)} recorded failed amount · ${num(A.op)} records still open` : `${num(A.op)} records still open · amounts below`],
     ['Final-sale return quantity', num(A.fs), delta(A.fs, P.fs, true), `${num(A.unknown_fs)} items have no matching final-sale flag`],
   ];
+  const tileKeys = ['returned','refunds','reason','exchanges','fees','claims','failed','final-sale'];
+  const shownTiles = monetary ? tiles.map((_,i)=>i) : [0,2,3,6];
   const opt = (v, cur, word) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(v === 'all' ? 'All' : word)}</option>`;
-  const head = `<div class="section-head"><div><div class="eyebrow">Returns dashboard · actual ALDO Group data</div><h2>Returns and money</h2><p>Explore why items come back. The charts follow your selected brand, channel, reason and dates; reason shares use all reasons in that same scope as their denominator.</p></div></div>
+  const head = `<div class="section-head"><div><div class="eyebrow">Returns dashboard · actual ALDO Group data</div><h2>Returns and money</h2><p>Explore return volumes, reasons and recorded amounts. Filters are optional.</p></div></div>
     ${srcSwitch('real')}
-    <details class="insights-coverage"><summary>Source coverage & amount definitions</summary><p class="small muted">${num(REAL.totals.items)} returned items across ${REAL.banners.length} banners from ${fmtY(REAL.start)} to ${fmtY(REAL.end)}. Currency is not supplied; amounts are recorded values, including open and failed records. Select one banner for monetary totals.</p>${actualCoverage()}
+    <details class="insights-coverage"><summary>Source coverage & amount definitions</summary><p class="small muted">${num(REAL.totals.items)} returned items across ${REAL.banners.length} banners from ${fmtY(REAL.start)} to ${fmtY(REAL.end)}. Currency is not supplied; amounts are recorded values, including open and failed records. All-brand amounts are shown separately by brand and market, with no currency conversion or combined total.</p>${actualCoverage()}
     ${REAL.orders ? `<p class="small muted">Orders file: ${num(REAL.orders.lines)} lines and ${num(REAL.orders.shipped_qty)} shipped units across the full source period. See Data for daily totals and join coverage.</p>` : ''}</details>
     <div class="dash-controls">
       <div class="seg dseg" role="group" aria-label="Group by">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month'], ['year', 'Year']].map(([k, l]) => `<button type="button" data-rgran="${k}" aria-pressed="${f.gran === k}">${l}</button>`).join('')}</div>
       <div class="seg dseg" role="group" aria-label="Time range">${RD_RANGES.map(([k, l]) => `<button type="button" data-rrange="${k}" aria-pressed="${f.range === k}">${l}</button>`).join('')}</div>
       <div class="dates" role="group" aria-label="Pick dates"><label class="dsel">From <input type="date" data-rdate="from" min="${REAL.start}" max="${REAL.end}" value="${isoOf(start)}"></label><label class="dsel">To <input type="date" data-rdate="to" min="${REAL.start}" max="${REAL.end}" value="${isoOf(end)}"></label>${f.range === 'custom' ? '<span class="pill info">Custom dates</span><button type="button" class="btn secondary sm" data-rclear="1">Clear dates</button>' : ''}</div>
-      <label class="dsel">Banner <select data-rfilter="banner">${['all', ...REAL.banners].map(v => opt(v, f.banner, BANNER_WORD[v])).join('')}</select></label>
+      <label class="dsel">Brand / market <select data-rfilter="banner">${['all', ...REAL.banners].map(v => opt(v, f.banner, BANNER_WORD[v])).join('')}</select></label>
       <label class="dsel">Channel <select data-rfilter="channel">${['all', ...REAL.channels].map(v => opt(v, f.channel, CHANNEL_WORD[v])).join('')}</select></label>
       <label class="dsel">Reason <select data-rfilter="group">${['all', ...REAL.groups].map(v => opt(v, f.group, GROUP_WORD[v])).join('')}</select></label>
       <button class="btn secondary sm" data-rreset>Reset filters</button><span class="small muted">${fmtY(isoOf(start))} to ${fmtY(isoOf(end))}${hasPrev ? ` · arrows compare with the ${len} days before; green is better for ALDO` : ''}</span>
     </div>
-    <div class="dash-tiles">${tiles.map(t => `<div class="stat"><div class="l">${esc(t[0])}</div><div class="v">${esc(t[1])}</div><div class="s">${t[2]} ${esc(t[3])}</div></div>`).join('')}</div>`;
+    <div class="dash-tiles">${shownTiles.map(i => { const t=tiles[i]; return `<div class="stat" data-insight-stat="${tileKeys[i]}"><div class="l">${esc(t[0])}</div><div class="v">${esc(t[1])}</div><div class="s">${t[2]} ${esc(t[3])}</div></div>`; }).join('')}</div>${monetary ? '<p class="small muted insights-amount-note">Amounts are recorded values; currency is not supplied. Recorded refunds include open and failed records.</p>' : realFinancialOverview(rows, A)}`;
 
   const mk = { partial };
   const reasonSeries = GROUP_STACK.map(([k, l, c]) => ({ name: l, color: c, values: by.map(b => b.reduce((s, r) => s + (stackGroup(r.g) === k ? r.n : 0), 0)) })).filter(s => s.values.some(Boolean));
   const chanSeries = REAL.channels.map((c, j) => ({ name: CHANNEL_WORD[c], color: CAT5[j], values: per.map(p => p.byC[c] || 0) })).filter(s => s.values.some(Boolean));
   const banSeries = REAL.banners.map((b, j) => ({ name: BANNER_WORD[b], color: CAT5[j], values: per.map(p => p.byB[b] || 0) })).filter(s => s.values.some(Boolean));
-  const tbl = tableView([gw[0].toUpperCase() + gw.slice(1), 'Items', 'Return orders', 'Refund worth', 'Fit', 'Exchanged in store', 'Restocking fees', 'Failed refunds'], per.map((p, i) => [labels[i], num(p.n), num(p.ro), money(p.amt), num(p.byG.fit || 0), num(p.ex), money(p.fee), num(p.fail)]), [0, 1, 1, 1, 1, 1, 1, 1]);
+  const tbl = tableView([gw[0].toUpperCase() + gw.slice(1), 'Items', 'Return orders', ...(monetary ? ['Recorded refunds'] : []), 'Fit', 'Exchanged in store', ...(monetary ? ['Restocking fees'] : []), 'Failed refunds'], per.map((p, i) => [labels[i], num(p.n), num(p.ro), ...(monetary ? [money(p.amt)] : []), num(p.byG.fit || 0), num(p.ex), ...(monetary ? [money(p.fee)] : []), num(p.fail)]), [0, 1, 1, 1, 1, 1, 1, 1]);
   const c1 = vizCard('r:count', `Items returned per ${gw}`, 'Coloured by the reason the customer gave', [
     { id: 'stack', render: () => stackSVG(labels, reasonSeries, { ...mk, fmt: num, aria: `Items returned per ${gw}, by reason` }) },
     { id: 'chan', render: () => stackSVG(labels, chanSeries, { ...mk, fmt: num }), note: 'By channel: where the item came back.' },
@@ -114,13 +124,13 @@ function renderRealDashboard(el) {
     { id: 'line', render: () => lineSVG(labels, [{ name: 'All items', color: 'var(--chart-1)', values: per.map(p => p.n) }, { name: 'Fit', color: 'var(--cat-1)', values: per.map(p => p.byG.fit || 0) }, { name: 'Changed their mind', color: 'var(--cat-2)', values: per.map(p => p.byG.change_of_mind || 0) }], { ...mk, fmt: num, tick: v => num(v) }), note: 'Lines: the selected total, fit and change-of-mind counts.' },
   ], `Each column is one ${gw} within the selected filters. Recorded reasons describe returns; they do not establish a cause.${partNote}`, tbl);
   const c2 = vizCard('r:money', 'Recorded refund amounts · currency unknown', `Per ${gw}`, [
-    { id: 'stack', render: () => stackSVG(labels, REAL.banners.map((b, j) => ({ name: BANNER_WORD[b], color: CAT5[j], values: per.map(p => r2(p.byBamt[b] || 0)) })).filter(s => s.values.some(Boolean)), { ...mk, fmt: whole, tick: compactMoney }) },
+    { id: 'stack', render: () => stackSVG(labels, REAL.banners.map((b, j) => ({ name: BANNER_WORD[b], color: CAT5[j], values: per.map(p => r2(p.byBamt[b] || 0)) })).filter(s => s.values.some(Boolean)), { ...mk, fmt: whole, tick: num }) },
     { id: 'line', render: () => lineSVG(labels, [{ name: 'Refund worth', color: 'var(--cat-2)', values: per.map(p => r2(p.amt)) }, { name: 'Fit refunds', color: 'var(--cat-1)', values: per.map(p => r2(p.byGamt.fit || 0)) }], {...mk,fmt:num,tick:num}), note: 'Lines: all refunds and the part refunded for fit.' },
   ], `Recorded refund amounts, including pending and failed records, split by banner.${partNote}`);
-  const gRows = REAL.groups.map(g => ({ label: GROUP_WORD[g], value: A.byG[g] || 0, sub: whole(A.byGamt[g] || 0), tip: `${GROUP_WORD[g]}\n${num(A.byG[g] || 0)} items · ${pct((A.byG[g] || 0) / (reasonBase.n || 1), 1)}\n${whole(A.byGamt[g] || 0)} refunded` })).filter(r => r.value).sort((a, b) => b.value - a.value);
+  const gRows = REAL.groups.map(g => ({ label: GROUP_WORD[g], value: A.byG[g] || 0, sub: monetary ? whole(A.byGamt[g] || 0) : '', tip: `${GROUP_WORD[g]}\n${num(A.byG[g] || 0)} items · ${pct((A.byG[g] || 0) / (reasonBase.n || 1), 1)}${monetary ? `\n${money(A.byGamt[g] || 0)} recorded amount` : ''}` })).filter(r => r.value).sort((a, b) => b.value - a.value);
   const c3 = vizCard('r:reason', 'Why customers returned', `The ${f.range === 'custom' ? 'dates' : RD_RANGES.find(x => x[0] === f.range)[1].toLowerCase()} selected`, catForms(gRows, { fmt: num, barFmt: v => `${num(v)} (${pct(v / (reasonBase.n || 1), 1)})`, tick: v => num(v), pie: f.group === 'all', center: num(A.n), centerSub: 'items', heatCol: 'Items' }),
-    'The customer\'s own reason, folded into eight groups (Too big, Too small and Uncomfortable are all Fit). Shares use all returned items for the selected brand, channel and dates, before the reason filter.', tableView(['Reason', 'Items', 'Share', 'Recorded amount'], gRows.map(r => [r.label, num(r.value), pct(r.value / (reasonBase.n || 1), 1), r.sub]), [0, 1, 1, 1]));
-  const cRows = REAL.channels.map(c => ({ label: CHANNEL_WORD[c], value: A.byC[c] || 0, sub: whole(A.byCamt[c] || 0), tip: `${CHANNEL_WORD[c]}\n${num(A.byC[c] || 0)} items · ${pct((A.byC[c] || 0) / (A.n || 1), 1)}\n${whole(A.byCamt[c] || 0)} refunded` })).filter(r => r.value).sort((a, b) => b.value - a.value);
+    'The customer\'s own reason, folded into eight groups (Too big, Too small and Uncomfortable are all Fit). Shares use all returned items for the selected brand, channel and dates, before the reason filter.', tableView(['Reason', 'Items', 'Share', ...(monetary ? ['Recorded amount'] : [])], gRows.map(r => [r.label, num(r.value), pct(r.value / (reasonBase.n || 1), 1), ...(monetary ? [r.sub] : [])]), [0, 1, 1, 1]));
+  const cRows = REAL.channels.map(c => ({ label: CHANNEL_WORD[c], value: A.byC[c] || 0, sub: monetary ? whole(A.byCamt[c] || 0) : '', tip: `${CHANNEL_WORD[c]}\n${num(A.byC[c] || 0)} items · ${pct((A.byC[c] || 0) / (A.n || 1), 1)}${monetary ? `\n${money(A.byCamt[c] || 0)} recorded amount` : ''}` })).filter(r => r.value).sort((a, b) => b.value - a.value);
   const c4 = vizCard('r:chan', 'Where items came back', 'Items by return channel', catForms(cRows, { fmt: num, barFmt: v => `${num(v)} (${pct(v / (A.n || 1))})`, tick: v => num(v), pie: true, center: num(A.n), centerSub: 'items', heatCol: 'Items' }),
     'Recorded return channels within the current filters. Percentages are shares of the selected returned items.');
   const hb = {}; for (const r of reasonRows) { const k = r.b; hb[k] = hb[k] || { n: 0 }; hb[k].n += r.n; hb[k][r.g] = (hb[k][r.g] || 0) + r.n; }
@@ -137,10 +147,10 @@ function renderRealDashboard(el) {
   ] : [{ id: 'line', render: () => '<p class="small muted">The exchange file starts in February 2025; pick dates after that.</p>' }], `Return transactions are linked by original order number, as specified in the notes. This is an association, not a one-to-one return or item match. The source contains CONFIRMED and ASSUMED exchange records; these are separated in Data. Returns before exchange coverage starts are excluded from this rate.`);
   const c7 = vizCard('r:fees', 'Recorded restocking fees · currency unknown', `Per ${gw}`, [
     { id: 'line', render: () => lineSVG(labels, [{ name: 'Restocking fees', color: 'var(--cat-5)', values: per.map(p => r2(p.fee)) }], { ...mk, w: chartW(), fmt:num, tick:num }) },
-    { id: 'stack', render: () => stackSVG(labels, REAL.channels.map((c, j) => ({ name: CHANNEL_WORD[c], color: CAT5[j], values: by.map(b => r2(b.filter(r => r.c === c).reduce((s, r) => s + r.fee, 0))) })).filter(s => s.values.some(Boolean)), { ...mk, w: chartW(), fmt: money, tick: compactMoney }), note: 'Recorded fees by return channel within the selected filters.' },
+    { id: 'stack', render: () => stackSVG(labels, REAL.channels.map((c, j) => ({ name: CHANNEL_WORD[c], color: CAT5[j], values: by.map(b => r2(b.filter(r => r.c === c).reduce((s, r) => s + r.fee, 0))) })).filter(s => s.values.some(Boolean)), { ...mk, w: chartW(), fmt: money, tick: num }), note: 'Recorded fees by return channel within the selected filters.' },
   ], `Fees are recorded at transaction level and attributed once in these aggregates. Currency and the reason for missing fees are not supplied.${partNote}`);
   const noMatches = !rows.length && hBan.length ? '<section class="insights-empty card card-pad" id="insights-no-matches" role="status"><h3>No records match these filters</h3><p>Try another combination, or reset the filters.</p><button class="btn secondary sm" data-rreset>Reset filters</button></section>' : '';
-  el.innerHTML = head + c5 + noMatches + (rows.length ? `<div class="dash-grid">${c1}${monetary?c2:'<section class="card card-pad"><h3>Recorded amounts</h3><p>Select one brand / market to view money. The files do not identify currency or exchange rates, so cross-market totals are not shown.</p></section>'}<div class="dash-two">${c3}${c4}</div><div class="dash-two">${c6}${monetary?c7:""}</div>${realOpportunity(rows)}<details class="card disclosure insights-context"><summary>Full-period context <span>Product rankings and customer history have separate coverage</span></summary><div class="card-pad">${realProducts()}${realCustomers()}</div></details></div>` : '');
+  el.innerHTML = head + c5 + noMatches + (rows.length ? `<div class="dash-grid">${c1}${monetary?c2:''}<div class="dash-two">${c3}${c4}</div><div class="dash-two">${c6}${monetary?c7:""}</div>${realOpportunity(rows)}<details class="card disclosure insights-context"><summary>Full-period context <span>Product rankings and customer history have separate coverage</span></summary><div class="card-pad">${realProducts()}${realCustomers()}</div></details></div>` : '');
   countUp(el);
 }
 
@@ -171,27 +181,21 @@ function realCustomers() {
 /** What turning online fit returns into exchanges is worth, from the selected range. */
 function realOpportunity(rows) {
   const f = UI.rdash;
-  const amount = n => f.banner==='all'?'Select a banner':Number(n).toLocaleString('en-CA',{maximumFractionDigits:2})+' (currency unknown)';
-  let fitN = 0, fitAmt = 0, onN = 0, insRo = 0, insEx = 0;
-  for (const r of rows) {
-    if (r.g !== 'fit') continue;
-    fitN += r.n; fitAmt += r.amt;
-    if (r.c === 'InStore') { if (r.dn >= REAL.exStart) { insRo += r.ro; insEx += r.ex; } } else onN += r.n;
-  }
-  const avg = fitAmt / (fitN || 1), store = insRo ? insEx / insRo : 0;
-  const targets = [[0.1, '10%'], [0.2, '20%'], ...(insRo ? [[Math.round(store * 100) / 100, `Match stores (${pct(store)})`]] : [])];
-  if (!targets.some(t => Math.abs(t[0] - f.target) < 1e-9)) f.target = 0.2;
-  const extra = f.target * onN, kept = extra * avg;
-  return `<section class="card card-pad dash-impact"><div class="eyebrow">Hypothetical conversion scenario · not measured savings</div><h3>Online fit returns turned into exchanges</h3>
-    <p class="small" style="margin:0 0 6px">${insRo ? `In store, ${pct(store)} of eligible-window fit-return transactions link to an exchange record (confirmed or assumed).` : 'No in-store fit-return comparison is available for these filters.'} The exchange file does not establish online coverage. Choose an assumed conversion share for a what-if calculation:</p>
-    <div class="seg dseg" role="group" aria-label="Exchange target" style="margin:8px 0">${targets.map(([t, l]) => `<button type="button" data-rtarget="${t}" aria-pressed="${Math.abs(f.target - t) < 1e-9}">${esc(l)}</button>`).join('')}</div>
-    <div class="imp-grid">
-      <div class="imp"><div class="small muted">Fit returns not made in store</div><div class="imp-row"><b class="mono">${num(onN)}</b></div></div>
-      <div class="imp"><div class="small muted">Assumed converted quantity</div><div class="imp-row"><b class="mono good">${num(extra)}</b></div></div>
-      <div class="imp"><div class="small muted">Illustrative amount retained</div><div class="imp-row"><b class="mono good">${amount(kept)}</b></div></div>
-      <div class="imp"><div class="small muted">Average fit refund</div><div class="imp-row"><b class="mono">${amount(avg)}</b></div></div>
-    </div>
-    <p class="small muted" style="margin:8px 0 0">Kept = fit returns outside stores × the share converted; dollars = that × the average fit refund. This is an illustrative gross amount, not profit or verified savings. Replacement cost, reverse logistics, recovery, cannibalization and customer acceptance are missing. Follows every filter and date above.</p></section>`;
+  const totals = rs => {
+    const fit = rs.filter(r=>r.g==='fit'), fitN=fit.reduce((s,r)=>s+r.n,0), fitAmt=fit.reduce((s,r)=>s+r.amt,0);
+    const onN=fit.filter(r=>r.c!=='InStore').reduce((s,r)=>s+r.n,0), storeRows=fit.filter(r=>r.c==='InStore'&&r.dn>=REAL.exStart);
+    return {fitN,avg:fitN?fitAmt/fitN:null,onN,insRo:storeRows.reduce((s,r)=>s+r.ro,0),insEx:storeRows.reduce((s,r)=>s+r.ex,0)};
+  };
+  const all=totals(rows),store=all.insRo?all.insEx/all.insRo:0;
+  const targets=[[0.1,'10%'],[0.2,'20%'],...(all.insRo?[[Math.round(store*100)/100,`Match stores (${pct(store)})`]]:[])];
+  if(!targets.some(t=>Math.abs(t[0]-f.target)<1e-9))f.target=0.2;
+  const brands=REAL.banners.filter(b=>rows.some(r=>r.b===b)).map(b=>({b,...totals(rows.filter(r=>r.b===b))}));
+  return `<details class="card disclosure dash-impact" data-rscenario ${f.scenarioOpen?'open':''}><summary>Explore an exchange scenario <span>Optional what-if estimate · not measured savings</span></summary><div class="card-pad">
+    <h3>Online fit returns turned into exchanges</h3><p class="small">${all.insRo?`In store, ${pct(store)} of fit-return transactions in the covered period link to an exchange record.`:'No in-store comparison is available for these filters.'} Choose an assumed conversion share:</p>
+    <div class="seg dseg" role="group" aria-label="Exchange target">${targets.map(([t,l])=>`<button type="button" data-rtarget="${t}" aria-pressed="${Math.abs(f.target-t)<1e-9}">${esc(l)}</button>`).join('')}</div>
+    <div class="tbl-wrap"><table class="insights-money-table"><thead><tr><th scope="col">Brand / market</th><th scope="col" class="num">Fit returns outside stores</th><th scope="col" class="num">Assumed conversions</th><th scope="col" class="num">Average fit refund</th><th scope="col" class="num">Illustrative amount retained</th></tr></thead><tbody>${brands.map(x=>`<tr><th scope="row">${esc(BANNER_WORD[x.b]||x.b)}</th><td class="num">${num(x.onN)}</td><td class="num">${num(x.onN*f.target)}</td><td class="num">${x.avg===null?'—':realMoney(x.avg)}</td><td class="num">${x.avg===null?'—':realMoney(x.onN*f.target*x.avg)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="small muted">For each brand: fit returns outside stores × assumed conversion share × that brand's average fit refund. Currency is not supplied. Amounts are kept separate; no cross-brand total is calculated. Counts are rounded for display.</p>
+    <p class="small muted">This estimates gross value retained, not profit or verified savings. Replacement cost, reverse logistics, recovery, cannibalization and customer acceptance are missing. Follows the filters and dates above.</p></div></details>`;
 }
 
 /* The policy assistant can answer questions about the real data too (totals only). */
@@ -201,11 +205,15 @@ if (REAL && typeof APPR_TOOLS !== 'undefined') APPR_TOOLS.push({
   inputSchema: { type: 'object', properties: { from: { type: 'string' }, to: { type: 'string' }, banner: { type: 'string' }, channel: { type: 'string' }, reason: { type: 'string' } }, required: ['from', 'to'] },
   execute: ({ from, to, banner, channel, reason }) => {
     const a = dayNum(from), b = dayNum(to); if (!(a <= b)) throw new Error('Dates must be YYYY-MM-DD with from before to.');
-    const A = realAgg(REAL.rows.filter(r => r.dn >= a && r.dn <= b && (!banner || r.b === banner) && (!channel || r.c === channel) && (!reason || r.g === reason)));
+    const rows = REAL.rows.filter(r => r.dn >= a && r.dn <= b && (!banner || r.b === banner) && (!channel || r.c === channel) && (!reason || r.g === reason));
+    const A = realAgg(rows);
+    const amountsByBanner = REAL.banners.filter(b=>rows.some(r=>r.b===b)).map(b=>{const t=realAgg(rows.filter(r=>r.b===b));return {banner:b,recorded_refunds:r2(t.amt),restocking_fees:r2(t.fee),failed_refund_amount:r2(t.failamt)};});
     const share = o => Object.fromEntries(Object.entries(o).sort((x, y) => y[1] - x[1]).map(([k, v]) => [k, `${num(v)} (${pct(v / (A.n || 1), 1)})`]));
-    return { range: `${from} to ${to}`, items: A.n, return_orders: A.ro, refund_worth: banner ? A.amt : null, currency: 'Not supplied', limitation: 'Amounts are recorded values, not settled payments or savings. Cross-banner monetary totals are suppressed.', by_reason: share(A.byG), by_channel: share(A.byC), by_banner: share(A.byB),
+    return { range: `${from} to ${to}`, items: A.n, return_orders: A.ro, refund_worth: banner ? A.amt : null, currency: 'Not supplied', limitation: 'Amounts are recorded values, not settled payments or savings. Monetary amounts are separated by banner without currency conversion.', amounts_by_banner:amountsByBanner, by_reason: share(A.byG), by_channel: share(A.byC), by_banner: share(A.byB),
       in_store_exchange_rate: A.insRo ? pct(A.ex / A.insRo, 1) : `no exchange data before ${REAL.ex_start}`, restocking_fees: banner ? A.fee : null, failed_refunds: A.fail, final_sale_items_refunded: A.fs };
   },
 });
 
 document.addEventListener('click',ev=>{if(ev.target.closest('[data-rreset]')){Object.assign(UI.rdash,{banner:'all',channel:'all',group:'all',range:'all',from:null,to:null});renderDashboard();}});
+
+document.addEventListener('toggle',ev=>{if(ev.target.matches?.('[data-rscenario]')&&ev.target.isConnected)UI.rdash.scenarioOpen=ev.target.open;},true);
