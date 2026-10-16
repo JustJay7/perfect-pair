@@ -1,4 +1,4 @@
-/* Actual source selection affects analytics; the agent demo keeps its fixtures. */
+/* Dataset choice controls analytics; each investigation and case also displays its provenance. */
 UI.dataSource = 'synthetic';
 UI.dataViews = {};
 
@@ -10,10 +10,8 @@ function renderDataSource() {
   });
   const note = $('#data-source-note');
   if (!note) return;
-  const analytics = ['dashboard', 'data'].includes(STATE.tab);
-  note.textContent = actual
-    ? (analytics ? 'Actual ALDO data · Dashboard and Data use the supplied files. Agent scenarios remain synthetic.' : 'This screen uses the synthetic agent demo. Actual data is available in Dashboard and Data.')
-    : (REAL ? 'Synthetic data · switch to Actual for the supplied ALDO data in Dashboard and Data.' : 'Synthetic data · actual dataset has not been imported.');
+  note.textContent = STATE.tab === 'history' ? 'Actual evidence · both agents can investigate supplied history with source links. Operational remedies require a separate simulated case.' : IDX.kase[STATE.active]?.hybrid && ['return','prevention'].includes(STATE.tab) ? 'Actual context + synthetic assumptions · new simulated case. Financial options are estimates; no real order is changed.' : actual ? 'Actual ALDO analytics · use Actual investigations for source records and agent findings. Standard agent scenarios remain synthetic.' : 'Synthetic rehearsal · switch to Actual for supplied analytics and source investigations.';
+  if (!BEDROCK_LOCAL) note.textContent += ' Standalone mode does not persist cases or enforce server controls.';
 }
 
 function setDataSource(source, navigate = true) {
@@ -25,6 +23,7 @@ function setDataSource(source, navigate = true) {
   UI.dash.src = source === 'actual' ? 'real' : 'pilot';
   UI.data = UI.dataViews[source] || { ds: source === 'actual' ? 'actual-returns' : 'orders', q: '' };
   renderDataSource();
+  if (navigate && source==='synthetic' && STATE.tab==='history') {showTab('return');return true;}
   if (navigate) showTab(source === 'actual' && !['dashboard', 'data'].includes(STATE.tab) ? 'dashboard' : STATE.tab);
   return true;
 }

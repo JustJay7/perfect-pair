@@ -32,6 +32,14 @@
       <button type="button" class="btn-ghost" id="reset-btn">Reset demo</button>
       <a class="btn-ghost" id="aws-connect" href="/connect" target="_blank" rel="noopener" hidden>Connect AWS</a>
     </div>
+    <div class="workspace-toolbar" id="agent-navigation">
+      <button class="btn secondary sm" data-tab="return">1 · Resolution — help one customer</button>
+      <button class="btn secondary sm" data-tab="prevention">2 · Prevention — propose product fixes</button>
+      <button class="btn secondary sm" data-tab="history">Investigate actual evidence</button>
+      <label>Demo staff role <select id="workspace-role"><option value="customer">Customer</option><option value="service_lead">Service lead</option><option value="supervisor">Supervisor</option><option value="store_associate">Store associate</option><option value="store_manager">Store manager</option><option value="merchandiser">Merchandiser</option></select></label>
+      <span class="small muted">Role rehearsal, not staff authentication</span>
+      <button class="btn secondary sm" id="workspace-stop" hidden>Stop current run</button>
+    </div>
     <div class="livenote" id="livenote"></div>
     <div class="livenote" id="data-source-note" role="status"></div>
   </div>
@@ -40,6 +48,8 @@
 <nav class="tabs" aria-label="Screens"><div class="wrap" id="tabs" role="tablist"></div></nav>
 
 <main class="wrap">
+  <section class="tab-panel" id="tab-history" role="tabpanel" aria-labelledby="tabbtn-history" hidden></section>
+  <section class="tab-panel" id="tab-inbox" role="tabpanel" aria-labelledby="tabbtn-inbox" hidden></section>
   <section class="tab-panel" id="tab-return" role="tabpanel" aria-labelledby="tabbtn-return" hidden></section>
   <section class="tab-panel" id="tab-store" role="tabpanel" aria-labelledby="tabbtn-store" hidden></section>
   <section class="tab-panel" id="tab-approvals" role="tabpanel" aria-labelledby="tabbtn-approvals" hidden></section>
@@ -51,7 +61,7 @@
   <section class="tab-panel" id="tab-how" role="tabpanel" aria-labelledby="tabbtn-how" hidden></section>
   <footer class="foot">
     <b>Perfect Pair</b> · Team Code Reapers · a working prototype for the BSRM × ALDO Retail Gen AI Hackathon, October 2026.
-    Agent demo customers, orders, prices, reviews and policy clauses are synthetic. Actual mode shows aggregates from the supplied ALDO files in Dashboard and Data. This is not ALDO's system or published return policy.
+    Actual investigations cite supplied historical records. Simulated new cases fill missing customer, inventory, cost and policy inputs synthetically and label those assumptions. All operational actions are simulations; the local server saves their state. The standalone file is an offline rehearsal. This is not ALDO's system or published return policy.
   </footer>
 </main>
 

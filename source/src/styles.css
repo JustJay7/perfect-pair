@@ -1025,3 +1025,19 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
 .ap-order{border:1px solid var(--line);border-radius:10px;padding:8px 12px}
 .ap-order summary{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;cursor:pointer}
 .ap-order .kv{margin:8px 0 2px}
+
+/* Evidence, saved cases and operational handoffs use the existing visual system. */
+.workspace-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0}
+.workspace-toolbar label{display:flex;align-items:center;gap:8px;font-size:12px}
+.evidence-dialog{background:var(--paper,#fff);color:var(--ink,#222);border:1px solid var(--line,#ddd);border-radius:12px;padding:24px;width:min(880px,calc(100vw - 32px));max-height:90vh;overflow:auto}
+.evidence-dialog::backdrop{background:#0008}
+.evidence-json{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:55vh;overflow:auto}
+.assumption-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.assumption-grid label{font-size:12px;display:grid;gap:5px}.assumption-grid input{width:100%;min-width:0}
+.provenance-panel{margin-bottom:16px;border-left:4px solid var(--red,#cf382d)}
+#tab-history .card{margin-bottom:18px}#tab-history .tbl-wrap{max-width:100%;overflow:auto}
+#tab-history .dataset-bar,#tab-inbox .dataset-bar{flex-wrap:wrap}#tab-history input,#tab-inbox input{max-width:100%}
+@media(max-width:600px){.evidence-dialog{padding:16px}.workspace-toolbar label{flex-wrap:wrap}.assumption-grid{grid-template-columns:1fr}.workspace-toolbar .btn{white-space:normal;text-align:left}}
+
+.mast .workspace-toolbar .btn.secondary{color:#f5f4f1;background:transparent;border-color:#696763}.mast .workspace-toolbar .btn.secondary:hover{background:#333}.mast .workspace-toolbar .muted{color:#b9b7b2}
+.assumption-grid input{border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--card,#fff);color:var(--ink)}

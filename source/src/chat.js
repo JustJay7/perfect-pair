@@ -121,7 +121,7 @@ async function askCustomer(caseId, q) {
       ans = { text: String(res.text || '').replace(/\[HANDOFF:[^\]]*\]/g, '').trim(), handoff: m ? m[1].trim() || 'The customer asked for a person.' : null };
     } else { await new Promise(r => setTimeout(r, 450)); ans = customerAnswerOffline(caseId, q); }
     bot.text = ans.text || "Sorry, I couldn't answer that. I can pass you to a person."; bot.pending = false;
-    if (ans.handoff) { const id = handoffToTeam(caseId, ans.handoff); bot.note = `Passed to our team (${id}). Expect a reply within 1 business day.`; }
+    if (ans.handoff) { const id = await handoffToTeam(caseId, ans.handoff); bot.note = `Passed to our team (${id}). Expect a reply within 1 business day.`; }
   } catch (e) {
     bot.pending = false; bot.text = e && e.code === 'not_granted' ? "The assistant needs permission to use Claude in this view. Here's what I can tell you offline." : "Sorry, I couldn't reach the assistant just now.";
     const off = customerAnswerOffline(caseId, q); bot.text += ' ' + off.text; bot.live = false;

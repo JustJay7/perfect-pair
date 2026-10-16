@@ -12,6 +12,9 @@ const definitions = JSON.parse(vm.runInContext('JSON.stringify(Object.values(TOO
 const extra = (name, description, properties, required = []) => ({ name, description, inputSchema: { type: 'object', properties, required } });
 const str = { type: 'string' };
 definitions.push(
+  extra('history_overview', 'Read the supplied history for the server-bound banner. Counts are not return rates.', {}),
+  extra('history_product', 'Read recorded reasons and source rows for the server-bound product. No invented attributes.', {}),
+  extra('history_return', 'Read the selected historical return and its uncertain joins. This does not execute a refund.', {}),
   extra('search_policy', 'Search the synthetic return policy and safety rules.', { query: str }, ['query']),
   extra('list_requests', 'List synthetic approval requests; this tool cannot approve them.', { status: { type: 'string', enum: ['pending', 'decided', 'all'] }, query: str }),
   extra('get_request', 'Read a synthetic approval request by ID or order number.', { review_id: str }, ['review_id']),
@@ -22,6 +25,7 @@ definitions.push(
 const registry = new Map(definitions.map(d => [d.name, d]));
 const ajv = new Ajv({ strict: false, allErrors: false });
 const validators = new Map(definitions.map(d => [d.name, ajv.compile(d.inputSchema)]));
+export function validateTool(name, input) { return !!validators.get(name)?.(input); }
 
 export function publicError(error) {
   if (error.code && error.status) return { code: error.code, message: error.message };
@@ -66,7 +70,7 @@ export class BedrockService {
     return this.clientFactory({ region: config.region, ...(credentials ? { credentials } : {}), maxAttempts: 1 });
   }
   status() {
-    return { provider: 'bedrock', connected: this.ready, ...this.config, error: this.lastError, mode: 'local-demo', toolExecution: 'browser-simulation' };
+    return { provider: 'bedrock', connected: this.ready, ...this.config, error: this.lastError, mode: 'local-demo', toolExecution: 'server-simulation' };
   }
   async send(client, input, signal) {
     const now = Date.now();

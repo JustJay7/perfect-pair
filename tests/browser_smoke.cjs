@@ -71,7 +71,7 @@ const {chromium} = require('playwright');
     await toggle.getByRole('button', {name: 'Actual', exact: true}).click();
     for (const id of ['return', 'store', 'approvals', 'prevention', 'evals', 'audit', 'how']) {
       await page.locator('#tabbtn-' + id).click();
-      assert.match(await page.locator('#data-source-note').textContent(), /synthetic agent demo/);
+      assert.match(await page.locator('#data-source-note').textContent(), /agent scenarios remain synthetic/);
     }
     await toggle.getByRole('button', {name: 'Synthetic', exact: true}).click();
     await page.getByRole('tab', {name: 'Evaluations', exact: true}).click();

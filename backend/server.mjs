@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { BedrockService, fail, publicError } from './bedrock.mjs';
+import { Workspace } from './workspace.mjs';
 
 const root = new URL('../', import.meta.url);
 const files = new Map([
@@ -27,7 +28,8 @@ async function jsonBody(req) {
   } catch { throw fail('invalid_request', 'The request is not a JSON object.'); }
 }
 
-export function createServer({ service = new BedrockService() } = {}) {
+export function createServer({ service = new BedrockService(), workspacePath = ':memory:', historyPath } = {}) {
+  const workspace = new Workspace({ service, path: workspacePath, ...(historyPath ? { historyPath } : {}) });
   const token = randomBytes(32).toString('hex');
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -52,10 +54,21 @@ export function createServer({ service = new BedrockService() } = {}) {
         return;
       }
       if (req.method === 'GET' && url.pathname === '/api/status') { reply(200, { ...service.status(), csrfToken: token }); return; }
+      if (req.method === 'GET' && url.pathname === '/api/workspace') { reply(200, workspace.snapshot()); return; }
+      if (req.method === 'GET' && url.pathname === '/api/history/overview') { reply(200, workspace.evidence.overview(url.searchParams.get('banner') || 'ALDO_CA')); return; }
+      if (req.method === 'GET' && url.pathname === '/api/history/products') { reply(200, workspace.evidence.products({ banner:url.searchParams.get('banner') || 'ALDO_CA', q:url.searchParams.get('q') || '', offset:Number(url.searchParams.get('offset') || 0) })); return; }
+      if (req.method === 'GET' && url.pathname === '/api/history/product') { reply(200, workspace.evidence.product(url.searchParams.get('banner'),url.searchParams.get('sku'))); return; }
+      if (req.method === 'GET' && url.pathname === '/api/history/return') { reply(200, workspace.evidence.record(Number(url.searchParams.get('row')))); return; }
+      if (req.method === 'GET' && url.pathname === '/api/history/evidence') { reply(200, workspace.evidence.resolve(url.searchParams.get('ref'))); return; }
+      if (req.method === 'GET' && url.pathname === '/api/replays') { reply(200, { replays:workspace.store.replays() }); return; }
+      if (req.method === 'GET' && /^\/api\/replays\/[a-f0-9-]{36}$/.test(url.pathname)) { reply(200, workspace.store.readReplay(url.pathname.split('/').pop())); return; }
       if (req.method !== 'POST' || !url.pathname.startsWith('/api/')) { reply(404, { error: { code: 'not_found', message: 'Page not found.' } }); return; }
       const given = Buffer.from(req.headers['x-pp-token'] || '');
       if (req.headers.origin !== origin || given.length !== token.length || !timingSafeEqual(given, Buffer.from(token))) throw fail('forbidden', 'Reload the local app before continuing.', 403);
       const body = await jsonBody(req);
+      if (url.pathname === '/api/workflow') { reply(202, workspace.submit(body)); return; }
+      if (url.pathname === '/api/workflow/stop') { workspace.stop(); reply(200,{stopped:true}); return; }
+      if (url.pathname === '/api/replays') { reply(201,{id:workspace.saveReplay(body.caseId,body.historyId)}); return; }
       if (url.pathname === '/api/connect') { reply(200, await service.connect(body)); return; }
       if (url.pathname === '/api/disconnect') { service.disconnect(); reply(200, service.status()); return; }
       if (url.pathname === '/api/runs') { reply(200, await service.start(body, abort.signal)); return; }
@@ -70,14 +83,15 @@ export function createServer({ service = new BedrockService() } = {}) {
   });
   server.requestTimeout = 120000;
   server.headersTimeout = 15000;
-  server.on('close', () => service.disconnect());
+  server.workspace=workspace;
+  server.on('close', () => { service.disconnect(); workspace.stop(); if(workspace.busy)workspace.completion.finally(()=>workspace.close());else workspace.close(); });
   return server;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try { process.loadEnvFile(new URL('../.env', import.meta.url)); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   process.env.AWS_EC2_METADATA_DISABLED = 'true';
-  const server = createServer();
+  const server = createServer({ workspacePath: process.env.PP_STATE_PATH || new URL('../local_data/workspace.sqlite', import.meta.url).pathname, historyPath:process.env.PP_HISTORY_PATH });
   const port = Number(process.env.PORT || 8787);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('PORT must be between 1024 and 65535.');
   server.on('error', error => { console.error(error.code === 'EADDRINUSE' ? `Port ${port} is in use. Stop the other server or choose another PORT.` : 'Could not start the local server.'); process.exitCode = 1; });

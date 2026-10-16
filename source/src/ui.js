@@ -43,7 +43,7 @@ function toast(text) {
 const TOOL_LABEL = n => TOOLS[n]?.label || ({ read_photo: 'Read the photo (Claude vision)' })[n] || n;
 const caseName = id => IDX.cust[IDX.kase[id].customer_id].display_name;
 const busy = id => ['investigating', 'acting'].includes(CASES[id].status);
-const anyBusy = () => !!STATE.running || DATA.cases.some(k => busy(k.case_id)) || STATE.prevention.status === 'running' || STATE.evalRunning;
+let anyBusy = () => !!STATE.running || DATA.cases.some(k => busy(k.case_id)) || STATE.prevention.status === 'running' || STATE.evalRunning;
 
 /* ---------- masthead and tabs ---------- */
 function renderBarcode() {
@@ -63,10 +63,10 @@ function renderMast() {
   $('#aws-connect').hidden = !BEDROCK_LOCAL;
   $('#failsw').checked = STATE.failureSwitch;
   $('#livenote').innerHTML = live.available
-    ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Tools and safety rules still run as browser simulations.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
+    ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['return', 'Return'], ['store', 'Store counter'], ['approvals', 'Approvals'], ['dashboard', 'Dashboard'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['return', 'Resolution agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store counter'], ['approvals', 'Approvals'], ['dashboard', 'Dashboard'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() {
   const n = pendingReviews().length;
@@ -84,6 +84,7 @@ function moveInk(animate = true) {
 }
 function showTab(id) {
   STATE.tab = id;
+  if(id==='history'&&REAL)setDataSource('actual',false);
   for (const [t] of TABS) $('#tab-' + t).hidden = t !== id;
   renderTabsBar(); moveInk(true);
   renderTab(id);
@@ -115,7 +116,7 @@ function countUp(root) {
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.matches(SEL)) scan(n.parentNode); else scan(n); } }).observe(main, { childList: true, subtree: true });
 })();
 function renderTab(id) {
-  ({ return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  ({ history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
   renderDataSource();
 }
 
@@ -1345,7 +1346,7 @@ function renderDashboard() {
     ['Share of margin kept', pct(pre.saved / (pre.margin || 1)), pct(post.saved / (post.margin || 1)), post.saved > pre.saved]];
   const impact = `<section class="card card-pad dash-impact"><div class="eyebrow">Before and after the pilot</div><h3>The 3 months before Perfect Pair, against the pilot since ${fmtDate(DATA.returns_ledger.pilot)}</h3>
     <div class="imp-grid">${imp.map(([l, a, b, good]) => `<div class="imp"><div class="small muted">${esc(l)}</div><div class="imp-row"><span class="mono">${esc(a)}</span><span class="imp-arrow">→</span><b class="mono ${good ? 'good' : ''}">${esc(b)}</b></div></div>`).join('')}</div>
-    <p class="small muted" style="margin:8px 0 0">Synthetic data generated for the demo, with the pilot's effect built in. In a real pilot the Measure step (difference-in-differences against stores without the pilot) would prove it.</p></section>`;
+    <p class="small muted" style="margin:8px 0 0">Synthetic data generated for the demo, with the pilot's effect built in. In a real pilot, a comparison with suitable control stores would help estimate the effect, subject to its assumptions.</p></section>`;
   el.innerHTML = head + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div>${c7}</div>`;
   countUp(el);
 }
@@ -1354,9 +1355,10 @@ function renderDashboard() {
 function renderPrevention() {
   const el = $('#tab-prevention');
   const P = STATE.prevention;
-  const rows = returnRateReport();
+  const hybrid=Object.values(IDX.kase).find(k=>k.hybrid && caseCtx(k.case_id).line.style_id===P.styleId);
+  const rows = returnRateReport().filter(r=>P.styleId?r.style_id===P.styleId:!IDX.style[r.style_id]?.hybrid);
   const fl = { flagged: ['red', 'Flagged'], watch: ['warn', 'Watching'], testing: ['info', 'Testing a fix'], fixed: ['ok', 'Fix kept'], ok: ['neutral', 'OK'] };
-  el.innerHTML = `<div class="section-head"><div><div class="eyebrow">Prevention agent · every night (EventBridge, 2 AM)</div><h2>Find the cause, fix it, prove it worked</h2><p>The agent compares every style's fit-return rate with similar styles over 28 days, reads why customers sent them back, drafts a fix for a merchandiser to approve, then measures whether returns really dropped.</p></div><button type="button" class="btn red" id="prev-run" ${anyBusy() ? 'disabled' : ''}>${icon('play')}Run tonight's analysis</button></div>
+  el.innerHTML = `<div class="section-head"><div><div class="eyebrow">Prevention agent · simulated analysis</div><h2>Investigate a cause, propose a fix, test its effect</h2><p>The agent compares every style's fit-return rate with similar styles over 28 days, reads why customers sent them back, drafts a fix for a merchandiser to approve, then measures whether returns really dropped.</p></div><button type="button" class="btn red" id="prev-run" ${anyBusy() ? 'disabled' : ''}>${icon('play')}Run tonight's analysis</button></div>
   <div class="card" style="margin-bottom:16px"><div class="card-pad" style="padding-bottom:8px"><div class="eyebrow">F1 · Spot · last 28 days</div><p class="small muted" style="margin:4px 0 0">Flag when a style's fit-return rate is at least 1.5× its category and it has at least 15 fit returns. The red mark is 1.5×.</p></div>
   <div class="tbl-wrap" style="border:0;border-top:1px solid var(--line);border-radius:0 0 var(--r) var(--r)"><table><thead><tr><th>Style</th><th>Category</th><th class="num">Units</th><th class="num">Fit returns</th><th class="num">Rate</th><th class="num">Category</th><th>Ratio</th><th>Status</th></tr></thead><tbody>
   ${rows.slice(0, 9).map(r => `<tr><td><b>${esc(r.product)}</b><br><span class="small muted mono">${esc(r.style_id)}</span></td><td>${esc(r.category)}</td><td class="num">${r.units_sold_28d}</td><td class="num">${r.fit_returns}</td><td class="num">${pct(r.fit_return_rate, 1)}</td><td class="num">${pct(r.category_rate, 1)}</td><td><div class="ratio"><span class="t"><span class="f" style="width:${clamp(r.ratio / 2.5, 0, 1) * 100}%"></span><span class="m" style="left:${1.5 / 2.5 * 100}%"></span></span><span class="mono small">${r.ratio.toFixed(2)}×</span></div></td><td><span class="pill ${fl[r.flag][0]}">${fl[r.flag][1]}</span>${r.quality_spike ? ' <span class="pill bad">Quality spike</span>' : ''}</td></tr>`).join('')}
@@ -1366,6 +1368,8 @@ function renderPrevention() {
     <section class="stack" id="prev-findings"></section>
   </div>
   <div id="prev-f4" style="margin-top:20px"></div>`;
+  if(hybrid)el.insertAdjacentHTML('afterbegin',caseProvenancePanel(hybrid.case_id));
+  el.insertAdjacentHTML('afterbegin','<p class="small muted">Operational Prevention uses synthetic reviews, inventory and test outcomes. Use Actual investigations for conclusions based only on supplied history.</p>');
   renderPrevHead();
   const list = $('#trace-prevent');
   list.innerHTML = P.events.length ? P.events.map(e => evHTML(e, P.stats.t0)).join('') : `<li class="trace-empty"><b>Not run yet tonight.</b><br>Press <b>Run tonight's analysis</b>. The agent reads the report, investigates each flagged style and drafts fixes.</li>`;
@@ -1426,14 +1430,14 @@ function f4Card(sid, m) {
       <div class="chart-box" id="did-${sid}"></div>
       <div class="stack"><div class="stat-row"><div class="stat"><div class="l">${esc(m.style.split(' ')[0])}</div><div class="v">${pct(m.before, 1)} → ${pct(m.after, 1)}</div></div><div class="stat"><div class="l">Similar styles</div><div class="v">${pct(m.compBefore, 1)} → ${pct(m.compAfter, 1)}</div></div></div>
       <div class="stat"><div class="l">Effect of the fix (difference-in-differences)</div><div class="v">${(m.did * 100).toFixed(1)} pts</div><div class="small muted">90% range ${(m.lo * 100).toFixed(1)} to ${(m.hi * 100).toFixed(1)} pts · ${m.ordersAfter} orders over ${m.weeksAfter} weeks</div></div>
-      <p class="small" style="margin:0">${m.keep ? `The whole 90% range is below zero, so the drop is real. The note stays and the Resolution agent now recommends the right fit for this style.` : `The 90% range crosses zero, so we can't tell the note helped. It's rolled back; next the agent tests another explanation (heel cup depth in small sizes) and flags the product team.`}</p></div>
+      <p class="small" style="margin:0">${m.keep ? `The whole 90% range is below zero, so this simulated test supports keeping the note. The note stays and the Resolution agent now recommends the right fit for this style.` : `The 90% range crosses zero, so we can't tell the note helped. It's rolled back; next the agent tests another explanation (heel cup depth in small sizes) and flags the product team.`}</p></div>
     </div></article>`;
 }
 function measureNow(sid) {
   const m = measureFix(sid);
   STATE.prevention.measured[sid] = m;
   if (!m.keep) { delete SYS.pageNotes[sid]; const d = SYS.drafts[SYS.measuring[sid].draft]; if (d) d.status = 'rolled back after measuring'; }
-  else { const d = SYS.drafts[SYS.measuring[sid].draft]; if (d) d.status = 'kept: proven to cut returns'; }
+  else { const d = SYS.drafts[SYS.measuring[sid].draft]; if (d) d.status = 'kept: supported by simulated test'; }
   renderPrevention();
 }
 function drawDiD(sid) {
@@ -1701,13 +1705,13 @@ permit (
 function renderHow() {
   const el = $('#tab-how');
   const layers = [
-    ['Agent brain', 'Live: Claude, through your Claude account. Scripted: the same tools in a fixed order.', 'Claude on Amazon Bedrock, run by the Strands Agents SDK on AgentCore Runtime; Nova for the fast path.'],
+    ['Agent brain', 'Live: Claude through Amazon Bedrock on the local server. Scripted: the same tools in a fixed order.', 'Claude on Amazon Bedrock, run by the Strands Agents SDK on AgentCore Runtime; Nova for the fast path.'],
     ['Reading photos', "New customers: Claude looks at the uploaded photo before the agent starts. Scripted: a person grades it.", 'Claude on Bedrock reads the photo inside the check_item_photo Lambda.'],
     ['Customer history', 'An order history for every customer, with margin, return costs and inspection results.', 'S3 and Athena; the profile is a Lambda the approval screen calls.'],
-    ['Tools', 'JavaScript functions in this page, over the synthetic data.', 'AWS Lambda functions behind AgentCore Gateway (MCP), with the same names and schemas.'],
+    ['Tools', 'Server-side JavaScript tools and SQLite state in local HTTP mode. Standalone HTML uses browser simulations.', 'AWS Lambda functions behind AgentCore Gateway (MCP), with the same names and schemas.'],
     ['Safety checks', 'A policy engine in code (R1 to R12) runs before every action.', 'Cedar policies in AgentCore Policy on the Gateway, plus the same data checks inside each Lambda.'],
     ['Input and output checks', 'Personal details masked; instructions aimed at the agent flagged; amounts in messages checked.', 'Bedrock Guardrails: sensitive-information filters, prompt-attack filter, grounding check.'],
-    ['Data', 'JSON inside this page.', 'DynamoDB for live lookups, S3 and Athena for history, a Bedrock Knowledge Base for the policy.'],
+    ['Data', 'Supplied history in read-only SQLite; synthetic and hybrid operational inputs are labelled separately.', 'DynamoDB for live lookups, S3 and Athena for history, a Bedrock Knowledge Base for the policy.'],
     ['People', 'Approvals and Store counter tabs.', 'Step Functions task tokens pause the workflow until someone approves; screens on AWS Amplify.'],
     ['Trace, audit, tests', 'The reasoning panel, the Audit tab and the Evaluations tab.', 'AgentCore Observability traces; AgentCore Evaluations replays the scenarios.'],
     ['Nightly run', 'The button on the Prevention agent tab.', 'EventBridge Scheduler starts the Prevention agent every night.'],
@@ -1715,8 +1719,8 @@ function renderHow() {
   const tools = Object.values(TOOLS);
   el.innerHTML = `<div class="section-head"><div><div class="eyebrow">For the team and the judges</div><h2>How the demo works</h2><p>The agent is given a goal, a set of tools and the rules. It decides which tools to call, reads what comes back and adapts. Every action passes a safety check in code first, so the model can't spend money it isn't allowed to.</p></div></div>
   <div class="card card-pad" style="margin-bottom:16px"><div class="loop">${['Plan', 'Tool call', 'Observe', 'Reflect', 'Next action'].map((s, i) => `${i ? '<span class="arr">→</span>' : ''}<span class="st">${s}</span>`).join('')}<span class="arr">↺</span></div><p class="small muted" style="margin:10px 0 0">Between the agent and every action sits the policy engine. Between the customer and the agent sit the input and output checks.</p></div>
-  <h3 style="margin:22px 0 10px">In this demo, and at the event</h3>
-  <div class="tbl-wrap"><table><thead><tr><th>Piece</th><th>In this demo</th><th>At the event (AWS)</th></tr></thead><tbody>${layers.map(l => `<tr><td><b>${esc(l[0])}</b></td><td>${esc(l[1])}</td><td>${esc(l[2])}</td></tr>`).join('')}</tbody></table></div>
+  <h3 style="margin:22px 0 10px">Implemented now, and optional AWS deployment</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Piece</th><th>In this demo</th><th>Future option (not deployed)</th></tr></thead><tbody>${layers.map(l => `<tr><td><b>${esc(l[0])}</b></td><td>${esc(l[1])}</td><td>${esc(l[2])}</td></tr>`).join('')}</tbody></table></div>
   <h3 style="margin:26px 0 10px">Safety rules</h3>
   <div class="tbl-wrap"><table><thead><tr><th>Rule</th><th>What it does</th><th>Policy</th><th>Enforced by</th></tr></thead><tbody>${Object.entries(RULES).map(([id, r]) => `<tr><td><span class="pill ok">${id}</span> <b>${esc(r.name)}</b></td><td>${esc(r.text)}</td><td>${esc(r.clause)}</td><td>${esc(r.where)}</td></tr>`).join('')}</tbody></table></div>
   <details style="margin-top:12px"><summary>The Cedar policies we'll load in AgentCore Policy</summary><pre>${esc(CEDAR)}</pre></details>
@@ -1742,7 +1746,7 @@ function buildActPromptPreview() {
 
 /* ---------- events wiring ---------- */
 function wire() {
-  document.addEventListener('click', ev => {
+  document.addEventListener('click', async ev => {
     const t = ev.target.closest('button, a');
     if (!t) return;
     if (t.dataset.source) return setDataSource(t.dataset.source);
@@ -1758,6 +1762,7 @@ function wire() {
     if (t.id === 'stop-btn') return stopRun();
     if (t.dataset.choose) { UI.sel = { caseId: STATE.active, option: t.dataset.choose, method: UI.sel.caseId === STATE.active ? UI.sel.method : undefined }; return renderPhone(); }
     if (t.id === 'confirm-btn') return confirmChoice();
+    if (t.dataset.restart && BEDROCK_LOCAL) return toast('Open the saved case to continue. Reset demo starts a fresh rehearsal and retains recorded replays.');
     if (t.dataset.restart) { const id = STATE.active; if (IDX.kase[id].custom) IDX.kase[id].photo.analyzed = false; clearCaseRecords(id); CASES[id] = Object.assign(newCaseState(id), { words: CASES[id].words, runId: CASES[id].runId }); UI.sel = {}; renderTabsBar(); return renderReturn(); }
     if (t.id === 'policy-review-btn') return askPolicyReview(STATE.active);
     if (t.dataset.apopen || t.dataset.apfocus || t.dataset.apback) { const id = t.dataset.apfocus || t.dataset.apopen; UI.apFocus = t.dataset.apback || UI.apFocus === id ? null : id; renderApprovals(); const tp = $('#tab-approvals'); if (tp) window.scrollTo({ top: Math.max(0, tp.getBoundingClientRect().top + window.scrollY - 70) }); return; }
@@ -1771,10 +1776,10 @@ function wire() {
     if (t.dataset.dclear) { UI.dash.range = '12m'; UI.dash.from = UI.dash.to = null; return renderDashboard(); }
     if (t.dataset.copy) { const v = t.dataset.copy; try { navigator.clipboard.writeText(v).then(() => toast(`Copied ${v}`), () => toast(`Copying is blocked here: ${v}`)); } catch (e) { toast(`Copying is blocked here: ${v}`); } return; }
     if (t.dataset.apfilter) { UI.apFilter = t.dataset.apfilter; return renderApprovals(); }
-    if (t.dataset.review) { decideReview(t.dataset.review, t.dataset.choice === 'resolve' ? 'resolve' : t.dataset.choice); if (t.dataset.choice === 'resolve') { const r = SYS.reviews[t.dataset.review]; if (r) { r.status = 'approved'; r.decision = 'resolved with the customer'; } } renderTabsBar(); if (STATE.tab === 'approvals') renderApprovals(); if (STATE.tab === 'prevention') renderPrevention(); if (STATE.tab === 'store') renderStore(); return; }
+    if (t.dataset.review) { await decideReview(t.dataset.review, t.dataset.choice); renderTabsBar(); if (STATE.tab === 'approvals') renderApprovals(); if (STATE.tab === 'prevention') renderPrevention(); if (STATE.tab === 'store') renderStore(); return; }
     if (t.dataset.counter) { UI.counter = { caseId: t.dataset.counter, store: null, grade: null }; return renderStore(); }
     if (t.dataset.grade) { UI.counter.grade = t.dataset.grade; return renderStore(); }
-    if (t.id === 'counter-confirm') { const store = $('#counter-store').value; UI.counter.store = store; gradeAtCounter(UI.counter.caseId, store, UI.counter.grade); return renderStore(); }
+    if (t.id === 'counter-confirm') { const store = $('#counter-store').value; UI.counter.store = store; await gradeAtCounter(UI.counter.caseId, store, UI.counter.grade); return renderStore(); }
     if (t.id === 'prev-run') return runPrevention();
     if (t.dataset.f4) return measureNow(t.dataset.f4);
     if (t.id === 'eval-all') return runEvalsSeq(DATA.cases.filter(k => k.expect).map(k => k.case_id));
@@ -1784,7 +1789,7 @@ function wire() {
     if (t.id === 'mode-live' && STATE.live.available) { STATE.mode = 'live'; renderMast(); return renderTab(STATE.tab); }
     if (t.id === 'mode-scripted') { STATE.mode = 'scripted'; renderMast(); return renderTab(STATE.tab); }
     if (t.id === 'theme-btn') return setTheme(isDark() ? 'light' : 'dark', true);
-    if (t.id === 'reset-btn') { if (anyBusy()) return toast('Wait for the current run to finish'); resetAll(); if (STATE.active !== '__new' && !CASES[STATE.active]) STATE.active = 'maya'; UI.sel = {}; UI.counter = { caseId: null }; renderTabsBar(); renderTab(STATE.tab); return toast('Demo reset'); }
+    if (t.id === 'reset-btn') { if (anyBusy()) return toast('Wait for the current run to finish'); await resetAll(); if (STATE.active !== '__new' && !CASES[STATE.active]) STATE.active = 'maya'; UI.sel = {}; UI.counter = { caseId: null }; renderTabsBar(); renderTab(STATE.tab); return toast('Demo reset'); }
   });
   document.addEventListener('change', ev => {
     if (ev.target.dataset && ev.target.dataset.ddate) {

@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "start": "node backend/server.mjs",
-    "test": "node --test tests/bedrock.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "test:browser": "node tests/browser_smoke.cjs",
     "test:bedrock-browser": "node tests/bedrock_browser.cjs",
     "test:bedrock-live": "node tests/bedrock_live.cjs",
-    "check:aws": "node backend/check-aws.mjs"
+    "check:aws": "node backend/check-aws.mjs",
+    "import:history": "python3 source/import_evidence.py",
+    "test:workspace-browser": "node tests/workspace_browser.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "3.1152.0",

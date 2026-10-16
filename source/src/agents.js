@@ -79,6 +79,11 @@ async function execTool(name, input, ctx) {
   ctx.emit({ kind: 'call', tool: name, stage: def.stage, why, args });
   try {
     const res = await def.run(input, ctx);
+    const provenanceCase = ctx.caseId ? IDX.kase[ctx.caseId] : Object.values(IDX.kase).find(k => k.hybrid && caseCtx(k.case_id).line.style_id === ctx.scope.styleId);
+    if (provenanceCase?.hybrid && res && typeof res === 'object') {
+      res.provenance = { ...provenanceCase.provenance, scope: 'Simulated operational inputs; actual history is context only.' };
+      if (name === 'look_up_order_and_customer' || name === 'get_return_rate_report') res.actual_context = provenanceCase.evidence;
+    }
     ctx.last[name] = res;
     if (name === 'find_exchange_options' && ctx.caseId && CASES[ctx.caseId]) {
       const cs = CASES[ctx.caseId];
@@ -511,7 +516,7 @@ const PREVENT_TOOLS = ['get_return_rate_report', 'read_return_comments', 'read_r
    Scripted backup: the same tools in a fixed order, for rehearsal and
    as the fallback when the live agent is unavailable.
    ===================================================================== */
-const pause = () => sleep(STATE.sandbox ? 0 : 420 + Math.random() * 380);
+const pause = () => sleep(STATE.sandbox || globalThis.PP_SERVER ? 0 : 420 + Math.random() * 380);
 async function think(ctx, text) { await pause(); ctx.emit({ kind: 'think', text, phase: ctx.phase }); }
 async function step(ctx, name, input) { await pause(); return execTool(name, input, ctx); }
 function classifyWords(w) {
@@ -870,6 +875,7 @@ async function act(caseId, opts = {}) {
   const ctx = makeCtx(scope, 'act', mode);
   ctx.emitPhase = 'act';
   const origEmit = ctx.emit; ctx.emit = ev => origEmit(Object.assign({ phase: 'act' }, ev));
+  cs.actionMode = mode;
   cs.status = 'acting'; cs.error = null; cs.stats.t1 = Date.now();
   const opt = cs.decision.options.find(o => o.type === cs.chosen.option);
   const label = opt ? opt.title : cs.chosen.option.replace('_', ' ');
@@ -995,7 +1001,7 @@ async function decideReview(reviewId, choice) {
   const caseId = r.case_id;
   const cs = caseId ? CASES[caseId] : null;
   const line = caseId ? caseCtx(caseId).line : null;
-  const resume = (option, covers, bonus) => {
+  const resume = async (option, covers, bonus) => {
     r.status = 'approved'; r.covers = covers; r.max_amount = line.selling_price;
     const ctx = makeCtx({ caseId }, 'act', STATE.mode);
     const sc = scoreOptions(caseId, cs.decision?.cost_owner || 'customer', [option === 'store_credit' ? 'refund' : option]).options[0];
@@ -1008,7 +1014,7 @@ async function decideReview(reviewId, choice) {
     cs.chosen = { option, method: 'store_dropoff', dropStore: best ? best.location_id : DATA.locations.find(l => l.type === 'store' && l.region === caseCtx(caseId).c.region)?.location_id, by: 'approver', approver: r.approver, bonus: bonus || 0 };
     ctx.emit({ kind: 'human', text: `${r.approver} approved: ${opt.title}.`, phase: 'act' });
     writeAudit(caseId, 'review', ctx, { review: { id: r.id, decision: choice, by: r.decided_by } });
-    act(caseId);
+    await act(caseId);
   };
   if (r.kind === 'counter') return decideCounter(r, choice);
   if (r.kind === 'chat') { r.status = 'approved'; r.decision = 'resolve'; UI.onApprovalsChanged?.(); return; }
@@ -1020,20 +1026,20 @@ async function decideReview(reviewId, choice) {
     return;
   }
   if (r.kind === 'action') {
-    if (choice === 'approve') { r.status = 'approved'; r.covers = [r.action?.action || 'issue_refund']; r.max_amount = Number(r.action?.params?.amount ?? line.selling_price); CASES[caseId].status = 'acting'; act(caseId, { resumed: true }); }
+    if (choice === 'approve') { r.status = 'approved'; r.covers = [r.action?.action || 'issue_refund']; r.max_amount = Number(r.action?.params?.amount ?? line.selling_price); CASES[caseId].status = 'acting'; await act(caseId, { resumed: true }); }
     else { r.status = 'rejected'; cs.status = 'needs_person'; cs.message = 'A member of our team will contact you about the next step within 1 business day.'; UI.onCaseChanged?.(caseId); }
     UI.onApprovalsChanged?.(); return;
   }
   if (r.kind === 'policy') {
-    if (choice === 'exception') resume('refund', ['issue_refund']);
+    if (choice === 'exception') await resume('refund', ['issue_refund']);
     else { r.status = 'rejected'; cs.status = 'declined'; cs.message = `A member of our team reviewed your request. The item was sold as final sale, so we can't take it back (policy §2.3). If it turns out to be defective, reply and we'll take care of it.`; writeAudit(caseId, 'review', makeCtx({ caseId }, 'review', STATE.mode), { review: { id: r.id, decision: 'upheld' } }); UI.onCaseChanged?.(caseId); }
     UI.onApprovalsChanged?.(); return;
   }
   // a whole case sent to a person in Phase 1
-  if (choice === 'approve_refund') resume('refund', ['issue_refund']);
-  else if (choice === 'approve_credit') resume('store_credit', ['issue_store_credit']);
-  else if (choice === 'approve_credit_bonus') resume('store_credit', ['issue_store_credit'], creditOptions(caseId).options.find(o => o.key === 'approve_credit_bonus').bonus);
-  else if (choice === 'approve_smart_credit') resume('smart_credit', ['issue_store_credit']);
+  if (choice === 'approve_refund') await resume('refund', ['issue_refund']);
+  else if (choice === 'approve_credit') await resume('store_credit', ['issue_store_credit']);
+  else if (choice === 'approve_credit_bonus') await resume('store_credit', ['issue_store_credit'], creditOptions(caseId).options.find(o => o.key === 'approve_credit_bonus').bonus);
+  else if (choice === 'approve_smart_credit') await resume('smart_credit', ['issue_store_credit']);
   else if (choice === 'decline') { r.status = 'rejected'; cs.status = 'declined'; cs.message = 'We looked at your return with the photo you sent. The boots show wear on the soles, so we can\'t accept them as unworn (policy §2.4). If you think we got this wrong, reply and a supervisor will look again.'; writeAudit(caseId, 'review', makeCtx({ caseId }, 'review', STATE.mode), { review: { id: r.id, decision: 'declined §2.4', by: r.decided_by } }); }
   else if (choice === 'more_info') { r.status = 'more_info'; cs.status = 'more_info'; cs.message = 'Thanks for your patience. Could you send a close-up photo of the damage, and one of the soles? We\'ll get back to you within 1 business day of receiving them.'; }
   UI.onApprovalsChanged?.(); UI.onCaseChanged?.(caseId);
@@ -1216,9 +1222,10 @@ async function runPrevention(opts = {}) {
   const mode = opts.mode || STATE.mode;
   const P = STATE.prevention = Object.assign(newPrevention(), { measured: STATE.prevention?.measured || {} });
   P.status = 'running'; P.mode = mode; P.stats.t0 = Date.now();
-  for (const [id, d] of Object.entries(SYS.drafts)) if (d.status === 'awaiting merchandiser approval') { d.status = 'superseded'; const rv = Object.values(SYS.reviews).find(r => r.draft_id === id && r.status === 'pending'); if (rv) rv.status = 'superseded'; }
+  for (const [id, d] of Object.entries(SYS.drafts)) if (d.status === 'awaiting merchandiser approval' && (opts.styleId ? d.style_id === opts.styleId : !IDX.style[d.style_id]?.hybrid)) { d.status = 'superseded'; const rv = Object.values(SYS.reviews).find(r => r.draft_id === id && r.status === 'pending'); if (rv) rv.status = 'superseded'; }
   UI.onApprovalsChanged?.();
-  const scope = { prevention: true };
+  const scope = { prevention: true, styleId: opts.styleId || null };
+  P.styleId = scope.styleId;
   const ctx = makeCtx(scope, 'prevent', mode);
   UI.renderPrevention?.();
   let out;

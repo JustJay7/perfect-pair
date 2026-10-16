@@ -96,7 +96,7 @@ const ordinal = n => n + (['th', 'st', 'nd', 'rd'][((n % 100) - 20) % 10] || ['t
 function invRow(sku, loc) { return (IDX.invBySku[sku] || []).find(r => r.location_id === loc); }
 function atp(sku, loc) {
   const r = invRow(sku, loc); if (!r) return 0;
-  const held = Object.values(SYS.holds).filter(h => h.sku === sku && h.location_id === loc && (h.status === 'held' || h.status === 'allocated')).length;
+  const held = Object.values(SYS.holds).filter(h => h.sku === sku && h.location_id === loc && (h.status === 'allocated' || (h.status === 'held' && Date.now() - h.created < META.hold_hours * 3600000))).length;
   return Math.max(0, r.available_to_promise - held - (SYS.sold[sku + '|' + loc] || 0));
 }
 function weeksOfSupply(sku, loc) {
@@ -127,7 +127,6 @@ function caseByReturnId(returnId) {
    so every tool and rule works unchanged. Removed again by Reset demo. */
 let CUSTOM_SEQ = 0;
 function createCustomCase(spec) {
-  removeCustomCases();
   const n = ++CUSTOM_SEQ;
   const s = IDX.sku[spec.sku]; if (!s) throw new Error('Pick a product, colour and size.');
   const st = IDX.style[s.style_id];
@@ -614,6 +613,7 @@ function gate(action, caseId, p, ctx) {
   if (money1 && cs.flags?.suspected_abuse && !approvalCovers(caseId, action, p.amount ?? line.selling_price)) needs('R8', 'This case is flagged for possible abuse. A supervisor decides.', 2);
   if (money1) {
     const amt = Number(p.amount ?? line.selling_price);
+    if (!Number.isFinite(amt) || amt < 0) deny('R1', 'A financial amount must be a finite, nonnegative number.');
     if (amt > META.agent_limit && !approvalCovers(caseId, action, amt)) needs('R1', `${money(amt)} is over the agent's $250 limit.`, amt > META.tier1_limit ? 2 : 1);
     ok('R1', amt > META.agent_limit ? `${money(amt)} approved by a person` : `${money(amt)} is within the $250 limit`);
   }
@@ -627,6 +627,8 @@ function gate(action, caseId, p, ctx) {
     case 'create_exchange': {
       const h = SYS.holds[p.hold_id];
       if (!h || h.status !== 'held') deny('R3', `No active hold ${p.hold_id || ''}. Reserve the pair first with reserve_pair, then pass its hold_id.`);
+      if (h.case_id !== caseId) deny('R3', 'This reservation belongs to a different case.');
+      if (Date.now() - h.created > META.hold_hours * 3600000) deny('R3', 'This reservation has expired.');
       if (h.sku !== p.new_sku) deny('R3', `Hold ${h.hold_id} is for ${h.sku}, not ${p.new_sku}.`);
       const diff = IDX.style[IDX.sku[p.new_sku].style_id].price - line.selling_price;
       if (diff > 50 && !approvalCovers(caseId, 'create_exchange', IDX.style[IDX.sku[p.new_sku].style_id].price)) needs('R3', `Price difference of ${money(diff)} is over $50.`, 1);
@@ -635,6 +637,7 @@ function gate(action, caseId, p, ctx) {
     }
     case 'issue_store_credit': {
       const amt = Number(p.amount), bonus = Number(p.in_store_bonus || 0), days = Number(p.bonus_valid_days || 0);
+      if (!Number.isFinite(bonus) || bonus < 0 || !Number.isFinite(days) || days < 0 || (bonus > 0 && days === 0)) deny('R2', 'Bonus and duration must be valid nonnegative values, with a positive duration for a bonus.');
       if (amt > line.selling_price + 0.001) deny('R1', `Credit of ${money(amt)} is more than the ${money(line.selling_price)} paid.`);
       const cap = Math.min(META.bonus_pct * amt, META.bonus_cap);
       if (bonus > cap + 0.001) deny('R2', `Bonus ${money(bonus)} is over the cap of ${money(cap)}.`);
@@ -1103,8 +1106,8 @@ defTool('get_return_rate_report', {
   group: 'prevent', stage: 'prevent', label: 'Fit-return report (F1)',
   description: 'Last 28 days, per footwear style: units sold, fit returns, fit-return rate, category rate, ratio, and a flag (flagged = at least 1.5× the category and at least 15 fit returns; watch = high ratio but too few returns; testing = a fix is being measured; fixed = a fix was measured and kept). Also flags quality spikes (at least 8 quality returns and 3× the baseline).',
   props: {}, required: [],
-  run() {
-    const rows = returnRateReport();
+  run(p, ctx) {
+    const rows = returnRateReport().filter(r => ctx?.scope.styleId ? r.style_id === ctx.scope.styleId : !IDX.style[r.style_id]?.hybrid);
     return { window_days: 28, thresholds: { ratio: META.f1.ratio, min_fit_returns: META.f1.min_fit_returns }, rows: rows.filter(r => r.flag !== 'ok' || r.quality_spike).concat(rows.filter(r => r.flag === 'ok' && !r.quality_spike).slice(0, 3)), sources: ['returns_history_28d', 'units_sold_28d'] };
   },
   summary: r => {

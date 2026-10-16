@@ -1,9 +1,9 @@
 # Perfect Pair
 
 Team Code Reapers · BSRM × ALDO Retail Gen AI Hackathon, October 2026.
-An agentic returns prototype: a Return agent that turns returns into exchanges or store credit, a Prevention agent that finds mis-sized styles, a store-counter check that gates every refund, and approvals for the people in the loop.
+An agentic returns prototype: a Return agent that turns returns into exchanges or store credit, a Prevention agent that investigates potential product issues, a store-counter check that gates every refund, and approvals for the people in the loop.
 
-> **Confidential.** The Dashboard is built from aggregates of ALDO Group's returns extract (`source/src/real.json`, also baked into the HTML). Keep this zip inside the team. Everything else (customers, orders, photos, costs, policy text) is synthetic.
+> **Private team project.** Supplied ALDO data is shared with invited teammates. Historical investigations use actual records; operational cases use synthetic missing inputs and clearly display their provenance. Source files and local SQLite databases stay out of Git.
 
 ## Open the demo
 Double-click `perfect_pair_demo_offline.html` and open it in Chrome. The **Scripted backup** runs with no internet. For Amazon Bedrock, use the local app below. Claude-hosted pages can still use the original Claude connection.
@@ -11,8 +11,7 @@ Double-click `perfect_pair_demo_offline.html` and open it in Chrome. The **Scrip
 ## Connect Amazon Bedrock
 
 On this Mac, double-click **Start Perfect Pair.command**. It uses the bundled
-Node runtime when available. For other computers, install Node.js 22 or newer
-(Node.js 24 recommended), then run `npm ci` and `npm start` in the project folder.
+Node runtime when available. For other computers, install Node.js 24 or newer, then run `npm ci` and `npm start` in the project folder.
 
 1. Open **http://127.0.0.1:8787/connect**.
 2. Enter the organizer-approved region and model/inference profile ID.
@@ -50,33 +49,54 @@ The connection test alone does not verify a full agent workflow.
 
 ### Architecture and current boundary
 
-Browser interface → local Node backend → Bedrock Converse → requested demo tools
-in the browser → tool results through the backend → final model response.
+Browser → local Node server → Resolution / Prevention workflow → Bedrock Converse
+→ server tools and policy checks → SQLite checkpoint → browser view.
 
-The backend keeps the model transcript, supplies the tool schemas from our source,
-validates tool names/arguments and matching results, handles cancellation, and limits
-runs to 8 model calls / 16,000 output tokens. Each call allows at most 4,096 output
-tokens. There is also a 120-call hourly limit and a five-minute run expiry. These
-are usage controls, not a dollar spending cap. No automatic SDK retries are used.
-No raw credentials, prompts or tool results are logged by this server. The local
-form and API reject other web origins; only the demo and connection page are served.
+- Resolution can review one historical return, or operate a separate simulated
+  case after a customer chooses a remedy. Payments and exchanges stay held until
+  inspection, except an eligible keep-it refund.
+- Prevention can investigate one actual SKU with source-linked observations, or
+  run the existing synthetic product-fix workflow. For a hybrid case, operational
+  Prevention is scoped to that simulated product. A demo merchandiser approves
+  page changes; measurement uses explicitly synthetic test data.
+- Historical agents have only read tools, bound to the selected product/return.
+  Each finding must cite evidence actually returned by a tool. They cannot issue
+  a second refund for a past return. Citation validation establishes provenance,
+  not the correctness of every model interpretation.
+- Operational tools run the existing policy rules on the server. A version check
+  rejects stale clients, one workflow runs at a time, and tool mutations are
+  serialized. Actions and state commit together; retries reuse the original
+  result, and one original order line cannot receive competing settlements.
+- SQLite stores cases, choices, approvals, inspections, traces and actions in
+  `local_data/workspace.sqlite`. Restarted work is marked interrupted; it is
+  never automatically rerun. One server may open this file at a time.
+- Replays keep original observations and policy snapshots, with an integrity
+  checksum. Reading them neither calls a model nor changes operational state.
+  Reset demo clears the working rehearsal; saved replays remain.
 
-**This is a local model integration, not a deployed operational backend.** The
-existing simulated tools, business rules, approvals and session state still run
-in the browser. Refunds do not move money. Bedrock receives only the current prompt,
-attached photos and requested tool outputs; the entire dataset is not uploaded.
-Actual aggregates can be used by the existing `real_returns_stats` assistant tool.
-Raw ALDO source files remain local and are not served by the backend.
+The backend controls the Bedrock transcript and tool schemas, with at most 8
+model calls / 16,000 output tokens per model run, 4,096 tokens per call,
+120 calls per hour, and a five-minute transcript expiry. A case also has a
+60-tool budget. These are usage controls, not a dollar spending cap. Credentials
+remain in memory; case data and tool observations are deliberately saved locally.
+The model receives only the current prompt, relevant tool results and any photo,
+not the complete raw dataset. Raw files are not directly served by the backend.
 
-Shared AWS hosting is a separate step: move authoritative rules/tools and durable
-state into the backend, add teammate authentication for both the interface and API,
-then deploy to AgentCore Runtime. Do not expose this local demo through a public
-tunnel. A private GitHub repository does not make a hosted website private.
+All refunds, reservations, exchanges and published notes remain simulations.
+The **Demo staff role** selector exercises server role checks but is not user
+identity verification. Shared hosting and authenticated teammate roles have not
+been deployed. SQLite persistence is local to this computer, not shared through
+GitHub. Standalone HTML retains browser-only simulation without persistence or
+server action guarantees. The customer/policy chat assistants remain read-only;
+customer handoffs are saved server-side with the submitted conversation excerpt.
 
 ### Verification
 
-- `npm test`: model transport, tool validation, cancellation, limits, credential
-  handling and local HTTP access checks, with fake AWS responses and no AWS costs.
+- `npm test`: transport, access checks, durable cases, concurrency, duplicate
+  actions, roles, source joins, scoped investigations and replay integrity. AWS
+  responses are mocked; no inference costs.
+- `npm run test:workspace-browser`: both historical agents, source evidence, a
+  hybrid refund, saved-case search, inspection after refresh, replay and mobile layout.
 - `npm run test:bedrock-browser`: browser flow through a mocked AWS SDK, including
   a Return investigation, source toggle, expired credentials and disconnect.
 - `npm run check:aws`: one real model request using locally configured AWS
@@ -102,17 +122,43 @@ AWS references: [Converse API](https://docs.aws.amazon.com/bedrock/latest/APIRef
 ## Choose the dataset
 The header's **Synthetic / Actual** toggle switches Dashboard and Data together.
 Every page load starts in Synthetic mode. Selecting Actual from an agent screen
-opens the actual Dashboard. Switching back preserves the demo's session state.
+opens the actual Dashboard. Switching back preserves saved cases.
 
 Actual mode uses all rows of the five supplied CSVs to build return, order,
 product, final-sale, restocking-fee and exchange aggregates. Data also shows
 source row counts and join coverage. Filters search all aggregate rows; tables
 display the first 200 matches. No raw order, customer or return IDs are embedded.
 
-Return, Store counter, Approvals, Prevention agent, Evaluations and Audit keep
-their existing synthetic scenarios and rules. The supplied files do not contain
-the inventory, product costs, policies, photos or review data required to replace
-those scenarios. The current screen's data source is stated below the controls.
+The standard agent scenarios remain synthetic. **Actual investigations** lets you
+select a brand/market and SKU, inspect original return records, and run either
+agent in Live or Scripted mode. Recorded amounts have no assumed source currency;
+unknown flags and conflicting matches remain unknown. Financial what-if estimates
+show separate assumptions and formulas. Their controls affect the what-if table
+only; they do not change an existing simulated case's financial rules.
+
+**Create simulated new case** makes a new case linked to the selected history.
+The original row stays unchanged. SKU, reason, refund amount and unambiguous
+matched size/flag are actual context. Customer, current dates, product attributes,
+reviews, inventory, costs, logistics, photo and policy are synthetic. The new-case
+price is an assumption based on refund/quantity when available. CAD is an explicit
+simulation assumption, not an inference about the historical source currency.
+
+Use **Saved cases** to search and reopen work. In a case, **Save recorded replay**
+preserves a read-only demonstration. Prevention and historical runs also have
+replay controls. Staff handoffs go through Approvals or Store counter; choose the
+appropriate demo staff role before deciding. This selector does not authenticate
+an actual staff member.
+
+Import source records for investigations (Python 3.11+, standard library only):
+```sh
+npm run import:history -- "/path/to/Dataset McGill"
+```
+This reads all five CSVs into `local_data/history.sqlite`, records source SHA-256
+hashes, and atomically replaces the database only after successful import. Stop
+and restart the server after an import. Source row numbers are one-based data
+record ordinals, excluding the header. Source files are never modified. On this
+Mac the supplied files have already been imported. A teammate needs the approved
+source files locally and must run this import after cloning.
 
 Import the actual files and rebuild with:
 ```sh
@@ -132,8 +178,8 @@ are reported separately. Zero quantities remain zero. Conflicting duplicate
 lookup keys stop the import. Exchange links are associations, with CONFIRMED
 and ASSUMED source records reported separately; they are not one-to-one item
 matches. The supplied orders and flags only cover part of the return lines, so
-the app does not infer a population return rate. Amounts retain source currency,
-without FX conversion. `Book.xlsx` is empty and supplies no product master.
+the app does not infer a population return rate. The source does not specify currency. No FX conversion is performed; the
+dashboard suppresses cross-banner monetary totals. `Book.xlsx` is empty and supplies no product master.
 
 ## What's inside
 | Path | What it is |
@@ -142,10 +188,13 @@ without FX conversion. `Book.xlsx` is empty and supplies no product master.
 | `source/src/` | The code: `core.js` (data, rules, tools), `agents.js` (Return agent, store check, approvals logic), `queue.js` (seeded approval queue), `photos.js`, `charts.js`, `chat.js` (customer and policy chatbots), `ui.js` (every tab), `dashreal.js` (Dashboard on the real data), `styles.css`, `index.html`, `data.json` (synthetic data), `real.json` (real-data aggregates) |
 | `source/build.py` | Builds `src/` into `dist/perfect_pair_demo.html`, `dist/test.html` and the root offline demo |
 | `source/gen_data.py` | Regenerates the synthetic data (`src/data.json` and `data/*.csv`); seeded, so the output is identical each run |
+| `backend/workspace.mjs`, `store.mjs`, `evidence.mjs` | Authoritative simulated workflows, local persistence and read-only historical queries |
+| `source/import_evidence.py` | Full source-record SQLite importer with source hashes; local database excluded from Git |
+| `source/src/workspace.js`, `history.js`, `state.js`, `hybrid.js` | Saved-case interface, source investigations, shared snapshots and labelled synthetic supplementation |
 | `source/gen_real.py` | Rebuilds `src/real.json` from the five supplied CSVs, with source hashes and join coverage |
 | `source/src/data_source.js` | Synthetic / Actual selection and the actual-data explorer |
 | `data/` | The synthetic tables as CSV, for loading into DynamoDB / S3 / Athena |
-| `agent/` | `tools.json` (22 tools with input schemas, one Lambda each behind AgentCore Gateway), `tool_sets.json`, `prompts/`, `safety_rules.md` (rules R1 to R13 and the Cedar policies) |
+| `agent/` | `tools.json` (original tool schemas for a possible AgentCore/Lambda deployment), `tool_sets.json`, `prompts/`, `safety_rules.md` (rules R1 to R13 and the Cedar policies) |
 
 ## Rebuild after a change
 ```
