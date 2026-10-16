@@ -47,7 +47,7 @@ const {chromium} = require('playwright');
     assert.equal(await page.locator('[data-restart]').count(),0);
     await screenshot('customer-return');
     await role('store_manager');
-    assert.deepEqual(await page.locator('#tabs [role=tab] > span:first-of-type').allTextContents(),['Dashboard','Customer review','Drop-off & grading','Return routing','Approvals']);
+    assert.deepEqual(await page.locator('#tabs [role=tab] > span:first-of-type').allTextContents(),['Dashboard','Needs attention','Drop-off & grading','Item destination','Approvals']);
     await screenshot('store-manager-dashboard');
     await page.evaluate(()=>showTab('prevention'));assert.equal(await page.evaluate(()=>STATE.tab),'home');
     await page.locator('#tabbtn-store').click();await page.locator('[data-counter="maya"]').click();await page.locator('[data-grade="A"]').click();await page.locator('#counter-confirm').click();

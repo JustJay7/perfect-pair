@@ -66,7 +66,7 @@ function renderMast() {
     ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['manager', 'Customer review'], ['store', 'Drop-off & grading'], ['routing', 'Return routing'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['manager', 'Needs attention'], ['store', 'Drop-off & grading'], ['routing', 'Item destination'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
@@ -608,7 +608,7 @@ function renderStore() {
   const storeId = UI.counter.store || label.store || (cs.chosen && cs.chosen.dropStore) || stores[0].location_id;
   const g = UI.counter.grade;
   const rc = cs.received;
-  el.innerHTML = head + `<div class="counter-context"><b>${esc(caseName(sel))}</b> · ${esc(k.return_id)}<button class="btn secondary sm" data-manager-case="${esc(sel)}">Customer review</button><button class="btn secondary sm" data-routing-case="${esc(sel)}">Compare routing</button></div>` + `<div class="grid2 g-side">
+  el.innerHTML = head + `<div class="counter-context"><b>${esc(caseName(sel))}</b> · ${esc(k.return_id)}<button class="btn secondary sm" data-manager-case="${esc(sel)}">Needs attention</button><button class="btn secondary sm" data-routing-case="${esc(sel)}">Item destination</button></div>` + `<div class="grid2 g-side">
     <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
     <div class="card card-pad stack">
       ${itemTag(sel)}
