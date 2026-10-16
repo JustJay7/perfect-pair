@@ -10,6 +10,15 @@ const assert=require('node:assert/strict'),{mkdtempSync,rmSync,mkdirSync}=requir
   const shot=async name=>{if(process.env.PP_SCREENSHOTS){mkdirSync(process.env.PP_SCREENSHOTS,{recursive:true});await page.screenshot({path:join(process.env.PP_SCREENSHOTS,name+'.png'),fullPage:true});}};
   await page.goto('http://127.0.0.1:'+server.address().port);await ready();await check('return');await page.locator('#tabbtn-scenarios').click();await check('scenarios');
   await role('store_manager');await check('manager');assert.equal(await page.locator('#tabs [role=tab]').count(),2);await shot('store-work-queue');
+  await page.locator('#tab-manager [data-home-review]').first().click();
+  const receipt=page.locator('#tab-approvals .inspection-breakdown');assert.equal(await receipt.isVisible(),true);
+  assert.match(await receipt.textContent(),/estimated product cost/);assert.match(await receipt.textContent(),/70% prior/);
+  const values=await page.evaluate(()=>{const co=counterOptions('q7');return co.options.filter(o=>o.value!=null).map(o=>({key:o.key,value:o.value,sum:r2(Object.entries(o.breakdown).reduce((n,[k,v])=>n+(BREAK_COST.includes(k)?-v:v),0))}));});
+  for(const o of values){assert.equal(o.sum,o.value,'Displayed components reconcile for '+o.key);assert.equal(await page.locator('#tab-approvals [data-choice="'+o.key+'"]').count(),1,'Only one decision button per option');}
+  assert.deepEqual(values.map(o=>o.value),[-11.9,26.6,39.5]);await shot('approval-breakdown');
+  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=390));await shot('approval-breakdown-mobile');await page.setViewportSize({width:1440,height:1000});
+  await page.locator('#section-manager').click();
+
   await page.locator('#tab-manager [data-tab="approvals"]').click();await check('approvals');assert.equal(await page.locator('#tabbtn-manager').getAttribute('aria-selected'),'true');await page.locator('#section-manager').click();await check('manager');
   await page.locator('#tabbtn-store').click();await check('store');await page.locator('#section-routing').click();await check('routing');assert.equal(await page.locator('#tabbtn-store').getAttribute('aria-selected'),'true');await shot('store-process-returns');
   await role('customer_service');await check('inbox');assert.equal(await page.locator('#tabs [role=tab]').count(),3);await shot('service-cases');

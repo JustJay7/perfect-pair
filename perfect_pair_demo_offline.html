@@ -1142,6 +1142,10 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
 
 .workspace-tools{display:flex;align-items:center;gap:12px;margin-left:auto;font-size:13px}.workspace-tools select{max-width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}@media(max-width:700px){.workspace-tools{margin-left:0;flex-wrap:wrap}.page-subnav{flex-wrap:wrap}}
 
+.inspection-breakdown th,.inspection-breakdown td{white-space:normal;vertical-align:top;padding:10px;min-width:100px}.inspection-breakdown .receipt-equation{font-size:13px}.inspection-breakdown{margin:16px 0}.ap-grid>*{min-width:0}
+
+.ap-counter>.econ{grid-column:1/-1}.ap-counter>.ap-main{grid-column:1/-1}.ap-counter .opt-rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ap-counter .opt-rules li{margin:0}@media(max-width:700px){.ap-counter .opt-rules{grid-template-columns:1fr}}
+
 </style>
 
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -5735,15 +5739,19 @@ function photoCompare(caseId) {
     <div class="pc-verdict">${gradeJourney(caseId)}<span class="small">${rc.grade > k.photo.grade ? `The pair got worse between the customer's photo and the store check: grade ${k.photo.grade} → ${rc.grade}.` : 'The store check matches the photo.'}</span></div></section>`;
 }
 /** What the approver can do after a store-check mismatch, valued, with the best one recommended. */
+function inspectionBreakdown(id,co){
+ const e=returnEconomics(id),valued=co.options.filter(o=>o.value!=null);
+ const parts=[['margin_kept','Margin retained / expected credit margin',1],['returned_pair_resold','Net recovery from returned pair',1],['label','Return or send-back label',-1],['processing','Processing',-1],['outbound_shipping','Replacement shipping',-1],['incentive_cost','Expected bonus cost',-1],['second_return_risk','Expected second-return cost',-1]];
+ return `<section class="inspection-breakdown"><h3>Price and decision breakdown</h3><p><b>Price paid ${money(e.price)} − estimated product cost ${money(e.cost)} = original gross margin ${money(e.margin)} (${pct(e.margin_pct)}).</b></p><p class="small muted">Synthetic demo inputs · CAD. These are scenario decision values, not audited profit or guaranteed savings. Original product cost is reflected in the gross margin; it is not deducted a second time below.</p><div class="tbl-wrap"><table><thead><tr><th>Component</th>${valued.map(o=>`<th>${esc(o.label)}</th>`).join('')}</tr></thead><tbody>${parts.map(([key,label,sign])=>`<tr><th>${label}</th>${valued.map(o=>`<td>${sign<0?'−':'+'}${money(o.breakdown?.[key]||0)}</td>`).join('')}</tr>`).join('')}<tr><th>Estimated decision value</th>${valued.map(o=>`<td><b>${money(o.value)}</b></td>`).join('')}</tr></tbody></table></div><p class="small"><b>Credit assumption:</b> ${pct(e.credit_use)} expected redemption × ${money(e.margin)} original margin = ${money(r2(e.credit_use*e.margin))} expected credit margin before recovery and costs. Redemption is estimated from synthetic customer credit history with a 70% prior; it is not guaranteed revenue.</p><p class="small">Recovery uses the store's grade ${esc(co.found)} and the best simulated route's net recovery. Refunds retain no original margin. Declining retains the original margin but includes sending the pair back. Refund face value is the customer payout, not an additional deduction from this decision-value model.</p>${valued.map(o=>`<p class="small receipt-equation"><b>${esc(o.label)}:</b> ${parts.map(([key,,sign],i)=>`${i?(sign<0?' − ':' + '):''}${money(o.breakdown?.[key]||0)}`).join('')} = <b>${money(o.value)}</b></p>`).join('')}<p class="small muted">Eligibility and evidence control the decision; the largest value does not establish that a return should be declined.</p></section>`;
+}
 function inspectionPanel(r) {
   const co = counterOptions(r.case_id), id = r.case_id;
   const valued = co.options.filter(o => o.value != null);
   const rows = valued.map(o => ({ label: o.label, value: o.value, hl: o.best, tip: [`${money(o.value)} to ALDO`, o.label].concat(breakLines(o.breakdown)).join('\n') }));
   const pending = r.status === 'pending';
   return `<div class="econ">${groupHead('ret', 'Updated decision after the store check', `Valued at the grade the store found (${co.found}), not the photo grade`)}
-    <div class="reco"><div class="eyebrow">${icon('check')}Recommended</div><div class="reco-main"><b>★ ${esc(co.best.label)}</b><span>${co.best.value != null ? `ALDO keeps <b>${money(co.best.value)}</b> on this return.` : ''}</span></div>
-      <p class="small" style="margin:0">${esc(co.why)}</p>${pending ? `<button type="button" class="btn sm" data-review="${r.id}" data-choice="${co.best.key}">${esc(co.best.label)}</button>` : ''}</div>
-    ${rows.length > 1 ? vizCard(`ins:${id}`, 'Profit to ALDO, by option', '', catForms(rows, { heatCol: 'Profit to ALDO' }), 'Each option valued at the grade the store found. Taking the pair back at grade C brings little back from liquidation; declining keeps the sale but costs a shipment back.') : ''}
+    <p class="small"><b>Assessment:</b> ${esc(co.why)}</p>
+    ${inspectionBreakdown(id,co)}
     <div class="eyebrow" style="margin-top:12px">${pending ? 'Pick an option: every one is allowed by the rule shown' : 'The options and the rule that allows each'}</div>
     <ul class="opt-rules">${co.options.map(o => { const inner = `<span class="or-top"><b>${o.best ? '★ ' : ''}${esc(o.label)}</b>${o.value != null ? ` <span class="mono small">${money(o.value)}</span>` : ''}${pending ? `<span class="or-go">${o.best ? 'Choose the recommended option' : 'Choose'} →</span>` : ''}</span><span class="small">${esc(o.note)}</span><span class="small muted">${esc(o.rule)}</span>`;
       return `<li>${pending ? `<button type="button" class="or-btn${o.best ? ' best' : ''}" data-review="${r.id}" data-choice="${o.key}">${inner}</button>` : `<div class="or-btn static${r.decision === o.key ? ' chosen' : ''}">${inner}${r.decision === o.key ? '<span class="pill ok">Chosen</span>' : ''}</div>`}</li>`; }).join('')}</ul>
@@ -5762,14 +5770,14 @@ function approvalDetail(r) {
     else if (r.kind === 'policy') actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="uphold">Uphold the policy</button><button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="exception">Make an exception: refund</button>`;
     else if (r.kind === 'page_fix') actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="approve">Approve and publish</button><button type="button" class="btn secondary sm" data-review="${r.id}" data-choice="reject">Reject</button>`;
     else if (r.kind === 'chat') actions = `<button type="button" class="btn sm" data-review="${r.id}" data-choice="resolve">Mark as answered</button>`;
-    else if (r.kind === 'counter') actions = counterOptions(r.case_id).options.map(o => `<button type="button" class="btn ${o.best ? '' : 'secondary '}sm" data-review="${r.id}" data-choice="${o.key}">${o.best ? '★ ' : ''}${esc(o.label)}</button>`).join('');
+    else if (r.kind === 'counter') actions = ''; // One decision control per option in inspectionPanel.
   }
   const k0 = r.case_id && IDX.kase[r.case_id];
   const decisionCol = `${k0 ? managerCustomerCard(r.case_id) : ''}<div class="stack ap-main">
       ${r.case_id && IDX.kase[r.case_id] ? apIds(r) : ctxLine ? `<div class="small mono muted">${esc(ctxLine)}</div>` : ''}
       ${k0 && k0.words ? `<div><div class="eyebrow">The customer said</div><blockquote class="ap-words">${esc(k0.words)}</blockquote></div>` : ''}
       <div><div class="eyebrow">Why it's here</div><div>${esc(r.reason)}</div></div>
-      <div><div class="eyebrow">${esc(r.requested_by || 'Agent')} recommends</div><div>${esc(r.recommendation)}</div></div>
+      ${r.kind!=='counter'?`<div><div class="eyebrow">${esc(r.requested_by || 'Agent')} recommends</div><div>${esc(r.recommendation)}</div></div>`:''}
       ${r.evidence && r.evidence.length ? `<div><div class="eyebrow">Evidence</div><ul class="evi">${r.evidence.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
       ${r.kind === 'page_fix' && r.draft_id ? `<div><span class="page-note">${esc(SYS.drafts[r.draft_id].note)}</span></div>` : ''}
       ${r.decision ? `<div class="small"><b>Decision:</b> ${esc(r.decided_by || r.approver)} ${esc(REVIEW_WORD[r.decision] || String(r.decision).replace(/_/g, ' '))}</div>` : ''}
@@ -5779,15 +5787,15 @@ function approvalDetail(r) {
   const prof = customerProfile(k.customer_id);
   const sum = prof.past.length ? `${prof.c.loyalty_status} · ${prof.orders} orders · net ${money(prof.net)} · rank ${prof.rank} of ${prof.of}` : `${prof.c.loyalty_status} · first order`;
   const credit = r.kind === 'case' ? creditPanel(r) : '';
-  if (r.kind === 'counter') return `<div class="ap-grid">${decisionCol}${inspectionPanel(r)}</div>
+  if (r.kind === 'counter') return `<div class="ap-grid ap-counter">${decisionCol}${inspectionPanel(r)}</div>
     ${photoCompare(r.case_id)}
-    <details class="ap-sec" open><summary>${groupHead('prod', `${caseCtx(r.case_id).line.product}, across all customers`, 'Why people send this style back, and how often compared with similar styles')}</summary>${productPanel(r.case_id)}</details>
-    <details class="ap-sec ap-cust" open><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details>`;
+    <details class="ap-sec"><summary>${groupHead('prod', `${caseCtx(r.case_id).line.product}, across all customers`, 'Why people send this style back, and how often compared with similar styles')}</summary>${productPanel(r.case_id)}</details>
+    <details class="ap-sec ap-cust"><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details>`;
   return `<div class="ap-grid">${decisionCol}${econPanel(r)}</div>
     <section class="ap-photos">${groupHead('ret', 'Photos the customer sent', k.photo.grade ? `Photo check: grade ${k.photo.grade}${k.photo.consistent === false ? ", and the photos don't match what the customer said" : ''}. Click a photo to look closer.` : 'Click a photo to look closer.')}${photoStrip(r.case_id, { empty: 'No photo was attached to this return.' })}</section>
     <div class="ap-pair${credit ? '' : ' one'}">${credit}${resalePanel(r.case_id)}</div>
-    <details class="ap-sec" open><summary>${groupHead('prod', `${caseCtx(r.case_id).line.product}, across all customers`, 'Why people send this style back, and how often compared with similar styles')}</summary>${productPanel(r.case_id)}</details>
-    <details class="ap-sec ap-cust" open><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details>`;
+    <details class="ap-sec"><summary>${groupHead('prod', `${caseCtx(r.case_id).line.product}, across all customers`, 'Why people send this style back, and how often compared with similar styles')}</summary>${productPanel(r.case_id)}</details>
+    <details class="ap-sec ap-cust"><summary>${groupHead('cust', `Customer ${k.customer_id}`, sum)}</summary>${customerPanel(k.customer_id)}</details>`;
 }
 const REASON_WORD = { fit: 'Fit', change_of_mind: 'Changed their mind', quality: 'Quality problem', expectations: 'Not as expected', damage: 'Arrived damaged', late: 'Arrived late' };
 const reasonWord = k => REASON_WORD[k] || String(k).replace(/_/g, ' ');

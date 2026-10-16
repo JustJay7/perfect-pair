@@ -92,3 +92,7 @@
 .route-receipt{margin:20px 0}.route-receipt select{display:block;max-width:100%;margin:10px 0}.receipt-equation{font-size:18px;font-weight:600;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow-wrap:anywhere}.route-receipt td{white-space:normal;vertical-align:top}.route-receipt td:nth-child(2){min-width:110px;font-variant-numeric:tabular-nums}.route-receipt th:last-child{min-width:240px}
 
 .workspace-tools{display:flex;align-items:center;gap:12px;margin-left:auto;font-size:13px}.workspace-tools select{max-width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}@media(max-width:700px){.workspace-tools{margin-left:0;flex-wrap:wrap}.page-subnav{flex-wrap:wrap}}
+
+.inspection-breakdown th,.inspection-breakdown td{white-space:normal;vertical-align:top;padding:10px;min-width:100px}.inspection-breakdown .receipt-equation{font-size:13px}.inspection-breakdown{margin:16px 0}.ap-grid>*{min-width:0}
+
+.ap-counter>.econ{grid-column:1/-1}.ap-counter>.ap-main{grid-column:1/-1}.ap-counter .opt-rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ap-counter .opt-rules li{margin:0}@media(max-width:700px){.ap-counter .opt-rules{grid-template-columns:1fr}}
