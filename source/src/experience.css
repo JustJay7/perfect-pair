@@ -51,3 +51,23 @@
 @media(max-width:680px){.scenario-gallery{grid-template-columns:1fr}.customer-first{padding:20px}.scope-fields{gap:12px}.prevention-scope{padding:18px}.scope-fields select{font-size:12px;padding:10px 7px}.demo-context{flex-wrap:wrap}.customer-first-head .eyebrow{font-size:9px}.customer-key-facts strong{font-size:23px}.prevention-problem h2,.prevention-launch h2{font-size:22px}}
 
 .customer-queue-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:20px 24px;border-bottom:1px solid var(--line)}.customer-queue-row:last-child{border:0}.customer-queue-row b{font-size:15px;font-weight:500}.customer-queue-row p{font-size:12px;color:var(--muted);margin:6px 0 10px}.customer-queue-row .btn{flex:none}[data-workspace="store_manager"] .home-metrics{margin-top:24px}
+
+/* Customer facts are individual tiles; tier colors never change business eligibility. */
+.customer-first-head{padding:20px 22px;border-radius:12px;background:var(--inset);border:1px solid var(--line)}
+.customer-key-facts{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:0;border-bottom:0;margin-top:16px}
+.customer-fact{display:flex;flex-direction:column;align-items:flex-start;min-width:0;gap:12px;padding:22px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px}
+.customer-fact small{display:flex;align-items:center;gap:7px;font-size:12px;line-height:1.4}.customer-fact small .icon{width:16px;height:16px}
+.customer-fact strong{font-size:28px;font-weight:600;line-height:1.15;margin:0;overflow-wrap:anywhere}
+.customer-fact>span{font-size:11px;color:var(--muted);line-height:1.5;margin-top:auto}
+.membership-fact[data-membership="gold"]{background:#fff7df;border-color:#dbc783;color:#805900}.membership-fact[data-membership="gold"] strong{color:#8b6508}.membership-fact[data-membership="gold"] small,.membership-fact[data-membership="gold"]>span{color:#765719}
+.membership-fact[data-membership="platinum"]{background:#303844;border-color:#858e9b;color:#e5e4e2}.membership-fact[data-membership="platinum"] strong{color:#e5e4e2}.membership-fact[data-membership="platinum"] small,.membership-fact[data-membership="platinum"]>span{color:#d0d5df}
+.membership-fact[data-membership="silver"]{background:#42474f;border-color:#9299a1;color:#cbd0d8}.membership-fact[data-membership="silver"] strong{color:#d0d4db}.membership-fact[data-membership="silver"] small,.membership-fact[data-membership="silver"]>span{color:#e0e4eb}
+.membership-fact[data-membership="bronze"]{background:#fcefe5;border-color:#d6ab89;color:#925828}.membership-fact[data-membership="bronze"] strong{color:#925828}.membership-fact[data-membership="bronze"] small,.membership-fact[data-membership="bronze"]>span{color:#794821}
+:root[data-theme="dark"] .membership-fact[data-membership="gold"]{background:#332a16;border-color:#786337}.membership-fact[data-membership="gold"] strong{font-weight:650}
+:root[data-theme="dark"] .membership-fact[data-membership="gold"] strong{color:#e6bf58}:root[data-theme="dark"] .membership-fact[data-membership="gold"] small,:root[data-theme="dark"] .membership-fact[data-membership="gold"]>span{color:#e0cd9e}
+:root[data-theme="dark"] .membership-fact[data-membership="bronze"]{background:#35271e;border-color:#866044}:root[data-theme="dark"] .membership-fact[data-membership="bronze"] strong{color:#dfa775}:root[data-theme="dark"] .membership-fact[data-membership="bronze"] small,:root[data-theme="dark"] .membership-fact[data-membership="bronze"]>span{color:#dac0aa}
+.insights-coverage{font-size:12px;color:var(--muted);margin:12px 0 20px}.insights-coverage summary{cursor:pointer}.insights-coverage p{max-width:100ch;line-height:1.6}
+.insights-empty{padding:24px;margin-bottom:20px;color:var(--muted);font-size:13px}.insights-empty h3{font-size:19px;color:var(--ink);font-weight:500;margin:0 0 8px}.insights-empty p{margin:0 0 14px}.insights-context>.card-pad{display:grid;gap:20px}.insights-context .chart-card{margin:0}
+#tab-dashboard [data-vizkey="r:heat"] .hc{min-height:56px;padding:12px 8px}#tab-dashboard [data-vizkey="r:heat"] .hc.empty{margin:0;border-radius:6px}
+@media(max-width:1050px){.customer-key-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.customer-first-head{padding:16px}.customer-fact{padding:16px 14px;gap:10px}.customer-fact strong{font-size:23px}.customer-fact small{font-size:11px}.customer-fact>span{font-size:10px}.customer-key-facts{gap:10px}.insights-empty{padding:18px}}

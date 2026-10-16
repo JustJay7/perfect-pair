@@ -68,7 +68,8 @@ The connection test alone does not verify a full agent workflow.
 - **Customer → Demo use cases** presents all eight original scenarios; the saved-customer selector also opens queued, custom and hybrid cases. Selecting a journey preserves its progress. Customer Service retains the operational case inbox.
 - **Store Manager → Store returns / Approvals** shows the customer first: lifetime profile counts, return rate, recent history, new/returning status and a separate color-coded agent assessment. Grey means not assessed, blue means in progress, green means no flag raised, amber means review/incomplete, and red means an active evidence flag. Text labels accompany every color. All operational customer profiles are synthetic, including hybrid cases.
 - History does not automatically reject a customer. Existing policy uses Gold/Silver status and a return rate ≤20% for early refund eligibility, with inspection required. An agent evidence flag routes financial actions to supervisor review; new customers receive the same eligibility assessment, with ordinary receipt/inspection timing. The card shows the saved decision or review reason, not an invented explanation.
-- **Customer Service → Insights** puts the reason heatmap before the metrics and other charts, for both datasets.
+- **Store Manager customer overview** uses individual shaded cards for membership, lifetime orders, profile return rate, past returns, tenure and recent damage claims. Gold, Silver, Platinum and Bronze have readable tier-colored text; styling does not assign a tier or change eligibility.
+- **Customer Service → Insights** puts the reason heatmap before the metrics and other charts, for both datasets. Actual heatmap rows honor the selected banner, channel and dates. Selecting a reason narrows the columns while keeping all reasons in that scope as the percentage denominator. Empty combinations show an explicit no-records message; zero reason quantities show 0%. Full-period product/customer context is collapsed separately and labels its filter limitations.
 - **Prevention agent** has dataset, company, market and all-products/single-product controls. Actual company/market choices follow the imported banners (ALDO, Call It Spring and Sperry). Actual analysis is read-only and source-linked; all-products totals cover the entire selected market, while the ranked product list is a sample. The synthetic network is fixed to Canada and supports all demo products or one style, with the existing approval and measurement flow.
 
 ### Architecture and current boundary
@@ -118,7 +119,8 @@ customer handoffs are saved server-side with the submitted conversation excerpt.
 - `npm test`: transport, access checks, durable cases, concurrency, duplicate
   actions, roles, source joins, scoped investigations and replay integrity. AWS
   responses are mocked; no inference costs.
-- `npm run test:journeys-browser`: scenario selection, customer status and history, heatmap ordering, actual market/product isolation, synthetic product scoping and mobile layouts.
+- `npm run test:insights-browser`: independently recomputed actual filter totals and reason shares, no-data and zero-quantity cases, date ranges, reset and mobile layouts.
+- `npm run test:journeys-browser`: scenario selection, customer status and history cards, heatmap ordering, actual market/product isolation, synthetic product scoping and mobile layouts.
 - `npm run test:experience-browser`: three role views, guarded navigation, a
   customer exchange, store inspection, specialist approval, saved workspace and
   customer selection, expandable evidence, mobile pages and dark mode.

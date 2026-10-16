@@ -28,8 +28,15 @@ function managerCustomerCard(id) {
   const trusted=trustedForEarlyRefund(c), d=cs.decision;
   const rows=prior.slice().sort((a,b)=>b.order_date.localeCompare(a.order_date)).slice(0,5);
   return `<section class="card customer-first" data-customer-profile="${esc(id)}">
-    <div class="customer-first-head"><div><div class="eyebrow">Customer overview · ${k.hybrid?'synthetic profile, actual product context':'synthetic demo history'}</div><h2>${esc(caseName(id))}</h2><span class="small muted">${esc(c.customer_id)} · ${esc(c.region)} · ${esc(c.loyalty_status)}${c.loyalty_status==='Member'?'':' member'}</span></div><div class="customer-badges"><span class="pill ${isNew?'info':'neutral'}">${isNew?'New customer':'Returning customer'}</span><span class="pill ${assessment.tone}" data-assessment>${esc(assessment.label)}</span><span class="pill neutral">${esc(workspaceStatusLabel(cs))}</span></div></div>
-    <div class="customer-key-facts"><div><small>Lifetime orders</small><strong>${num(c.lifetime_orders)}</strong></div><div><small>Recorded past returns</small><strong>${num(c.number_of_returns)}</strong></div><div><small>Profile return rate</small><strong>${isNew?'No history yet':pct(c.return_rate,1)}</strong></div><div><small>Damage claims · 90 days</small><strong>${num(c.damage_claims_90d)}</strong></div></div>
+    <div class="customer-first-head"><div><div class="eyebrow">Customer overview · ${k.hybrid?'synthetic profile, actual product context':'synthetic demo history'}</div><h2>${esc(caseName(id))}</h2><span class="small muted">${esc(c.customer_id)} · ${esc(c.region)}</span></div><div class="customer-badges"><span class="pill ${isNew?'info':'neutral'}">${isNew?'New customer':'Returning customer'}</span><span class="pill ${assessment.tone}" data-assessment>${esc(assessment.label)}</span><span class="pill neutral">${esc(workspaceStatusLabel(cs))}</span></div></div>
+    <div class="customer-key-facts">
+      ${customerFact('Membership status', c.loyalty_status || 'Not recorded', 'Loyalty tier · demo profile', membershipTone(c.loyalty_status))}
+      ${customerFact('Lifetime orders', num(c.lifetime_orders), 'Recorded in the customer profile')}
+      ${customerFact('Profile return rate', isNew ? 'No history yet' : pct(c.return_rate,1), isNew ? 'First order · no prior return history' : 'Share of lifetime orders returned')}
+      ${customerFact('Recorded past returns', num(c.number_of_returns), 'Previous returns in the profile')}
+      ${customerFact('Customer since', tenureWords(c.customer_tenure_months), 'Time with the brand')}
+      ${customerFact('Damage claims · 90 days', num(c.damage_claims_90d), 'Claim count · not an abuse finding')}
+    </div>
     <div class="agent-treatment"><div class="eyebrow">How the agent handles this case ${cs.mode?'· '+esc(cs.mode):''}</div><p>${esc(assessment.detail)}</p>${assessment.review?`<p><b>Reason:</b> ${esc(assessment.review.reason)}<br><b>Next step:</b> ${esc(assessment.review.recommendation)}</p>`:d?`<p><b>Current decision:</b> ${esc(d.summary)}${d.recommended?`<br><b>Recommended option:</b> ${esc(d.recommended.replaceAll('_',' '))}`:''}</p>`:''}
     ${cs.chosen?`<p><b>Customer chose:</b> ${esc(cs.chosen.option.replaceAll('_',' '))}</p>`:''}<p class="small muted">${isNew?'No prior history: assess the order, item condition and policy; newness is not grounds for refusal.':'Return history provides context; the return rate alone never refuses a return.'} ${trusted?'This profile meets the demo’s early-refund rule (Gold/Silver and return rate ≤20%): an eligible refund can be released after the store checks the pair at drop-off.':'This profile does not meet the demo’s early-refund rule: an eligible standard refund waits for receipt and inspection.'} ${assessment.label.startsWith('Flag')?'A supervisor must review flagged financial actions (R8). ':''}Item evidence, eligibility and approval controls still determine the final output (§3.1, §7.2, R11/R13).</p></div>
     <details class="inline-disclosure" data-disclosure="customer-history-${esc(id)}"><summary>Recent customer history & agent evidence</summary>${rows.length?tableView(['Date','Product','Outcome','Reason'],rows.map(r=>[r.order_date,r.product,r.outcome.replaceAll('_',' '),r.return_reason?.replaceAll('_',' ')||'—'])).replace('<details','<details open'):'<p>No earlier completed orders in the demo history.</p>'}<p class="small muted">Showing up to five completed orders. The profile return rate uses the saved lifetime profile; the table is a recent-history view.</p>${assessment.review?.evidence?.length?`<ul>${assessment.review.evidence.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</details>
@@ -41,4 +48,12 @@ document.addEventListener('change',ev=>{if(ev.target.id==='demo-case-picker'&&ev
 function managerQueueRow(id,action,label) {
   const {c,line}=caseCtx(id),a=customerAssessment(id),isNew=c.lifetime_orders<=1;
   return `<div class="customer-queue-row"><div><b>${esc(caseName(id))}</b><p>${isNew?'New customer':num(c.lifetime_orders)+' orders · '+pct(c.return_rate,1)+' return rate'} · ${esc(line.product)}</p><span class="pill ${a.tone}">${esc(a.label)}</span></div><button class="btn secondary sm" ${action}>${esc(label)} ${icon('call')}</button></div>`;
+}
+
+function membershipTone(status) {
+  const tier=String(status||'').trim().toLowerCase();
+  return ['gold','platinum','silver','bronze'].includes(tier)?tier:'member';
+}
+function customerFact(label,value,note,tier) {
+  return `<div class="customer-fact${tier?' membership-fact':''}"${tier?` data-membership="${tier}"`:''}><small>${tier?icon('shield'):''}${esc(label)}</small><strong>${esc(value)}</strong><span>${esc(note)}</span></div>`;
 }

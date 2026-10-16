@@ -124,7 +124,7 @@ function histSVG(values, o = {}) {
 function heatHTML(h) {
   const fmt = h.fmt || (v => String(v));
   const all = h.cells.flat().filter(c => c && c.v != null).map(c => c.v);
-  const mx = Math.max(0, ...all), mn = Math.min(0, ...all);
+  const mx = Math.max(0, h.max || 0, ...all), mn = Math.min(0, ...all);
   let i = 0;
   return `<div class="heat" style="--hc:${h.cols.length}">
     <div class="heat-row heat-head"><span class="heat-corner">${esc(h.corner || '')}</span>${h.cols.map(c => `<span class="heat-col">${esc(c)}</span>`).join('')}</div>

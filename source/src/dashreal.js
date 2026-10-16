@@ -60,6 +60,13 @@ function renderRealDashboard(el) {
   const pool = realFilter(REAL.rows);
   const rows = pool.filter(r => r.dn >= start && r.dn <= end), prev = pool.filter(r => r.dn >= start - len && r.dn < start);
   const A = realAgg(rows), P = realAgg(prev), hasPrev = start - len >= REAL.d0;
+  // Reason percentages keep an all-reasons denominator in the same brand/channel/date scope.
+  const reasonPool = realFilter(REAL.rows, 'group');
+  const reasonRows = reasonPool.filter(r => r.dn >= start && r.dn <= end);
+  const reasonBase = realAgg(reasonRows), priorReasonBase = realAgg(reasonPool.filter(r => r.dn >= start - len && r.dn < start));
+  const shareGroup = f.group === 'all' ? 'fit' : f.group;
+  const reasonShare = reasonBase.n ? (A.byG[shareGroup] || 0) / reasonBase.n : null;
+  const priorReasonShare = priorReasonBase.n ? (P.byG[shareGroup] || 0) / priorReasonBase.n : null;
   const keys = []; for (let k = periodKey(start, f.gran); k <= end; k = nextPeriod(k, f.gran)) keys.push(k);
   const idx = new Map(keys.map((k, i) => [k, i])), labels = keys.map(k => periodLabel(k, f.gran));
   const partial = keys.map(k => { const full = nextPeriod(k, f.gran) - k, inside = Math.min(nextPeriod(k, f.gran), end + 1) - Math.max(k, start); return inside < full ? `${inside} of ${full} days in range` : ''; });
@@ -72,7 +79,7 @@ function renderRealDashboard(el) {
   const tiles = [
     ['Items returned', num(A.n), delta(A.n, P.n, true), `${num(A.ro)} return orders · ${num(A.n / Math.max(1, len))} a day`],
     ['Refund worth', whole(A.amt), monetary ? delta(A.amt, P.amt, true) : '', `${money(A.amt / (A.n || 1))} average per item`],
-    ['Returned for fit', pct((A.byG.fit || 0) / (A.n || 1)), delta((A.byG.fit || 0) / (A.n || 1), (P.byG.fit || 0) / (P.n || 1), true), `${num(A.byG.fit || 0)} items · ${whole(A.byGamt.fit || 0)} refunded`],
+    [`${GROUP_WORD[shareGroup]} · share of returns`, reasonShare === null ? '—' : pct(reasonShare, 1), reasonShare === null || priorReasonShare === null ? '' : delta(reasonShare, priorReasonShare, true), `${num(A.byG[shareGroup] || 0)} of ${num(reasonBase.n)} returned items across all reasons · same brand, channel and dates`],
     ['In-store returns linked to exchanges', A.insRo ? pct(exRate, 1) : '—', delta(exRate, pExRate), A.insRo ? `${num(A.ex)} of ${num(A.insRo)} in-store return orders, since ${fmtY(REAL.ex_start)}` : `Exchange data starts ${fmtY(REAL.ex_start)}`],
     ['Restocking fees', whole(A.fee), monetary ? delta(A.fee, P.fee) : '', `${num(A.fn)} orders charged · ${pct(A.fn / (A.ro || 1))} of return orders`],
     ['Carrier / no-item refund amounts', whole(claimAmt), monetary ? delta(claimAmt, P.byGamt ? (P.byGamt.no_merch || 0) + (P.byGamt.carrier || 0) : 0, true) : '', `${num(claimN)} items with carrier or no-merchandise reasons`],
@@ -80,10 +87,10 @@ function renderRealDashboard(el) {
     ['Final-sale return quantity', num(A.fs), delta(A.fs, P.fs, true), `${num(A.unknown_fs)} items have no matching final-sale flag`],
   ];
   const opt = (v, cur, word) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(v === 'all' ? 'All' : word)}</option>`;
-  const head = `<div class="section-head"><div><div class="eyebrow">Returns dashboard · actual ALDO Group data</div><h2>Returns and money</h2><p>Every returned item in the extract from ${fmtY(REAL.start)} to ${fmtY(REAL.end)}: ${num(REAL.totals.items)} items, across ${REAL.banners.length} banners and ${REAL.channels.length} return channels. Source currency is not supplied; select one banner to view its recorded amounts without a currency symbol. Cross-banner monetary totals are suppressed. Amounts include open and failed records and are not necessarily settled refunds. Only totals are in this page; no customer, order or return numbers.</p></div></div>
+  const head = `<div class="section-head"><div><div class="eyebrow">Returns dashboard · actual ALDO Group data</div><h2>Returns and money</h2><p>Explore why items come back. The charts follow your selected brand, channel, reason and dates; reason shares use all reasons in that same scope as their denominator.</p></div></div>
     ${srcSwitch('real')}
-    ${actualCoverage()}
-    ${REAL.orders ? `<p class="small muted">Orders file: ${num(REAL.orders.lines)} lines and ${num(REAL.orders.shipped_qty)} shipped units across the full source period. See Data for daily totals and join coverage.</p>` : ''}
+    <details class="insights-coverage"><summary>Source coverage & amount definitions</summary><p class="small muted">${num(REAL.totals.items)} returned items across ${REAL.banners.length} banners from ${fmtY(REAL.start)} to ${fmtY(REAL.end)}. Currency is not supplied; amounts are recorded values, including open and failed records. Select one banner for monetary totals.</p>${actualCoverage()}
+    ${REAL.orders ? `<p class="small muted">Orders file: ${num(REAL.orders.lines)} lines and ${num(REAL.orders.shipped_qty)} shipped units across the full source period. See Data for daily totals and join coverage.</p>` : ''}</details>
     <div class="dash-controls">
       <div class="seg dseg" role="group" aria-label="Group by">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month'], ['year', 'Year']].map(([k, l]) => `<button type="button" data-rgran="${k}" aria-pressed="${f.gran === k}">${l}</button>`).join('')}</div>
       <div class="seg dseg" role="group" aria-label="Time range">${RD_RANGES.map(([k, l]) => `<button type="button" data-rrange="${k}" aria-pressed="${f.range === k}">${l}</button>`).join('')}</div>
@@ -91,7 +98,7 @@ function renderRealDashboard(el) {
       <label class="dsel">Banner <select data-rfilter="banner">${['all', ...REAL.banners].map(v => opt(v, f.banner, BANNER_WORD[v])).join('')}</select></label>
       <label class="dsel">Channel <select data-rfilter="channel">${['all', ...REAL.channels].map(v => opt(v, f.channel, CHANNEL_WORD[v])).join('')}</select></label>
       <label class="dsel">Reason <select data-rfilter="group">${['all', ...REAL.groups].map(v => opt(v, f.group, GROUP_WORD[v])).join('')}</select></label>
-      <span class="small muted">${fmtY(isoOf(start))} to ${fmtY(isoOf(end))}${hasPrev ? ` · arrows compare with the ${len} days before; green is better for ALDO` : ''}</span>
+      <button class="btn secondary sm" data-rreset>Reset filters</button><span class="small muted">${fmtY(isoOf(start))} to ${fmtY(isoOf(end))}${hasPrev ? ` · arrows compare with the ${len} days before; green is better for ALDO` : ''}</span>
     </div>
     <div class="dash-tiles">${tiles.map(t => `<div class="stat"><div class="l">${esc(t[0])}</div><div class="v">${esc(t[1])}</div><div class="s">${t[2]} ${esc(t[3])}</div></div>`).join('')}</div>`;
 
@@ -104,24 +111,24 @@ function renderRealDashboard(el) {
     { id: 'stack', render: () => stackSVG(labels, reasonSeries, { ...mk, fmt: num, aria: `Items returned per ${gw}, by reason` }) },
     { id: 'chan', render: () => stackSVG(labels, chanSeries, { ...mk, fmt: num }), note: 'By channel: where the item came back.' },
     { id: 'ban', render: () => stackSVG(labels, banSeries, { ...mk, fmt: num }), note: 'By banner: which brand sold it.' },
-    { id: 'line', render: () => lineSVG(labels, [{ name: 'All items', color: 'var(--chart-1)', values: per.map(p => p.n) }, { name: 'Fit', color: 'var(--cat-1)', values: per.map(p => p.byG.fit || 0) }, { name: 'Changed their mind', color: 'var(--cat-2)', values: per.map(p => p.byG.change_of_mind || 0) }], { ...mk, fmt: num, tick: v => num(v) }), note: 'Lines: the total and the two reasons that make up three quarters of it.' },
-  ], `Each column is one ${gw}. Fit and change of mind are about three quarters of everything; the December peak is holiday buying coming back in January.${partNote}`, tbl);
+    { id: 'line', render: () => lineSVG(labels, [{ name: 'All items', color: 'var(--chart-1)', values: per.map(p => p.n) }, { name: 'Fit', color: 'var(--cat-1)', values: per.map(p => p.byG.fit || 0) }, { name: 'Changed their mind', color: 'var(--cat-2)', values: per.map(p => p.byG.change_of_mind || 0) }], { ...mk, fmt: num, tick: v => num(v) }), note: 'Lines: the selected total, fit and change-of-mind counts.' },
+  ], `Each column is one ${gw} within the selected filters. Recorded reasons describe returns; they do not establish a cause.${partNote}`, tbl);
   const c2 = vizCard('r:money', 'Recorded refund amounts · currency unknown', `Per ${gw}`, [
     { id: 'stack', render: () => stackSVG(labels, REAL.banners.map((b, j) => ({ name: BANNER_WORD[b], color: CAT5[j], values: per.map(p => r2(p.byBamt[b] || 0)) })).filter(s => s.values.some(Boolean)), { ...mk, fmt: whole, tick: compactMoney }) },
     { id: 'line', render: () => lineSVG(labels, [{ name: 'Refund worth', color: 'var(--cat-2)', values: per.map(p => r2(p.amt)) }, { name: 'Fit refunds', color: 'var(--cat-1)', values: per.map(p => r2(p.byGamt.fit || 0)) }], {...mk,fmt:num,tick:num}), note: 'Lines: all refunds and the part refunded for fit.' },
   ], `Recorded refund amounts, including pending and failed records, split by banner.${partNote}`);
-  const gRows = REAL.groups.map(g => ({ label: GROUP_WORD[g], value: A.byG[g] || 0, sub: whole(A.byGamt[g] || 0), tip: `${GROUP_WORD[g]}\n${num(A.byG[g] || 0)} items · ${pct((A.byG[g] || 0) / (A.n || 1), 1)}\n${whole(A.byGamt[g] || 0)} refunded` })).filter(r => r.value).sort((a, b) => b.value - a.value);
-  const c3 = vizCard('r:reason', 'Why customers returned', `The ${f.range === 'custom' ? 'dates' : RD_RANGES.find(x => x[0] === f.range)[1].toLowerCase()} selected`, catForms(gRows, { fmt: num, barFmt: v => `${num(v)} (${pct(v / (A.n || 1))})`, tick: v => num(v), pie: true, center: num(A.n), centerSub: 'items', heatCol: 'Items' }),
-    'The customer\'s own reason, folded into eight groups (Too big, Too small and Uncomfortable are all Fit). Fit is the one Perfect Pair turns into an exchange.', tableView(['Reason', 'Items', 'Share', 'Recorded amount'], gRows.map(r => [r.label, num(r.value), pct(r.value / (A.n || 1), 1), r.sub]), [0, 1, 1, 1]));
+  const gRows = REAL.groups.map(g => ({ label: GROUP_WORD[g], value: A.byG[g] || 0, sub: whole(A.byGamt[g] || 0), tip: `${GROUP_WORD[g]}\n${num(A.byG[g] || 0)} items · ${pct((A.byG[g] || 0) / (reasonBase.n || 1), 1)}\n${whole(A.byGamt[g] || 0)} refunded` })).filter(r => r.value).sort((a, b) => b.value - a.value);
+  const c3 = vizCard('r:reason', 'Why customers returned', `The ${f.range === 'custom' ? 'dates' : RD_RANGES.find(x => x[0] === f.range)[1].toLowerCase()} selected`, catForms(gRows, { fmt: num, barFmt: v => `${num(v)} (${pct(v / (reasonBase.n || 1), 1)})`, tick: v => num(v), pie: f.group === 'all', center: num(A.n), centerSub: 'items', heatCol: 'Items' }),
+    'The customer\'s own reason, folded into eight groups (Too big, Too small and Uncomfortable are all Fit). Shares use all returned items for the selected brand, channel and dates, before the reason filter.', tableView(['Reason', 'Items', 'Share', 'Recorded amount'], gRows.map(r => [r.label, num(r.value), pct(r.value / (reasonBase.n || 1), 1), r.sub]), [0, 1, 1, 1]));
   const cRows = REAL.channels.map(c => ({ label: CHANNEL_WORD[c], value: A.byC[c] || 0, sub: whole(A.byCamt[c] || 0), tip: `${CHANNEL_WORD[c]}\n${num(A.byC[c] || 0)} items · ${pct((A.byC[c] || 0) / (A.n || 1), 1)}\n${whole(A.byCamt[c] || 0)} refunded` })).filter(r => r.value).sort((a, b) => b.value - a.value);
   const c4 = vizCard('r:chan', 'Where items came back', 'Items by return channel', catForms(cRows, { fmt: num, barFmt: v => `${num(v)} (${pct(v / (A.n || 1))})`, tick: v => num(v), pie: true, center: num(A.n), centerSub: 'items', heatCol: 'Items' }),
-    'Half of all returns come back over a store counter, which is where an exchange is easiest to offer and where the quality check happens.');
-  // Banner × reason, as a share of each banner's returns: ignores the banner and reason filters.
-  const hPool = realFilter(REAL.rows, 'banner').filter(r => r.dn >= start && r.dn <= end );
-  const hb = {}; for (const r of hPool) { const k = r.b; hb[k] = hb[k] || { n: 0 }; hb[k].n += r.n; hb[k][r.g] = (hb[k][r.g] || 0) + r.n; }
-  const hBan = REAL.banners.filter(b => hb[b]);
-  const c5 = vizCard('r:heat', 'Reasons by banner', 'Share of each banner\'s returned items', [{ id: 'heat', render: () => heatHTML({ corner: 'Banner', rows: hBan.map(b => BANNER_WORD[b]), cols: REAL.groups.map(g => GROUP_WORD[g]), fmt: v => pct(v), cells: hBan.map(b => REAL.groups.map(g => { const v = (hb[b][g] || 0) / hb[b].n; return { v: v || null, tip: `${BANNER_WORD[b]} · ${GROUP_WORD[g]}\n${pct(v, 1)} of the banner's returns\n${num(hb[b][g] || 0)} items` }; })) }) }],
-    'Read across a row: each banner\'s returns split by reason. Sperry US stands out on fit; the contact-centre-heavy banners carry most of the refunds without the item.', tableView(['Banner', ...REAL.groups.map(g => GROUP_WORD[g])], hBan.map(b => [BANNER_WORD[b], ...REAL.groups.map(g => pct((hb[b][g] || 0) / hb[b].n, 1))]), [0, 1, 1, 1, 1, 1, 1, 1, 1]));
+    'Recorded return channels within the current filters. Percentages are shares of the selected returned items.');
+  const hb = {}; for (const r of reasonRows) { const k = r.b; hb[k] = hb[k] || { n: 0 }; hb[k].n += r.n; hb[k][r.g] = (hb[k][r.g] || 0) + r.n; }
+  const hBan = REAL.banners.filter(b => hb[b]?.n > 0), hGroups = f.group === 'all' ? REAL.groups : [f.group];
+  const heatNote = 'Each percentage is reason quantity ÷ all returned items for that same brand, channel and date range. Selecting a reason narrows the columns without changing the denominator. A zero means no items for that reason; no matching records are shown separately. These are shares of returns, not sales-based return rates.';
+  const c5 = vizCard('r:heat', 'Reasons by banner', `${f.banner === 'all' ? 'All banners' : BANNER_WORD[f.banner]} · ${f.channel === 'all' ? 'All channels' : CHANNEL_WORD[f.channel]} · ${fmtY(isoOf(start))} to ${fmtY(isoOf(end))}`,
+    [{ id: 'heat', render: () => hBan.length ? heatHTML({ max: 1, corner: 'Banner', rows: hBan.map(b => BANNER_WORD[b]), cols: hGroups.map(g => GROUP_WORD[g]), fmt: v => pct(v, 1), cells: hBan.map(b => hGroups.map(g => { const count = hb[b][g] || 0, v = count / hb[b].n; return { v, tip: `${BANNER_WORD[b]} · ${GROUP_WORD[g]}\n${num(count)} of ${num(hb[b].n)} returned items across all reasons\n${pct(v, 1)}` }; })) }) : `<div class="insights-empty" ${rows.length ? '' : 'id="insights-no-matches"'} role="status"><h3>${rows.length ? 'No returned items in this scope' : 'No records match these filters'}</h3><p>Choose another brand, channel or date range. No percentages can be calculated without returned items.</p><button class="btn secondary sm" data-rreset>Reset filters</button></div>` }], hBan.length ? heatNote : '',
+    hBan.length ? tableView(['Banner', 'All-reason items', ...hGroups.map(g => GROUP_WORD[g])], hBan.map(b => [BANNER_WORD[b], num(hb[b].n), ...hGroups.map(g => pct((hb[b][g] || 0) / hb[b].n, 1))]), [0, 1, ...hGroups.map(()=>1)]) : '');
   const exIx = keys.map((k, i) => i).filter(i => nextPeriod(keys[i], gw) > REAL.exStart);
   const exLab = exIx.map(i => labels[i]), exPart = exIx.map(i => partial[i] || (keys[i] < REAL.exStart ? 'exchange data starts mid-period' : ''));
   const c6 = vizCard('r:exch', 'In-store returns linked to an exchange', `Per ${gw}, from ${fmtY(REAL.ex_start)} when exchange data starts`, exIx.length ? [
@@ -130,9 +137,10 @@ function renderRealDashboard(el) {
   ] : [{ id: 'line', render: () => '<p class="small muted">The exchange file starts in February 2025; pick dates after that.</p>' }], `Return transactions are linked by original order number, as specified in the notes. This is an association, not a one-to-one return or item match. The source contains CONFIRMED and ASSUMED exchange records; these are separated in Data. Returns before exchange coverage starts are excluded from this rate.`);
   const c7 = vizCard('r:fees', 'Recorded restocking fees · currency unknown', `Per ${gw}`, [
     { id: 'line', render: () => lineSVG(labels, [{ name: 'Restocking fees', color: 'var(--cat-5)', values: per.map(p => r2(p.fee)) }], { ...mk, w: chartW(), fmt:num, tick:num }) },
-    { id: 'stack', render: () => stackSVG(labels, REAL.channels.map((c, j) => ({ name: CHANNEL_WORD[c], color: CAT5[j], values: by.map(b => r2(b.filter(r => r.c === c).reduce((s, r) => s + r.fee, 0))) })).filter(s => s.values.some(Boolean)), { ...mk, w: chartW(), fmt: money, tick: compactMoney }), note: 'By channel: never charged on an in-store return.' },
-  ], `The fee started in May 2024 at $4.95 and rose to $5.95 in May 2025. It is never charged in store, which is one more reason to steer a customer to a store and an exchange. The extract has no fees for October 2025, likely a gap in the file.${partNote}`);
-  el.innerHTML = head.replace('<div class="dash-tiles">', c5 + '<div class="dash-tiles">') + `<div class="dash-grid">${c1}${monetary?c2:'<section class="card card-pad"><h3>Recorded amounts</h3><p>Select one brand / market to view money. The files do not identify currency or exchange rates, so cross-market totals are not shown.</p></section>'}<div class="dash-two">${c3}${c4}</div><div class="dash-two">${c6}${monetary?c7:""}</div>${realProducts()}<div class="dash-two">${realCustomers()}${realOpportunity(rows)}</div></div>`;
+    { id: 'stack', render: () => stackSVG(labels, REAL.channels.map((c, j) => ({ name: CHANNEL_WORD[c], color: CAT5[j], values: by.map(b => r2(b.filter(r => r.c === c).reduce((s, r) => s + r.fee, 0))) })).filter(s => s.values.some(Boolean)), { ...mk, w: chartW(), fmt: money, tick: compactMoney }), note: 'Recorded fees by return channel within the selected filters.' },
+  ], `Fees are recorded at transaction level and attributed once in these aggregates. Currency and the reason for missing fees are not supplied.${partNote}`);
+  const noMatches = !rows.length && hBan.length ? '<section class="insights-empty card card-pad" id="insights-no-matches" role="status"><h3>No records match these filters</h3><p>Try another combination, or reset the filters.</p><button class="btn secondary sm" data-rreset>Reset filters</button></section>' : '';
+  el.innerHTML = head.replace('<div class="dash-tiles">', c5 + noMatches + '<div class="dash-tiles">') + (rows.length ? `<div class="dash-grid">${c1}${monetary?c2:'<section class="card card-pad"><h3>Recorded amounts</h3><p>Select one brand / market to view money. The files do not identify currency or exchange rates, so cross-market totals are not shown.</p></section>'}<div class="dash-two">${c3}${c4}</div><div class="dash-two">${c6}${monetary?c7:""}</div>${realOpportunity(rows)}<details class="card disclosure insights-context"><summary>Full-period context <span>Product rankings and customer history have separate coverage</span></summary><div class="card-pad">${realProducts()}${realCustomers()}</div></details></div>` : '');
   countUp(el);
 }
 
@@ -147,7 +155,7 @@ function realProducts() {
     return `<div class="skew-row" style="--i:${i}" data-tip="${esc(`${p.name} · ${BANNER_WORD[p.banner]}\n${num(p.n)} items returned · ${num(p.refund)} recorded amount (currency unknown)\nToo small ${pct(s, 1)} · Too big ${pct(b, 1)} · Uncomfortable ${pct(p.unc / p.n, 1)}`)}" tabindex="0"><span class="skew-name"><b>${esc(p.name)}</b><span class="small muted">${esc(BANNER_WORD[p.banner])}</span></span>
       <span class="skew-bar l"><i style="width:${(s / max * 100).toFixed(1)}%"></i><em>${pct(s)}</em></span><span class="skew-bar r"><i style="width:${(b / max * 100).toFixed(1)}%"></i><em>${pct(b)}</em></span>
       <span class="skew-n mono">${num(p.fit)}${lean ? ` <span class="pill ${lean === 'big' ? 'info' : 'warn'}">More reported ${lean}</span>` : ''}</span></div>`; }).join('')}</div>`;
-  return vizCard('r:prod', 'Styles with the most fit returns', 'Whole period · share of each style\'s returns', [
+  return vizCard('r:prod', 'Styles with the most fit returns', 'Selected banner · full source period; date, channel and reason filters do not apply', [
     { id: 'skew', render: skew },
     { id: 'scatter', render: () => scatterSVG(ps.map(p => ({ x: p.small / p.n, y: p.big / p.n, fill: p.big > 2 * p.small ? 'var(--cat-1)' : p.small > 2 * p.big ? 'var(--cat-2)' : null, tip: `${p.name}\nToo small ${pct(p.small / p.n, 1)} · Too big ${pct(p.big / p.n, 1)}\n${num(p.fit)} fit returns` })), { x: { label: 'Returned as too small', fmt: v => pct(v), zero: true }, y: { label: 'Returned as too big', fmt: v => pct(v), zero: true } }), note: 'Scatter: top left has more too-big reports (blue), bottom right more too-small reports (orange).' },
   ], 'A dominant reason is a hypothesis to investigate with product measurements and reviews. It does not establish a sizing defect or justify changing fit guidance on its own. These are shares of returns, not population return rates: the supplied orders file matches only part of the returns extract. Daily shipped quantities and join coverage are available in Data.',
@@ -157,7 +165,7 @@ function realProducts() {
 function realCustomers() {
   const C = REAL.customers;
   const rows = C.dist.map(d => ({ label: `${d.label} item${d.label === '1' ? '' : 's'}`, value: d.customers, tip: `${d.label} returned item${d.label === '1' ? '' : 's'}\n${num(d.customers)} customers · ${num(d.items)} items` }));
-  return vizCard('r:cust', 'How many items each customer returned', `${num(C.known)} customers with a profile · whole period`, catForms(rows, { fmt: num, tick: v => num(v), heatCol: 'Customers' }).filter(x => x.id !== 'pie'),
+  return vizCard('r:cust', 'How many items each customer returned', `${num(C.known)} customers · all banners, channels and reasons · full source period; dashboard filters do not apply`, catForms(rows, { fmt: num, tick: v => num(v), heatCol: 'Customers' }).filter(x => x.id !== 'pie'),
     `Counts describe the supplied history only. ${num(C.claim3_n)} customer identifiers have at least three carrier or no-item claims; counts alone do not establish abuse. ${num(C.items_unknown)} items have no customer identifier. The operational Approvals examples use synthetic profiles.`);
 }
 /** What turning online fit returns into exchanges is worth, from the selected range. */
@@ -171,11 +179,11 @@ function realOpportunity(rows) {
     if (r.c === 'InStore') { if (r.dn >= REAL.exStart) { insRo += r.ro; insEx += r.ex; } } else onN += r.n;
   }
   const avg = fitAmt / (fitN || 1), store = insRo ? insEx / insRo : 0;
-  const targets = [[0.1, '10%'], [0.2, '20%'], [Math.round(store * 100) / 100, `Match stores (${pct(store)})`]];
+  const targets = [[0.1, '10%'], [0.2, '20%'], ...(insRo ? [[Math.round(store * 100) / 100, `Match stores (${pct(store)})`]] : [])];
   if (!targets.some(t => Math.abs(t[0] - f.target) < 1e-9)) f.target = 0.2;
   const extra = f.target * onN, kept = extra * avg;
   return `<section class="card card-pad dash-impact"><div class="eyebrow">Hypothetical conversion scenario · not measured savings</div><h3>Online fit returns turned into exchanges</h3>
-    <p class="small" style="margin:0 0 6px">In store, ${pct(store)} of eligible-window fit-return transactions link to an exchange record (confirmed or assumed). The exchange file does not establish online coverage. Choose an assumed conversion share for a what-if calculation:</p>
+    <p class="small" style="margin:0 0 6px">${insRo ? `In store, ${pct(store)} of eligible-window fit-return transactions link to an exchange record (confirmed or assumed).` : 'No in-store fit-return comparison is available for these filters.'} The exchange file does not establish online coverage. Choose an assumed conversion share for a what-if calculation:</p>
     <div class="seg dseg" role="group" aria-label="Exchange target" style="margin:8px 0">${targets.map(([t, l]) => `<button type="button" data-rtarget="${t}" aria-pressed="${Math.abs(f.target - t) < 1e-9}">${esc(l)}</button>`).join('')}</div>
     <div class="imp-grid">
       <div class="imp"><div class="small muted">Fit returns not made in store</div><div class="imp-row"><b class="mono">${num(onN)}</b></div></div>
@@ -199,3 +207,5 @@ if (REAL && typeof APPR_TOOLS !== 'undefined') APPR_TOOLS.push({
       in_store_exchange_rate: A.insRo ? pct(A.ex / A.insRo, 1) : `no exchange data before ${REAL.ex_start}`, restocking_fees: banner ? A.fee : null, failed_refunds: A.fail, final_sale_items_refunded: A.fs };
   },
 });
+
+document.addEventListener('click',ev=>{if(ev.target.closest('[data-rreset]')){Object.assign(UI.rdash,{banner:'all',channel:'all',group:'all',range:'all',from:null,to:null});renderDashboard();}});
