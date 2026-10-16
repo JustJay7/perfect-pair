@@ -312,3 +312,9 @@ The visible **Follow the money for one pair** table provides a destination selec
 Example using the current synthetic Maya seed: price 130, cost 58 and handling 6 give 66 if sold locally. Packing 2 and shipping 8 give 56 online. Original pre-return gross profit is 72. These amounts are CAD scenario inputs, not observed ALDO results. The teammate ZIP uses different seed values and a separate decision-onward comparison against a refund baseline, so its absolute and incremental remedy values are not directly interchangeable with these routing margins.
 
 The audit corrected a destination-cost inconsistency: earlier actual routing substituted each destination’s historical cost for the same returned pair. It now holds the pair cost constant, with a separate optional override that does not silently change the benchmark. Calculation version 2 evidence rejects earlier routing references instead of recalculating them under new assumptions; saved replay observations remain unchanged. Edited inputs now explicitly mark displayed calculations as stale until recalculated.
+
+### Connection and manager status clarity
+
+The app remembers an explicitly selected Live/Scripted mode in this browser. Refreshing checks the running server without making a model call; Live is restored only while that server reports a working connection. AWS credentials remain in server memory and are cleared by disconnect or shutdown. Expired workshop sessions require fresh credentials; saved mode is not a saved credential.
+
+Store Manager Work queue includes service concerns, inspection exceptions and assessment failures without an assigned approval. Customer Service-only approvals remain in Customer Service Cases. A manager opening such a case through the demo selector sees the waiting status and its reason, not an empty remedy prompt. Follow-up notes are optional and collapsed when there is no remedy or service concern.

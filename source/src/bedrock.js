@@ -1,6 +1,8 @@
 /* Bedrock transport for the local demo. Existing tools still simulate actions in the page. */
 const BEDROCK_LOCAL = location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname);
 let bedrockToken = '';
+function rememberAgentMode(mode){try{localStorage.setItem('pp-agent-mode',mode);}catch{}}
+function restoreAgentMode(){try{if(STATE.live.available&&localStorage.getItem('pp-agent-mode')==='live')STATE.mode='live';}catch{}}
 async function bedrockPost(path, input, signal) {
   const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-PP-Token': bedrockToken }, body: JSON.stringify(input), signal });
   const result = await response.json();
@@ -65,7 +67,7 @@ async function getLiveSample() {
     bedrockToken = info.csrfToken;
     STATE.live.modelId = info.modelId;
     STATE.live.thoroughModelId = info.thoroughModelId;
-    STATE.live.reason = info.error?.message || 'Use Connect AWS to test your workshop connection. The scripted backup is ready.';
+    STATE.live.reason = info.error?.message || 'Connect AWS once for this running server. Refreshing the page does not disconnect AWS; restarting the server or disconnecting clears the temporary session. Expired workshop credentials must be renewed.';
     return info.connected ? bedrockSample : null;
   } catch {
     STATE.live.reason = 'The local AWS connection is unavailable. Start the Perfect Pair server, then reload.';
@@ -81,6 +83,7 @@ async function refreshBedrock() {
   STATE.live.limits = sample ? await sample.limits() : null;
   STATE.live.images = !!sample;
   if (!sample) STATE.mode = 'scripted';
+  else restoreAgentMode();
   renderMast();
 }
 window.addEventListener('focus', refreshBedrock);

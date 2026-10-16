@@ -1756,8 +1756,8 @@ function wire() {
     if (t.dataset.eval) return runEvalsSeq([t.dataset.eval]);
     if (t.dataset.audit) { UI.auditSel = t.dataset.audit; return renderAudit(); }
     if (t.dataset.dl) return downloadAudit(t.dataset.dl);
-    if (t.id === 'mode-live' && STATE.live.available) { STATE.mode = 'live'; renderMast(); return renderTab(STATE.tab); }
-    if (t.id === 'mode-scripted') { STATE.mode = 'scripted'; renderMast(); return renderTab(STATE.tab); }
+    if (t.id === 'mode-live' && STATE.live.available) { STATE.mode = 'live'; rememberAgentMode('live'); renderMast(); return renderTab(STATE.tab); }
+    if (t.id === 'mode-scripted') { STATE.mode = 'scripted'; rememberAgentMode('scripted'); renderMast(); return renderTab(STATE.tab); }
     if (t.id === 'theme-btn') return setTheme(isDark() ? 'light' : 'dark', true);
     if (t.id === 'reset-btn') { if (anyBusy()) return toast('Wait for the current run to finish'); await resetAll(); if (STATE.active !== '__new' && !CASES[STATE.active]) STATE.active = 'maya'; UI.sel = {}; UI.counter = { caseId: null }; renderTabsBar(); renderTab(STATE.tab); return toast('Demo reset'); }
   });
@@ -1866,6 +1866,7 @@ function boot() {
     if (lim && lim.tools && lim.tools.maxCount && lim.tools.maxCount < need) { STATE.live.reason = `This viewer allows ${lim.tools.maxCount} tools per call and the agent needs ${need}. Using the scripted backup.`; renderMast(); return; }
     STATE.live.sample = s; STATE.live.available = true; STATE.live.limits = lim; STATE.live.images = !!(lim && lim.images);
     if (!anyBusy() && !BEDROCK_LOCAL) STATE.mode = 'live';
+    if(BEDROCK_LOCAL)restoreAgentMode();
     renderMast(); if (STATE.tab === 'return' || STATE.tab === 'evals') renderTab(STATE.tab);
   }).catch(() => { STATE.live.reason = 'Could not reach Claude from this page. Using the scripted backup.'; renderMast(); });
   use('downloads').then(d => { UI.downloads = d || null; if (STATE.tab === 'audit') renderAudit(); }).catch(() => {});

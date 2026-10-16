@@ -48,6 +48,11 @@ const { chromium } = require('playwright');
     await page.locator('#settings-open').click();
     await page.locator('#mode-live').click();
     assert.match(await page.locator('#livenote').textContent(), /Amazon Bedrock/);
+    const callsBeforeReload=sent.length;
+    await page.reload();await page.waitForFunction(()=>STATE.live.checked&&WORK.ready);
+    assert.equal(await page.evaluate(()=>STATE.mode),'live','Explicit Live choice survives refresh');
+    assert.equal(sent.length,callsBeforeReload,'Refresh does not reconnect or call the model');
+    await page.locator('#settings-open').click();
     const result = await page.evaluate(async () => {
       const d = await investigate('maya', { mode: 'live', throwOnError: true });
       return { status: CASES.maya.status, tools: CASES.maya.stats.tools, calls: CASES.maya.events.filter(e => e.kind === 'call').map(e => e.tool), model: CASES.maya.tierApplied, decision: d };
