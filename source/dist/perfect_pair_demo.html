@@ -1092,6 +1092,15 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
 
 .assumption-grid input{background:var(--panel);color:var(--ink)}
 
+.demo-context{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;font-size:12px;color:var(--muted)}
+.scenario-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:24px 0}.scenario-card{padding:24px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}.scenario-card h2{font-size:25px;font-weight:500}.scenario-card p{color:var(--muted);font-size:14px;margin:0 0 auto;min-height:45px}.scenario-card .btn{width:100%;margin-top:10px}.saved-demo{margin:26px 0}.saved-demo select{display:block;width:100%;margin-top:12px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.customer-first{margin:0 0 24px;padding:26px}.customer-first-head{display:flex;justify-content:space-between;gap:22px;align-items:flex-start}.customer-first h2{font-size:28px;font-weight:500;margin:8px 0}.customer-badges{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;max-width:320px}.customer-key-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:22px 0;margin-top:14px;border-bottom:1px solid var(--line)}.customer-key-facts small{display:block;color:var(--muted);font-size:11px}.customer-key-facts strong{display:block;font-size:25px;font-weight:500;margin-top:8px}.agent-treatment{margin-top:22px}.agent-treatment p{font-size:13px;line-height:1.6;margin:10px 0}.agent-treatment .small{font-size:12px}.customer-first .inline-disclosure .tv{margin-top:12px}.customer-first .inline-disclosure .tv>summary{display:none}.customer-first .inline-disclosure .tv{display:block}.customer-first .inline-disclosure .tv:not([open])>*:not(summary){display:block}.ap-grid>.customer-first{grid-column:1/-1}
+.prevention-scope{padding:22px;margin-bottom:24px}.scope-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.scope-fields label,.scope-product{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:500}.scope-fields select,.scope-product select,#prevention-query{width:100%;padding:11px;border-radius:7px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;min-width:0}.prevention-scope p{margin:16px 0 0}.scope-product{margin-top:18px;max-width:580px}.prevention-problem{margin-bottom:22px}.prevention-problem h2,.prevention-launch h2{font-size:24px;font-weight:500;margin:10px 0}.prevention-problem>p{font-size:13px}.prevention-launch{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px}.prevention-launch>.btn{flex:none}.prevention-results{margin-bottom:24px}#prevention-query{margin:10px 0 16px}#tab-dashboard>.chart-card{margin-bottom:24px}
+@media(max-width:1100px){.scenario-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.scope-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-first-head{flex-direction:column;gap:12px}.customer-badges{justify-content:flex-start;max-width:none}.customer-key-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.prevention-launch{flex-direction:column;align-items:flex-start}}
+@media(max-width:680px){.scenario-gallery{grid-template-columns:1fr}.customer-first{padding:20px}.scope-fields{gap:12px}.prevention-scope{padding:18px}.scope-fields select{font-size:12px;padding:10px 7px}.demo-context{flex-wrap:wrap}.customer-first-head .eyebrow{font-size:9px}.customer-key-facts strong{font-size:23px}.prevention-problem h2,.prevention-launch h2{font-size:22px}}
+
+.customer-queue-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:20px 24px;border-bottom:1px solid var(--line)}.customer-queue-row:last-child{border:0}.customer-queue-row b{font-size:15px;font-weight:500}.customer-queue-row p{font-size:12px;color:var(--muted);margin:6px 0 10px}.customer-queue-row .btn{flex:none}[data-workspace="store_manager"] .home-metrics{margin-top:24px}
+
 </style>
 
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -1116,6 +1125,7 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
     <main id="main-content" class="app-main" tabindex="-1">
       <div id="page-context"></div>
       <section class="tab-panel" id="tab-home" role="tabpanel" aria-label="Dashboard" hidden></section>
+      <section class="tab-panel" id="tab-scenarios" role="tabpanel" aria-label="Demo use cases" hidden></section>
       <section class="tab-panel" id="tab-history" role="tabpanel" aria-label="Actual investigations" hidden></section>
       <section class="tab-panel" id="tab-inbox" role="tabpanel" aria-label="Saved cases" hidden></section>
       <section class="tab-panel" id="tab-return" role="tabpanel" aria-label="Return agent" hidden></section>
@@ -4699,7 +4709,7 @@ function toast(text) {
   document.body.appendChild(el); setTimeout(() => el.remove(), 2600);
 }
 const TOOL_LABEL = n => TOOLS[n]?.label || ({ read_photo: 'Read the photo (Claude vision)' })[n] || n;
-const caseName = id => IDX.cust[IDX.kase[id].customer_id].display_name;
+const caseName = id => IDX.cust[IDX.kase[id].customer_id].display_name || 'Customer '+IDX.kase[id].customer_id;
 const busy = id => ['investigating', 'acting'].includes(CASES[id].status);
 let anyBusy = () => !!STATE.running || DATA.cases.some(k => busy(k.case_id)) || STATE.prevention.status === 'running' || STATE.evalRunning;
 
@@ -4724,7 +4734,7 @@ function renderMast() {
     ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['home', 'Dashboard'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
@@ -4764,7 +4774,7 @@ function countUp(root) {
 })();
 function renderTab(id) {
   rememberDisclosures($('#tab-'+id));
-  ({ home: renderWorkspaceHome, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  ({ home: renderWorkspaceHome, scenarios: renderDemoScenarios, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
   renderDataSource(); renderPageContext();
 }
 
@@ -5266,8 +5276,8 @@ function renderStore() {
   const storeId = UI.counter.store || label.store || (cs.chosen && cs.chosen.dropStore) || stores[0].location_id;
   const g = UI.counter.grade;
   const rc = cs.received;
-  el.innerHTML = head + `<div class="grid2 g-side">
-    <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(x.return_id)}</b> · ${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
+  el.innerHTML = head + managerCustomerCard(sel) + `<div class="grid2 g-side">
+    <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
     <div class="card card-pad stack">
       ${itemTag(sel)}
       <div class="grid2"><div><div class="eyebrow">Photo suggested</div><b>Grade ${esc(k.photo.grade)}</b> · <span class="small">${esc(GRADE[k.photo.grade])}</span></div><div><div class="eyebrow">Agent's plan</div>${plan ? `<b>${esc(IDX.loc[plan.plan]?.name || plan.scores[0].name)}</b>` : '<span class="muted">No plan yet</span>'}</div></div>
@@ -5513,7 +5523,7 @@ setInterval(() => {
 function approvalSummary(r, isOpen) {
   const k = r.case_id && IDX.kase[r.case_id];
   const line = k ? caseCtx(r.case_id).line : null;
-  const what = line ? `${line.product} · ${money(line.selling_price)}` : r.draft_id ? `${styleName(SYS.drafts[r.draft_id].style_id)} · page note` : r.reason;
+  const what = line ? `${caseName(r.case_id)} · ${line.product} · ${money(line.selling_price)}` : r.draft_id ? `${styleName(SYS.drafts[r.draft_id].style_id)} · page note` : r.reason;
   const h = slaHTML(r), x = slaInfo(r);
   const statusPill = r.status === 'pending' ? (x.escalated ? '<span class="pill red">Escalated</span>' : '<span class="pill warn">Waiting</span>') : r.status === 'approved' ? (r.auto ? '<span class="pill ok">Decided automatically</span>' : '<span class="pill ok">Approved</span>') : r.status === 'more_info' ? '<span class="pill info">More info asked</span>' : r.status === 'rejected' ? '<span class="pill neutral">Declined</span>' : '<span class="pill neutral">Closed</span>';
   const thumb = k ? casePhotos(r.case_id)[0] : null;
@@ -5603,7 +5613,7 @@ function approvalDetail(r) {
     else if (r.kind === 'counter') actions = counterOptions(r.case_id).options.map(o => `<button type="button" class="btn ${o.best ? '' : 'secondary '}sm" data-review="${r.id}" data-choice="${o.key}">${o.best ? '★ ' : ''}${esc(o.label)}</button>`).join('');
   }
   const k0 = r.case_id && IDX.kase[r.case_id];
-  const decisionCol = `<div class="stack ap-main">
+  const decisionCol = `${k0 ? managerCustomerCard(r.case_id) : ''}<div class="stack ap-main">
       ${r.case_id && IDX.kase[r.case_id] ? apIds(r) : ctxLine ? `<div class="small mono muted">${esc(ctxLine)}</div>` : ''}
       ${k0 && k0.words ? `<div><div class="eyebrow">The customer said</div><blockquote class="ap-words">${esc(k0.words)}</blockquote></div>` : ''}
       <div><div class="eyebrow">Why it's here</div><div>${esc(r.reason)}</div></div>
@@ -5975,7 +5985,7 @@ function renderDashboard() {
   const impact = `<section class="card card-pad dash-impact"><div class="eyebrow">Before and after the pilot</div><h3>The 3 months before Perfect Pair, against the pilot since ${fmtDate(DATA.returns_ledger.pilot)}</h3>
     <div class="imp-grid">${imp.map(([l, a, b, good]) => `<div class="imp"><div class="small muted">${esc(l)}</div><div class="imp-row"><span class="mono">${esc(a)}</span><span class="imp-arrow">→</span><b class="mono ${good ? 'good' : ''}">${esc(b)}</b></div></div>`).join('')}</div>
     <p class="small muted" style="margin:8px 0 0">Synthetic data generated for the demo, with the pilot's effect built in. In a real pilot, a comparison with suitable control stores would help estimate the effect, subject to its assumptions.</p></section>`;
-  el.innerHTML = head + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div>${c7}</div>`;
+  el.innerHTML = head.replace('<div class="dash-tiles">', c7 + '<div class="dash-tiles">') + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div></div>`;
   countUp(el);
 }
 
@@ -6665,7 +6675,7 @@ function renderRealDashboard(el) {
     { id: 'line', render: () => lineSVG(labels, [{ name: 'Restocking fees', color: 'var(--cat-5)', values: per.map(p => r2(p.fee)) }], { ...mk, w: chartW(), fmt:num, tick:num }) },
     { id: 'stack', render: () => stackSVG(labels, REAL.channels.map((c, j) => ({ name: CHANNEL_WORD[c], color: CAT5[j], values: by.map(b => r2(b.filter(r => r.c === c).reduce((s, r) => s + r.fee, 0))) })).filter(s => s.values.some(Boolean)), { ...mk, w: chartW(), fmt: money, tick: compactMoney }), note: 'By channel: never charged on an in-store return.' },
   ], `The fee started in May 2024 at $4.95 and rose to $5.95 in May 2025. It is never charged in store, which is one more reason to steer a customer to a store and an exchange. The extract has no fees for October 2025, likely a gap in the file.${partNote}`);
-  el.innerHTML = head + `<div class="dash-grid">${c1}${monetary?c2:'<section class="card card-pad"><h3>Recorded amounts</h3><p>Select one brand / market to view money. The files do not identify currency or exchange rates, so cross-market totals are not shown.</p></section>'}<div class="dash-two">${c3}${c4}</div>${c5}<div class="dash-two">${c6}${monetary?c7:""}</div>${realProducts()}<div class="dash-two">${realCustomers()}${realOpportunity(rows)}</div></div>`;
+  el.innerHTML = head.replace('<div class="dash-tiles">', c5 + '<div class="dash-tiles">') + `<div class="dash-grid">${c1}${monetary?c2:'<section class="card card-pad"><h3>Recorded amounts</h3><p>Select one brand / market to view money. The files do not identify currency or exchange rates, so cross-market totals are not shown.</p></section>'}<div class="dash-two">${c3}${c4}</div><div class="dash-two">${c6}${monetary?c7:""}</div>${realProducts()}<div class="dash-two">${realCustomers()}${realOpportunity(rows)}</div></div>`;
   countUp(el);
 }
 
@@ -6940,7 +6950,7 @@ act=async function(id,opts={}){if(!BEDROCK_LOCAL)return localAct(id,opts);try{aw
 decideReview=async function(id,choice){if(!BEDROCK_LOCAL)return localReview(id,choice);try{await workspaceCommand({kind:'review',reviewId:id,choice,role:EXPERIENCE.role==='customer_service'?EXPERIENCE.approver:WORK.role});}catch{}};
 gradeAtCounter=async function(id,store,grade){if(!BEDROCK_LOCAL)return localReceipt(id,store,grade);try{return await workspaceCommand({kind:'receipt',caseId:id,store,grade});}catch{}};
 askPolicyReview=async function(id){if(!BEDROCK_LOCAL)return localPolicyReview(id);try{return await workspaceCommand({kind:'policy-review',caseId:id});}catch{}};
-runPrevention=async function(opts={}){if(!BEDROCK_LOCAL)return localPrevention(opts);try{await workspaceCommand({kind:'prevention',caseId:IDX.kase[STATE.active]?.hybrid?STATE.active:null,mode:opts.mode||STATE.mode});}catch{}};
+runPrevention=async function(opts={}){if(!BEDROCK_LOCAL)return localPrevention(opts);try{await workspaceCommand({kind:'prevention',styleId:opts.styleId||null,caseId:Object.hasOwn(opts,'styleId')?null:IDX.kase[STATE.active]?.hybrid?STATE.active:null,mode:opts.mode||STATE.mode});}catch{}};
 resetAll=async function(){if(!BEDROCK_LOCAL)return localReset();try{await workspaceCommand({kind:'reset',mode:'scripted'});}catch{}};
 measureNow=async function(sid){if(!BEDROCK_LOCAL)return localMeasure(sid);try{await workspaceCommand({kind:'measure',styleId:sid,mode:'scripted'});}catch{}};
 stopRun=function(){if(!BEDROCK_LOCAL)return localStop();bedrockPost('/api/workflow/stop',{}).catch(e=>toast(e.message));};
@@ -7048,7 +7058,7 @@ document.addEventListener('input',ev=>{if(ev.target.id==='history-query'){WORK.h
 /* Workspace navigation is a prototype view boundary, not authentication. */
 const EXPERIENCE = { role: 'customer', customerCase: 'maya', approver: 'supervisor', disclosures: {}, historyFrom: 'dashboard' };
 const WORKSPACES = {
-  customer: { label: 'Customer', role: 'customer', pages: ['home', 'return'], nav: [['home','Dashboard','grid'],['return','My return','replan']] },
+  customer: { label: 'Customer', role: 'customer', pages: ['home', 'return', 'scenarios'], nav: [['home','Dashboard','grid'],['return','My return','replan'],['scenarios','Demo use cases','grid']] },
   store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','store','approvals'], nav: [['home','Dashboard','grid'],['store','Store returns','store'],['approvals','Approvals','check']] },
   customer_service: { label: 'Customer Service', role: 'supervisor', pages: TABS.map(t=>t[0]), nav: [['home','Dashboard','grid'],['inbox','Cases','inbox'],['return','Return agent','replan'],['prevention','Prevention agent','spark'],['approvals','Approvals','check'],['dashboard','Insights','chart']] },
 };
@@ -7105,7 +7115,7 @@ function renderPageContext() {
     if(primary==='dashboard')links=[['dashboard','Analytics'],['history','Actual investigations'],['data','Data'],['audit','Audit & fairness'],['evals','Evaluations'],['how','How it works']];
     if(primary==='inbox')links=[['inbox','Saved cases'],['store','Store handoffs']];
     if(primary==='return')links=[['return','Customer cases'],['history','Past return evidence']];
-    if(primary==='prevention')links=[['prevention','Product improvements'],['history','Actual product evidence']];
+    if(primary==='prevention')links=[['prevention','Analysis'],['history','Source records']];
   }
   el.innerHTML=links.length?`<nav class="page-subnav" aria-label="${primary==='dashboard'?'Insights':primary==='inbox'?'Cases':'Agent'} pages">${links.map(([id,label])=>`<button class="subnav-btn" data-tab="${id}" ${id==='history'?`data-history-from="${primary}"`:''} aria-current="${id===current?'page':'false'}">${label}</button>`).join('')}</nav>`:'';
 }
@@ -7133,9 +7143,10 @@ function renderWorkspaceHome() {
     `<div class="home-provenance">${icon('shield')} ${BEDROCK_LOCAL?(WORK.ready?'Saved workspace':'Connecting to saved workspace'):'Offline rehearsal'} · Simulated operations</div>
     <div class="home-metrics">${manager?metric('Awaiting inspection',waiting.length,'Store returns','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
     <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'At the counter':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'store':'approvals'}">View all ${icon('call')}</button></div>
-    ${reviews.slice(0,3).map(r=>focusRow(r.kind==='counter'?'Inspection exception':r.kind==='page_fix'?'Product improvement':r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting. You’re up to date.</div>'}
-    ${manager?waiting.slice(0,2).map(id=>focusRow(caseCtx(id).line.product,IDX.kase[id].return_id+' · Ready for inspection',`data-home-counter="${esc(id)}"`,'Inspect')).join(''):''}</section>
+    ${reviews.slice(0,3).map(r=>manager&&r.case_id?managerQueueRow(r.case_id,`data-home-review="${esc(r.id)}"`,'Review'):focusRow(r.kind==='counter'?caseName(r.case_id)+' · Inspection exception':r.kind==='page_fix'?'Product improvement':r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting. You’re up to date.</div>'}
+    ${manager?waiting.slice(0,2).map(id=>managerQueueRow(id,`data-home-counter="${esc(id)}"`,'Inspect')).join(''):''}</section>
     <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>Inspect. Grade. Route.</h3><p>Review the return, confirm the condition of the pair, and record its next destination.</p><button class="btn" data-tab="store">Open store returns ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
+  if(manager)el.querySelector('.home-metrics').before(el.querySelector('.home-columns'));
 }
 function productThumb(style) {
   const name=style?.name||'Your pair';
@@ -7145,7 +7156,7 @@ function productThumb(style) {
 }
 function renderCustomerReturn() {
   ensureCustomerCase(); const id=STATE.active, el=$('#tab-return');
-  el.innerHTML=pageHeading('Your return', 'Choose the option that works for you. We’ll guide you through the rest.','Customer care')+`<div class="customer-return-layout"><section class="card customer-surface"><div class="phone-body" id="phone"></div>${custChatShell(id)}</section><aside class="customer-reassurance"><div class="agent-symbol">${icon('replan')}</div><h2>Let’s find your perfect next step.</h2><p>Your return agent checks your order and available options. You choose what happens next.</p><div class="help-line">${icon('user')}A team member can help when you need one.</div><span class="pill neutral">${IDX.kase[id].hybrid?'Simulated case · actual product context':'Demo order · synthetic data'}</span></aside></div>`;
+  el.innerHTML=`<div class="demo-context"><span>Demo customer: <b>${esc(caseName(id))}</b></span><button class="text-button" data-tab="scenarios">Change use case ${icon('call')}</button></div>`+pageHeading('Your return', 'Choose the option that works for you. We’ll guide you through the rest.','Customer care')+`<div class="customer-return-layout"><section class="card customer-surface"><div class="phone-body" id="phone"></div>${custChatShell(id)}</section><aside class="customer-reassurance"><div class="agent-symbol">${icon('replan')}</div><h2>Let’s find your perfect next step.</h2><p>Your return agent checks your order and available options. You choose what happens next.</p><div class="help-line">${icon('user')}A team member can help when you need one.</div><span class="pill neutral">${IDX.kase[id].hybrid?'Simulated case · actual product context':'Demo order · synthetic data'}</span></aside></div>`;
   renderPhone(); renderCustChat(id);
   el.querySelectorAll('[data-restart]').forEach(b=>b.remove());
 }
@@ -7173,7 +7184,7 @@ renderApprovals=function(){
 const experiencePrevention=renderPrevention;
 renderPrevention=function(){
   rememberDisclosures($('#tab-prevention')); experiencePrevention();const el=$('#tab-prevention');
-  const head=el.querySelector('.section-head');head.querySelector('h2').textContent='Prevent the next return.';head.querySelector('p').textContent='Investigate patterns, propose a product fix and measure its effect. Explore actual product evidence in the tab above.';
+  const head=el.querySelector('.section-head');head.querySelector('h2').textContent='Prevent the next return.';head.querySelector('p').textContent='Investigate patterns, propose a product fix and measure its effect. Choose the scope above, then review findings and proposed fixes.';
   el.querySelector(':scope > p.small')?.remove();
   const table=head.nextElementSibling;
   if(table?.classList.contains('card')) {const d=document.createElement('details');d.className='card disclosure';d.dataset.disclosure='prevention-patterns';d.innerHTML='<summary>Product signals <span>Synthetic fit-return rates · last 28 days</span></summary>';table.replaceWith(d);d.append(table);}
@@ -7210,6 +7221,134 @@ document.addEventListener('keydown',ev=>{
   else if(ev.key==='Home')at=0;else if(ev.key==='End')at=buttons.length-1;else return;
   ev.preventDefault();const id=buttons[at].dataset.tab;showTab(id);$('#tabbtn-'+id)?.focus();
 });
+
+function selectDemoCustomer(id) {
+  if(anyBusy()||!CASES[id])return;
+  EXPERIENCE.customerCase=id; STATE.active=id; UI.sel={};
+  try{localStorage.setItem('pp-customer-case',id);}catch{}
+  showTab('return');
+}
+function renderDemoScenarios() {
+  const cases=Object.values(IDX.kase).filter(k=>CASES[k.case_id]), featured=DATA.cases.filter(k=>!k.custom&&!k.queue&&!k.hybrid&&['maya','priya','leo','ana','jordan','sam','kai','bianca'].includes(k.case_id));
+  $('#tab-scenarios').innerHTML=pageHeading('Every journey, in one place.','Choose a use case to walk through the customer experience. Progress stays saved when you switch.','Demo use cases')+
+    `<p class="small muted">These are simulated customers for the presentation. Customer Service keeps the shared staff inbox, agent evidence and approvals.</p>
+    <div class="scenario-gallery">${featured.map(k=>`<article class="card scenario-card"><div class="eyebrow">${esc(k.tag)}</div><h2>${esc(caseName(k.case_id))}</h2><p>${esc(k.headline)}</p><span class="pill neutral">${esc(workspaceStatusLabel(CASES[k.case_id]))}</span><button class="btn secondary" data-demo-case="${esc(k.case_id)}" ${anyBusy()?'disabled':''}>Open this journey ${icon('call')}</button></article>`).join('')}</div>
+    <section class="card card-pad saved-demo"><h2>More saved customers</h2><p class="small muted">Open any saved demonstration, including new customers and cases created from actual product evidence.</p><label for="demo-case-picker">Choose a customer / case</label><select id="demo-case-picker" ${anyBusy()?'disabled':''}><option value="">Select a saved case…</option>${cases.map(k=>`<option value="${esc(k.case_id)}">${esc(caseName(k.case_id))} · ${esc(k.tag||k.headline||k.case_id)} · ${esc(k.case_id)}</option>`).join('')}</select></section>`;
+}
+function customerAssessment(id) {
+  const cs=CASES[id], reviews=Object.values(SYS.reviews).filter(r=>r.case_id===id&&r.status!=='superseded');
+  const pending=reviews.filter(r=>['pending','more_info'].includes(r.status)), flag=!!cs.flags?.suspected_abuse;
+  if(flag)return {tone:pending.length?'bad':'warn',label:pending.length?'Flagged for review':'Flag reviewed',detail:'The agent escalated an evidence concern. This is a case review flag, not a finding of fraud.',review:reviews.find(r=>['case','action'].includes(r.kind))};
+  if(pending.length)return {tone:'warn',label:'Team review needed',detail:'This case needs a person’s decision. A review request does not necessarily mean suspected abuse.',review:pending[0]};
+  if(cs.error||['error','needs_person'].includes(cs.status))return {tone:'warn',label:'Assessment incomplete',detail:'The run needs attention. Do not interpret an incomplete investigation as a clear assessment.'};
+  if(['investigating','acting'].includes(cs.status))return {tone:'info',label:'Assessment in progress',detail:'Wait for the agent’s completed findings.'};
+  if(!cs.decision)return {tone:'neutral',label:'Not assessed',detail:'The agent has not completed this case. History alone has not flagged the customer.'};
+  return {tone:'ok',label:'No review flag raised',detail:'The completed investigation raised no customer evidence flag. Eligibility and item checks still apply.'};
+}
+function managerCustomerCard(id) {
+  if(!id||!CASES[id]||EXPERIENCE.role==='customer')return '';
+  const {c,k}=caseCtx(id),cs=CASES[id],assessment=customerAssessment(id),isNew=c.lifetime_orders<=1;
+  const history=IDX.histByCust[c.customer_id]||[], prior=history.filter(r=>r.outcome!=='return in progress');
+  const trusted=trustedForEarlyRefund(c), d=cs.decision;
+  const rows=prior.slice().sort((a,b)=>b.order_date.localeCompare(a.order_date)).slice(0,5);
+  return `<section class="card customer-first" data-customer-profile="${esc(id)}">
+    <div class="customer-first-head"><div><div class="eyebrow">Customer overview · ${k.hybrid?'synthetic profile, actual product context':'synthetic demo history'}</div><h2>${esc(caseName(id))}</h2><span class="small muted">${esc(c.customer_id)} · ${esc(c.region)} · ${esc(c.loyalty_status)}${c.loyalty_status==='Member'?'':' member'}</span></div><div class="customer-badges"><span class="pill ${isNew?'info':'neutral'}">${isNew?'New customer':'Returning customer'}</span><span class="pill ${assessment.tone}" data-assessment>${esc(assessment.label)}</span><span class="pill neutral">${esc(workspaceStatusLabel(cs))}</span></div></div>
+    <div class="customer-key-facts"><div><small>Lifetime orders</small><strong>${num(c.lifetime_orders)}</strong></div><div><small>Recorded past returns</small><strong>${num(c.number_of_returns)}</strong></div><div><small>Profile return rate</small><strong>${isNew?'No history yet':pct(c.return_rate,1)}</strong></div><div><small>Damage claims · 90 days</small><strong>${num(c.damage_claims_90d)}</strong></div></div>
+    <div class="agent-treatment"><div class="eyebrow">How the agent handles this case ${cs.mode?'· '+esc(cs.mode):''}</div><p>${esc(assessment.detail)}</p>${assessment.review?`<p><b>Reason:</b> ${esc(assessment.review.reason)}<br><b>Next step:</b> ${esc(assessment.review.recommendation)}</p>`:d?`<p><b>Current decision:</b> ${esc(d.summary)}${d.recommended?`<br><b>Recommended option:</b> ${esc(d.recommended.replaceAll('_',' '))}`:''}</p>`:''}
+    ${cs.chosen?`<p><b>Customer chose:</b> ${esc(cs.chosen.option.replaceAll('_',' '))}</p>`:''}<p class="small muted">${isNew?'No prior history: assess the order, item condition and policy; newness is not grounds for refusal.':'Return history provides context; the return rate alone never refuses a return.'} ${trusted?'This profile meets the demo’s early-refund rule (Gold/Silver and return rate ≤20%): an eligible refund can be released after the store checks the pair at drop-off.':'This profile does not meet the demo’s early-refund rule: an eligible standard refund waits for receipt and inspection.'} ${assessment.label.startsWith('Flag')?'A supervisor must review flagged financial actions (R8). ':''}Item evidence, eligibility and approval controls still determine the final output (§3.1, §7.2, R11/R13).</p></div>
+    <details class="inline-disclosure" data-disclosure="customer-history-${esc(id)}"><summary>Recent customer history & agent evidence</summary>${rows.length?tableView(['Date','Product','Outcome','Reason'],rows.map(r=>[r.order_date,r.product,r.outcome.replaceAll('_',' '),r.return_reason?.replaceAll('_',' ')||'—'])).replace('<details','<details open'):'<p>No earlier completed orders in the demo history.</p>'}<p class="small muted">Showing up to five completed orders. The profile return rate uses the saved lifetime profile; the table is a recent-history view.</p>${assessment.review?.evidence?.length?`<ul>${assessment.review.evidence.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}</details>
+  </section>`;
+}
+document.addEventListener('click',ev=>{const t=ev.target.closest('[data-demo-case]');if(t)selectDemoCustomer(t.dataset.demoCase);});
+document.addEventListener('change',ev=>{if(ev.target.id==='demo-case-picker'&&ev.target.value)selectDemoCustomer(ev.target.value);});
+
+function managerQueueRow(id,action,label) {
+  const {c,line}=caseCtx(id),a=customerAssessment(id),isNew=c.lifetime_orders<=1;
+  return `<div class="customer-queue-row"><div><b>${esc(caseName(id))}</b><p>${isNew?'New customer':num(c.lifetime_orders)+' orders · '+pct(c.return_rate,1)+' return rate'} · ${esc(line.product)}</p><span class="pill ${a.tone}">${esc(a.label)}</span></div><button class="btn secondary sm" ${action}>${esc(label)} ${icon('call')}</button></div>`;
+}
+
+const PREVENT_VIEW={banner:'ALDO_CA',scope:'all',browserOpen:true,sku:null,product:null,styleId:null,q:'',offset:0,cache:new Map(),pending:new Set(),error:null};
+const COMPANY_NAMES={ALDO:'ALDO',CIS:'Call It Spring',SPERRY:'Sperry',GLOBO:'Globo',GHBASS:'G.H. Bass'};
+const marketName=b=>b.endsWith('_CA')?'Canada':b.endsWith('_US')?'United States':b.split('_').at(-1);
+function preventionKey(){const v=PREVENT_VIEW;return [WORK.history?.dataset_id,v.banner,v.q,v.offset].join('|');}
+function preventionControls(actual,overview) {
+  const v=PREVENT_VIEW,banners=overview?.banners||REAL?.banners||['ALDO_CA','ALDO_US'],company=v.banner.split('_')[0],companies=[...new Set(banners.map(b=>b.split('_')[0]))],disabled=anyBusy()?'disabled':'';
+  return `<section class="card prevention-scope"><div class="scope-fields">
+    <label>Dataset<select id="prevention-source" ${disabled}><option value="actual" ${actual?'selected':''}>Actual supplied data</option><option value="synthetic" ${!actual?'selected':''}>Synthetic demo</option></select></label>
+    <label>Company<select id="prevention-company" ${!actual?'disabled':disabled}>${(actual?companies:['ALDO']).map(c=>`<option value="${esc(c)}" ${actual&&c===company?'selected':''}>${esc(COMPANY_NAMES[c]||c)}</option>`).join('')}</select></label>
+    <label>Market<select id="prevention-market" ${!actual?'disabled':disabled}>${actual?banners.filter(b=>b.split('_')[0]===company).map(b=>`<option value="${esc(b)}" ${b===v.banner?'selected':''}>${esc(marketName(b))}</option>`).join(''):'<option>Canada · demo network</option>'}</select></label>
+    <label>Analyze<select id="prevention-scope" ${disabled}><option value="all" ${v.scope==='all'?'selected':''}>All products</option><option value="single" ${v.scope==='single'?'selected':''}>One product</option></select></label>
+    </div><p class="small muted">${actual?'Markets come from the supplied files. No verified individual-store breakdown is available.':'Synthetic reviews, stock, customer histories and outcomes support the operational rehearsal. Company and market are fixed to the demo network.'}</p>
+    ${!actual&&v.scope==='single'?`<label class="scope-product">Product<select id="prevention-style" ${disabled}><option value="">Choose a product…</option>${DATA.catalogue.filter(s=>s.category!=='Accessories').map(s=>`<option value="${esc(s.style_id)}" ${v.styleId===s.style_id?'selected':''}>${esc(s.name)} · ${esc(s.style_id)}${s.hybrid?' · actual context + synthetic assumptions':''}</option>`).join('')}</select></label>`:''}
+    </section>`;
+}
+async function loadPreventionEvidence(key) {
+  if(PREVENT_VIEW.pending.has(key))return;
+  const v=PREVENT_VIEW,banner=v.banner,q=v.q,offset=v.offset;
+  v.pending.add(key);
+  try {
+    const [overview,page]=await Promise.all([workspaceGet('/api/history/overview?'+new URLSearchParams({banner})),workspaceGet('/api/history/products?'+new URLSearchParams({banner,q,offset:String(offset)}))]);
+    v.cache.set(key,{overview,page});v.error=null;
+  } catch(e){if(key===preventionKey())v.error=e.message;}
+  finally {v.pending.delete(key);if(STATE.tab==='prevention'&&UI.dataSource==='actual'&&key===preventionKey())renderPrevention();}
+}
+function preventionProblem(e,all) {
+  const rows=all?e.totals.rows:e.rows,reasons=e.reasons.slice(0,8),label=all?(BANNER_WORD[e.banner]||e.banner):(e.name||e.sku);
+  return `<section class="card card-pad prevention-problem"><div class="eyebrow">01 · See the problem · actual records</div><h2>What brings customers back?</h2><p>${num(rows)} return records ${all?'across '+num(e.products)+' products':'for '+esc(e.sku)}. Showing the ${Math.min(8,e.reasons.length)} most frequent recorded reasons.</p><div class="tbl-wrap">${heatHTML({corner:'Selected scope',rows:[label],cols:reasons.map(r=>r.reason||'Not supplied'),fmt:v=>pct(v,1),cells:[reasons.map(r=>({v:rows?r.rows/rows:0,tip:`${r.rows} of ${rows} return records`}))]})}</div><p class="small muted">Share of return records, including open or failed records; not a sales-based return rate or proof of cause.</p><button class="text-button" data-evidence="${esc(e.citations[0])}">View source evidence ${icon('call')}</button></section>`;
+}
+const renderOperationalPrevention=renderPrevention;
+renderPrevention=function(){
+  const el=$('#tab-prevention'),v=PREVENT_VIEW,actual=UI.dataSource==='actual';
+  rememberDisclosures(el);
+  if(!actual) {
+    renderOperationalPrevention();
+    el.insertAdjacentHTML('afterbegin',preventionControls(false));
+    const run=$('#prev-run');run.textContent=v.scope==='single'?'Analyze selected product':'Analyze all demo products';run.disabled=anyBusy()||(v.scope==='single'&&!v.styleId);
+    if(STATE.prevention.events.length)run.closest('.section-head').insertAdjacentHTML('afterend',`<p class="small muted">Saved operational run: ${STATE.prevention.styleId?esc(styleName(STATE.prevention.styleId)):'all demo products'}. The controls above set the next run.</p>`);
+    return;
+  }
+  const data=v.cache.get(preventionKey());
+  el.innerHTML=pageHeading('Prevent the next return.','Choose a company and market. Investigate the whole assortment or focus on a single product.','Prevention agent')+preventionControls(true,data?.overview);
+  if(!BEDROCK_LOCAL||!WORK.ready||!WORK.history){el.insertAdjacentHTML('beforeend','<section class="card card-pad"><h2>Connect the supplied records</h2><p>Actual investigations need the local server with the source files imported. The synthetic demo and actual aggregate Insights are still available.</p></section>');return;}
+  if(!data){el.insertAdjacentHTML('beforeend',`<p role="status">${esc(v.error||'Loading the selected market…')}</p>${v.error?'<button class="btn secondary" id="prevention-retry">Try again</button>':''}`);if(!v.error)loadPreventionEvidence(preventionKey());return;}
+  const {overview,page}=data,selected=v.scope==='single'?v.product:overview,valid=!!selected;
+  if(v.scope==='single')el.insertAdjacentHTML('beforeend',`<details class="card disclosure" ${v.browserOpen?'open':''} id="prevention-products"><summary>${v.product?'Change product · '+esc(v.product.name||v.product.sku):'Choose a product'} <span>Search the selected market’s ${num(overview.products)} products</span></summary><div class="card-pad"><label for="prevention-query">Product name or SKU</label><input id="prevention-query" type="search" value="${esc(v.q)}" placeholder="Search supplied products" ${anyBusy()?'disabled':''}><div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Return records</th><th></th></tr></thead><tbody>${page.products.map(p=>`<tr><td>${esc(p.name||'Name not supplied')}<br><span class="small mono">${esc(p.sku)}</span></td><td>${num(p.rows)}</td><td><button class="btn secondary sm" data-prevention-product="${esc(p.sku)}" ${anyBusy()?'disabled':''}>Select product</button></td></tr>`).join('')||'<tr><td colspan="3">No matching products.</td></tr>'}</tbody></table></div><div class="dataset-bar"><button class="btn secondary sm" data-prevention-page="-1" ${anyBusy()||!v.offset?'disabled':''}>Previous</button><span>${page.total?v.offset+1:0}–${Math.min(v.offset+25,page.total)} of ${num(page.total)}</span><button class="btn secondary sm" data-prevention-page="1" ${anyBusy()||v.offset+25>=page.total?'disabled':''}>Next</button></div></div></details>`);
+  if(selected)el.insertAdjacentHTML('beforeend',preventionProblem(selected,v.scope==='all'));
+  const scopeLabel=v.scope==='all'?`${BANNER_WORD[v.banner]||v.banner} · all products`:v.product?`${BANNER_WORD[v.banner]||v.banner} · ${v.product.name||v.sku} (${v.sku})`:'Select a product above';
+  el.insertAdjacentHTML('beforeend',`<section class="card card-pad prevention-launch"><div><div class="eyebrow">02 · Investigate the evidence</div><h2>${esc(scopeLabel)}</h2><p class="small muted">${STATE.mode==='live'?'Live agent':'Scripted demonstration'} · findings link back to the original source. Historical analysis proposes next steps; it does not change product pages or create refunds.</p></div><button class="btn" id="prevention-investigate" ${!valid||anyBusy()?'disabled':''}>${v.scope==='all'?'Analyze all products':'Analyze this product'} ${icon('play')}</button></section>`);
+  const runs=WORK.historyRuns.filter(r=>r.agent==='prevention'&&r.dataset_id===WORK.history.dataset_id&&r.banner===v.banner&&(r.sku||null)===(v.scope==='single'?v.sku:null));
+  el.insertAdjacentHTML('beforeend',`<section class="stack prevention-results"><div class="eyebrow">03 · Review findings</div>${runs.length?runs.slice(0,5).map(historyRunHTML).join(''):'<div class="card card-pad"><h3>Ready to investigate</h3><p>Run the analysis to see evidence, uncertainties and proposed next steps for this selection.</p></div>'}</section>`);
+  restoreDisclosures(el);
+};
+function resetPreventionScope(){const v=PREVENT_VIEW;v.sku=null;v.product=null;v.q='';v.offset=0;v.error=null;v.browserOpen=true;}
+document.addEventListener('change',ev=>{
+  const t=ev.target,v=PREVENT_VIEW;if(!t.id.startsWith('prevention-')||anyBusy())return;
+  if(t.id==='prevention-source'){setDataSource(t.value,false);v.error=null;renderPrevention();}
+  if(t.id==='prevention-company'){v.banner=(REAL?.banners||[]).find(b=>b.split('_')[0]===t.value)||'ALDO_CA';resetPreventionScope();renderPrevention();}
+  if(t.id==='prevention-market'){v.banner=t.value;resetPreventionScope();renderPrevention();}
+  if(t.id==='prevention-scope'){v.scope=t.value;renderPrevention();}
+  if(t.id==='prevention-style'){v.styleId=t.value||null;renderPrevention();}
+});
+document.addEventListener('click',async ev=>{
+  const t=ev.target.closest('button');if(!t)return;const v=PREVENT_VIEW;
+  if(t.id==='prev-run'){
+    ev.stopImmediatePropagation();if(anyBusy()||(v.scope==='single'&&!v.styleId))return;
+    return runPrevention({styleId:v.scope==='single'?v.styleId:null});
+  }
+  try {
+    if(t.id==='prevention-retry'){v.error=null;renderPrevention();}
+    if(t.dataset.preventionProduct){const banner=v.banner,sku=t.dataset.preventionProduct;const product=await workspaceGet('/api/history/product?'+new URLSearchParams({banner,sku}));if(v.banner!==banner||STATE.tab!=='prevention'||UI.dataSource!=='actual')return;v.sku=sku;v.product=product;v.browserOpen=false;renderPrevention();}
+    if(t.dataset.preventionPage){v.offset=Math.max(0,v.offset+Number(t.dataset.preventionPage)*25);v.error=null;renderPrevention();}
+    if(t.id==='prevention-investigate'){if(anyBusy()||(v.scope==='single'&&!v.product))return;const command={kind:'history',agent:'prevention',banner:v.banner,sku:v.scope==='single'?v.sku:null,dataset_id:WORK.history.dataset_id};const pending=workspaceCommand(command);renderPrevention();await pending;}
+  }catch(e){toast(e.message);}
+},true);
+document.addEventListener('input',ev=>{
+  if(ev.target.id!=='prevention-query')return;
+  PREVENT_VIEW.q=ev.target.value;PREVENT_VIEW.offset=0;PREVENT_VIEW.error=null;clearTimeout(PREVENT_VIEW.timer);
+  PREVENT_VIEW.timer=setTimeout(async()=>{const key=preventionKey();await loadPreventionEvidence(key);if(key!==preventionKey())return;const input=$('#prevention-query');input?.focus();input?.setSelectionRange(input.value.length,input.value.length);},250);
+});
+
+document.addEventListener('toggle',ev=>{if(ev.target.id==='prevention-products'&&ev.target.isConnected)PREVENT_VIEW.browserOpen=ev.target.open;},true);
 
 boot();
 

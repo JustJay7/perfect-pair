@@ -22,7 +22,10 @@ export class Evidence {
     const banners = this.db.prepare('SELECT DISTINCT banner FROM products ORDER BY banner').all().map(r => r.banner);
     if (!banners.includes(banner)) throw fail('bad_scope', 'Select a supplied brand and market.');
     const totals = this.db.prepare('SELECT count(*) AS rows,sum(qty) AS quantity,count(DISTINCT rkey) AS transactions,min(date) AS start,max(date) AS end FROM returns WHERE banner=?').get(banner);
-    const result=this.scope('overview', [banner], { banner, banners, totals, sources: this.manifest.sources });this.overviews.set(banner,result);return result;
+    const reasons = this.db.prepare('SELECT reason,count(*) AS rows,sum(qty) AS quantity FROM returns WHERE banner=? GROUP BY reason ORDER BY rows DESC,reason').all(banner);
+    const products = this.db.prepare('SELECT count(*) AS n FROM products WHERE banner=?').get(banner).n;
+    const top_products = this.db.prepare('SELECT sku,name,rows,quantity FROM products WHERE banner=? ORDER BY rows DESC,sku LIMIT 10').all(banner);
+    const result=this.scope('overview', [banner], { banner, banners, totals, reasons, products, top_products, currency:null, return_rate:null, sources: this.manifest.sources });this.overviews.set(banner,result);return result;
   }
   products({ banner = 'ALDO_CA', q = '', offset = 0 } = {}) {
     this.overview(banner);

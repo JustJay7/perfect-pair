@@ -52,3 +52,23 @@ test('custom cases and photo evidence survive another case and a server restart'
 });
 test('failed action commit rolls back both the action key and the durable snapshot',async t=>{const{w}=fixture(t);const before=w.store.load(),key='duplicate-transaction';w.store.commit(before,{key,payload:{v:1},result:{id:1}});assert.throws(()=>w.store.commit({...before,version:999},{key,payload:{v:2},result:{id:2}}));assert.equal(w.store.load().version,before.version);assert.equal(w.store.getAction(key).result.id,1);});
 test('expired holds stop blocking stock and cannot be exchanged',async t=>{const{w}=fixture(t);await command(w,{kind:'investigate',caseId:'maya'});const a=w.api,sku=a.CASES.maya.decision.options.find(x=>x.type==='exchange').sku,inv=a.DATA.inventory.find(x=>x.sku===sku&&x.available_to_promise>0);inv.available_to_promise=1;a.STATE.failureSwitch=false;a.CASES.maya.chosen={option:'exchange'};a.SYS.holds.old={hold_id:'old',case_id:'maya',sku,location_id:inv.location_id,status:'held',created:Date.now()-49*3600000};await assert.rejects(call(w,'maya','create_exchange',{return_id:a.IDX.kase.maya.return_id,new_sku:sku,hold_id:'old'}),/expired/);const hold=await call(w,'maya','reserve_pair',{return_id:a.IDX.kase.maya.return_id,sku,location_id:inv.location_id});assert.ok(hold.hold_id);});
+test('market-wide Prevention covers all records in one banner, retains evidence in replay and never settles money',async t=>{
+ const f=fixture(t),w=f.w;await command(w,{kind:'history',agent:'prevention',banner:'ALDO_CA',dataset_id:f.dataset});
+ const run=w.historyRuns[0],e=w.evidence.resolve(run.findings[0].citations[0]);
+ assert.equal(run.sku,null);assert.equal(e.totals.rows,2);assert.equal(e.products,1);assert.equal(e.reasons.reduce((n,r)=>n+r.rows,0),2);assert.equal(e.top_products[0].sku,'A');assert.equal(e.return_rate,null);
+ assert.equal(run.observations[0].tool,'history_overview');assert.deepEqual(run.actions_taken,[]);
+ const replay=w.store.readReplay(w.saveReplay(null,run.id));assert.match(replay.label,/ALDO_CA.*all products/);assert.equal(replay.history.observations[0].result.totals.rows,2);
+ await command(w,{kind:'history',agent:'prevention',banner:'ALDO_US',dataset_id:f.dataset});assert.equal(w.historyRuns[0].observations[0].result.totals.rows,1);
+ await command(w,{kind:'history',agent:'resolution',banner:'ALDO_CA',row:1,dataset_id:f.dataset},'error');assert.equal(w.job.code,'bad_scope');
+ await command(w,{kind:'history',agent:'prevention',banner:'ALDO_STORE_1',dataset_id:f.dataset},'error');assert.equal(w.job.code,'bad_scope');
+});
+test('live market-wide Prevention is required to observe its fixed market before findings',async t=>{
+ let skip=false;const service={ready:true,async start(){return skip?{id:'mock',done:true,text:JSON.stringify({summary:'Unsupported',findings:[{observation:'Claim',uncertainty:'Unknown',citations:['fake']}]})}:{id:'mock',tools:[{name:'history_overview',input:{banner:'ALDO_US'},toolUseId:'o'}]};},async resume(id,results){assert.equal(results[0].result.banner,'ALDO_CA');return {id,done:true,modelId:'mock',text:JSON.stringify({summary:'Selected market',findings:[{observation:'Two return records',uncertainty:'No sales denominator',citations:results[0].result.citations}]})};},cancel(){}};
+ const f=fixture(t,service);await command(f.w,{kind:'history',agent:'prevention',mode:'live',banner:'ALDO_CA',dataset_id:f.dataset});skip=true;
+ await command(f.w,{kind:'history',agent:'prevention',mode:'live',banner:'ALDO_CA',dataset_id:f.dataset},'error');assert.equal(f.w.job.code,'uncited_findings');
+});
+test('synthetic Prevention respects a selected product and rejects unknown products',async t=>{
+ const{w}=fixture(t);const styleId=w.api.caseCtx('maya').line.style_id;await command(w,{kind:'prevention',styleId});
+ assert.equal(w.api.STATE.prevention.styleId,styleId);assert.ok(w.api.STATE.prevention.events.filter(e=>e.tool==='get_return_rate_report'&&e.result).every(e=>e.result.rows.every(r=>r.style_id===styleId)));
+ assert.ok(w.api.STATE.prevention.findings.list.every(f=>f.style_id===styleId));await command(w,{kind:'prevention',styleId:'missing'},'error');assert.equal(w.job.code,'bad_scope');
+});

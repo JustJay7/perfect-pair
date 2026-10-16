@@ -14,7 +14,7 @@ Use **Viewing as** in the top right. The selected workspace is remembered on thi
 
 | Workspace | Pages |
 |---|---|
-| Customer | Dashboard and My return. A single customer journey, with options, progress and Help. |
+| Customer | Dashboard, My return and Demo use cases. Select a demonstration, then follow its customer journey with options, progress and Help. |
 | Store Manager | Dashboard, Store returns and Approvals filtered to store inspection exceptions. |
 | Customer Service | Dashboard, Cases, Return agent, Prevention agent, Approvals and Insights. |
 
@@ -63,6 +63,14 @@ AWS attempts subscription in the background and later calls can be denied;
 see [AWS model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html).
 The connection test alone does not verify a full agent workflow.
 
+### Demo navigation and customer context
+
+- **Customer → Demo use cases** presents all eight original scenarios; the saved-customer selector also opens queued, custom and hybrid cases. Selecting a journey preserves its progress. Customer Service retains the operational case inbox.
+- **Store Manager → Store returns / Approvals** shows the customer first: lifetime profile counts, return rate, recent history, new/returning status and a separate color-coded agent assessment. Grey means not assessed, blue means in progress, green means no flag raised, amber means review/incomplete, and red means an active evidence flag. Text labels accompany every color. All operational customer profiles are synthetic, including hybrid cases.
+- History does not automatically reject a customer. Existing policy uses Gold/Silver status and a return rate ≤20% for early refund eligibility, with inspection required. An agent evidence flag routes financial actions to supervisor review; new customers receive the same eligibility assessment, with ordinary receipt/inspection timing. The card shows the saved decision or review reason, not an invented explanation.
+- **Customer Service → Insights** puts the reason heatmap before the metrics and other charts, for both datasets.
+- **Prevention agent** has dataset, company, market and all-products/single-product controls. Actual company/market choices follow the imported banners (ALDO, Call It Spring and Sperry). Actual analysis is read-only and source-linked; all-products totals cover the entire selected market, while the ranked product list is a sample. The synthetic network is fixed to Canada and supports all demo products or one style, with the existing approval and measurement flow.
+
 ### Architecture and current boundary
 
 Browser → local Node server → Resolution / Prevention workflow → Bedrock Converse
@@ -71,11 +79,10 @@ Browser → local Node server → Resolution / Prevention workflow → Bedrock C
 - Resolution can review one historical return, or operate a separate simulated
   case after a customer chooses a remedy. Payments and exchanges stay held until
   inspection, except an eligible keep-it refund.
-- Prevention can investigate one actual SKU with source-linked observations, or
-  run the existing synthetic product-fix workflow. For a hybrid case, operational
-  Prevention is scoped to that simulated product. A demo merchandiser approves
+- Prevention can investigate all products in one actual brand/market or a selected SKU with source-linked observations, or
+  run the existing synthetic product-fix workflow. A hybrid product is also selectable in the synthetic operational analysis, scoped to that simulated product. A demo merchandiser approves
   page changes; measurement uses explicitly synthetic test data.
-- Historical agents have only read tools, bound to the selected product/return.
+- Historical agents have only read tools, bound to the selected brand/market, product or return.
   Each finding must cite evidence actually returned by a tool. They cannot issue
   a second refund for a past return. Citation validation establishes provenance,
   not the correctness of every model interpretation.
@@ -111,6 +118,7 @@ customer handoffs are saved server-side with the submitted conversation excerpt.
 - `npm test`: transport, access checks, durable cases, concurrency, duplicate
   actions, roles, source joins, scoped investigations and replay integrity. AWS
   responses are mocked; no inference costs.
+- `npm run test:journeys-browser`: scenario selection, customer status and history, heatmap ordering, actual market/product isolation, synthetic product scoping and mobile layouts.
 - `npm run test:experience-browser`: three role views, guarded navigation, a
   customer exchange, store inspection, specialist approval, saved workspace and
   customer selection, expandable evidence, mobile pages and dark mode.
@@ -211,7 +219,7 @@ dashboard suppresses cross-banner monetary totals. `Book.xlsx` is empty and supp
 | `source/import_evidence.py` | Full source-record SQLite importer with source hashes; local database excluded from Git |
 | `source/src/workspace.js`, `history.js`, `state.js`, `hybrid.js` | Saved-case interface, source investigations, shared snapshots and labelled synthetic supplementation |
 | `source/gen_real.py` | Rebuilds `src/real.json` from the five supplied CSVs, with source hashes and join coverage |
-| `source/src/experience.js`, `experience.css` | Three workspace views, focused dashboards, navigation, progressive disclosure and responsive layout |
+| `source/src/experience.js`, `experience.css`, `journeys.js`, `prevention_scope.js` | Three workspace views, focused dashboards, navigation, progressive disclosure and responsive layout |
 | `source/src/data_source.js` | Synthetic / Actual selection and the actual-data explorer |
 | `data/` | The synthetic tables as CSV, for loading into DynamoDB / S3 / Athena |
 | `agent/` | `tools.json` (original tool schemas for a possible AgentCore/Lambda deployment), `tool_sets.json`, `prompts/`, `safety_rules.md` (rules R1 to R13 and the Cedar policies) |

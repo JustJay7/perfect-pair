@@ -1,0 +1,48 @@
+const assert=require('node:assert/strict');
+const {mkdtempSync,rmSync,mkdirSync}=require('node:fs');
+const {join}=require('node:path');
+const {tmpdir}=require('node:os');
+const {once}=require('node:events');
+const {chromium}=require('playwright');
+(async()=>{
+ const {createServer}=await import('../backend/server.mjs'),{historyFixture}=await import('./history-fixture.mjs');
+ const dir=mkdtempSync(join(tmpdir(),'pp-journeys-')),historyPath=join(dir,'history.sqlite');historyFixture(historyPath);
+ const server=createServer({workspacePath:join(dir,'workspace.sqlite'),historyPath});server.listen(0,'127.0.0.1');await once(server,'listening');
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ try {
+  const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));await page.route('https://**/*',r=>r.abort());
+  const ready=()=>page.waitForFunction(()=>WORK.ready&&!WORK.busy),role=r=>page.locator('#workspace-role').selectOption(r);
+  const shot=async name=>{if(process.env.PP_SCREENSHOTS){mkdirSync(process.env.PP_SCREENSHOTS,{recursive:true});await page.screenshot({path:join(process.env.PP_SCREENSHOTS,name+'.png'),fullPage:true});}};
+  await page.goto(`http://127.0.0.1:${server.address().port}`);await ready();
+  await page.locator('#tabbtn-scenarios').click();assert.equal(await page.locator('[data-demo-case]').count(),8);await shot('customer-use-cases');
+  for(const id of ['priya','leo','ana','sam','kai','bianca','maya']){await page.locator(`[data-demo-case="${id}"]`).click();assert.equal(await page.evaluate(()=>STATE.active),id);assert.equal(await page.locator('#console-head').count(),0);await page.locator('#tabbtn-scenarios').click();}
+  await page.locator('[data-demo-case="jordan"]').click();await page.reload();await ready();assert.equal(await page.evaluate(()=>STATE.active),'jordan');await page.locator('#tabbtn-return').click();
+  await page.locator('#start-btn').click();await page.waitForFunction(()=>CASES.jordan.flags.suspected_abuse&&!WORK.busy);
+  await role('customer_service');await page.locator('#tabbtn-approvals').click();const review=await page.evaluate(()=>Object.values(SYS.reviews).find(r=>r.case_id==='jordan'&&r.status==='pending').id);await page.locator(`[data-apopen="${review}"]`).click();
+  const profile=page.locator('[data-customer-profile="jordan"]');assert.match(await profile.textContent(),/Flagged for review/);assert.match(await profile.textContent(),/supervisor/);await shot('agent-review-status');
+  const newCase=await page.evaluate(async()=>{const r=await workspaceCommand({kind:'custom',spec:{sku:caseCtx('maya').line.sku,name:'First-time shopper',region:'Greater Montreal',days_since_delivery:3,words:'The shoes feel too narrow',grade:'A',matches:true},mode:'scripted'});return r.caseId;});
+  assert.ok(newCase,'New customer exists in saved demonstrations');const newProfile=await page.evaluate(id=>managerCustomerCard(id),newCase);assert.match(newProfile,/New customer/);assert.match(newProfile,/newness is not grounds for refusal/);assert.equal(await page.evaluate(id=>CASES[id].flags.suspected_abuse||false,newCase),false);
+  const unassessed=await page.evaluate(()=>customerAssessment('priya'));assert.equal(unassessed.label,'Not assessed');
+  await role('customer');await page.locator('#tabbtn-scenarios').click();await page.locator('[data-demo-case="maya"]').click();await page.locator('#start-btn').click();await page.waitForFunction(()=>CASES.maya.status==='options'&&!WORK.busy);await page.locator('[data-choose="refund"]').click();await page.locator('#m-store').check();await page.locator('#confirm-btn').click();await page.waitForFunction(()=>CASES.maya.status==='done'&&!WORK.busy);
+  await role('store_manager');await page.locator('#tabbtn-store').click();await page.locator('[data-counter="maya"]').click();
+  assert.match(await page.locator('[data-customer-profile="maya"]').textContent(),/No review flag raised/);assert.match(await page.locator('[data-customer-profile="maya"]').textContent(),/Customer chose: refund/);
+  assert.ok(await page.evaluate(()=>document.querySelector('[data-customer-profile]').compareDocumentPosition(document.querySelector('#counter-confirm'))&Node.DOCUMENT_POSITION_FOLLOWING));await shot('manager-customer-first');
+  await role('customer_service');await page.locator('#tabbtn-dashboard').click();
+  assert.ok(await page.evaluate(()=>{const h=[...document.querySelectorAll('#tab-dashboard .chart-card')].find(e=>e.textContent.includes('Why customers returned, by'));return !!h&&(h.compareDocumentPosition(document.querySelector('.dash-tiles'))&Node.DOCUMENT_POSITION_FOLLOWING);}));
+  await page.evaluate(()=>setDataSource('actual'));assert.ok(await page.evaluate(()=>{const h=[...document.querySelectorAll('#tab-dashboard .chart-card')].find(e=>e.textContent.includes('Reasons by banner'));return !!h&&(h.compareDocumentPosition(document.querySelector('.dash-tiles'))&Node.DOCUMENT_POSITION_FOLLOWING);}));await shot('analytics-heatmap-first');
+  await page.locator('#tabbtn-prevention').click();await page.waitForSelector('#prevention-investigate');
+  assert.equal(await page.locator('#prevention-company').inputValue(),'ALDO');assert.equal(await page.locator('#prevention-market').inputValue(),'ALDO_CA');
+  await page.locator('#prevention-investigate').click();await ready();assert.equal(await page.evaluate(()=>WORK.historyRuns[0].sku),null);assert.equal(await page.evaluate(()=>WORK.historyRuns[0].observations[0].result.totals.rows),2);await shot('prevention-all-products');
+  await page.locator('.prevention-results [data-evidence]').first().click();assert.match(await page.locator('#evidence-dialog').textContent(),/ALDO_CA/);await page.locator('#evidence-dialog').evaluate(d=>d.close());
+  await page.locator('#prevention-market').selectOption('ALDO_US');await page.waitForSelector('#prevention-investigate');assert.equal(await page.locator('.prevention-results article').count(),0,'Other-market findings must not leak');
+  await page.locator('#prevention-investigate').click();await ready();assert.equal(await page.evaluate(()=>WORK.historyRuns[0].observations[0].result.totals.rows),1);
+  await page.locator('#prevention-scope').selectOption('single');assert.equal(await page.locator('#prevention-investigate').isDisabled(),true);await page.locator('[data-prevention-product="B"]').click();await page.locator('#prevention-investigate').click();await ready();assert.equal(await page.evaluate(()=>WORK.historyRuns[0].sku),'B');await shot('prevention-single-product');
+  await page.locator('#prevention-market').selectOption('ALDO_CA');await page.waitForSelector('[data-prevention-product="A"]');assert.equal(await page.locator('#prevention-investigate').isDisabled(),true,'Product selection clears on market change');
+  await page.locator('#prevention-query').fill('no matching sku');await page.waitForFunction(()=>document.querySelector('#tab-prevention').textContent.includes('No matching products.'));
+  await page.locator('#prevention-source').selectOption('synthetic');const styleId=await page.evaluate(()=>caseCtx('maya').line.style_id);await page.locator('#prevention-style').selectOption(styleId);await page.locator('#prev-run').click();await page.waitForFunction(()=>STATE.prevention.status==='done'&&!WORK.busy);assert.equal(await page.evaluate(()=>STATE.prevention.styleId),styleId);assert.ok(await page.evaluate(id=>STATE.prevention.findings.list.every(f=>f.style_id===id),styleId));
+  await page.setViewportSize({width:390,height:844});await page.locator('#prevention-source').selectOption('actual');await page.locator('#prevention-scope').selectOption('all');await page.waitForSelector('#prevention-investigate');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=390));await shot('prevention-mobile');
+  await role('customer');await page.locator('#tabbtn-scenarios').click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=390));await shot('customer-use-cases-mobile');await role('store_manager');await page.locator('#tabbtn-store').click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=390));await shot('manager-mobile');
+  assert.deepEqual(errors,[]);console.log(JSON.stringify({demoUseCases:8,customerHistory:'passed',agentFlags:'passed',heatmapFirst:'passed',actualMarketAndProductScopes:'passed',syntheticProductScope:'passed',mobile:'passed',browserErrors:0}));
+ }finally{await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));rmSync(dir,{recursive:true,force:true});}
+})().catch(e=>{console.error(e);process.exitCode=1;});

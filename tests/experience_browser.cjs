@@ -19,7 +19,7 @@ const {chromium} = require('playwright');
     const role=name=>page.locator('#workspace-role').selectOption(name);
     const screenshot=async name=>{if(process.env.PP_SCREENSHOTS){mkdirSync(process.env.PP_SCREENSHOTS,{recursive:true});await page.screenshot({path:join(process.env.PP_SCREENSHOTS,name+'.png'),fullPage:true});}};
     await page.goto(base);await ready();
-    assert.deepEqual(await page.locator('#tabs [role=tab] > span:first-of-type').allTextContents(),['Dashboard','My return']);
+    assert.deepEqual(await page.locator('#tabs [role=tab] > span:first-of-type').allTextContents(),['Dashboard','My return','Demo use cases']);
     assert.equal(await page.locator('#settings-open').isVisible(),false);
     await screenshot('customer-dashboard');
     await page.locator('#tabbtn-return').click();

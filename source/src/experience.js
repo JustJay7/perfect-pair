@@ -1,7 +1,7 @@
 /* Workspace navigation is a prototype view boundary, not authentication. */
 const EXPERIENCE = { role: 'customer', customerCase: 'maya', approver: 'supervisor', disclosures: {}, historyFrom: 'dashboard' };
 const WORKSPACES = {
-  customer: { label: 'Customer', role: 'customer', pages: ['home', 'return'], nav: [['home','Dashboard','grid'],['return','My return','replan']] },
+  customer: { label: 'Customer', role: 'customer', pages: ['home', 'return', 'scenarios'], nav: [['home','Dashboard','grid'],['return','My return','replan'],['scenarios','Demo use cases','grid']] },
   store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','store','approvals'], nav: [['home','Dashboard','grid'],['store','Store returns','store'],['approvals','Approvals','check']] },
   customer_service: { label: 'Customer Service', role: 'supervisor', pages: TABS.map(t=>t[0]), nav: [['home','Dashboard','grid'],['inbox','Cases','inbox'],['return','Return agent','replan'],['prevention','Prevention agent','spark'],['approvals','Approvals','check'],['dashboard','Insights','chart']] },
 };
@@ -58,7 +58,7 @@ function renderPageContext() {
     if(primary==='dashboard')links=[['dashboard','Analytics'],['history','Actual investigations'],['data','Data'],['audit','Audit & fairness'],['evals','Evaluations'],['how','How it works']];
     if(primary==='inbox')links=[['inbox','Saved cases'],['store','Store handoffs']];
     if(primary==='return')links=[['return','Customer cases'],['history','Past return evidence']];
-    if(primary==='prevention')links=[['prevention','Product improvements'],['history','Actual product evidence']];
+    if(primary==='prevention')links=[['prevention','Analysis'],['history','Source records']];
   }
   el.innerHTML=links.length?`<nav class="page-subnav" aria-label="${primary==='dashboard'?'Insights':primary==='inbox'?'Cases':'Agent'} pages">${links.map(([id,label])=>`<button class="subnav-btn" data-tab="${id}" ${id==='history'?`data-history-from="${primary}"`:''} aria-current="${id===current?'page':'false'}">${label}</button>`).join('')}</nav>`:'';
 }
@@ -86,9 +86,10 @@ function renderWorkspaceHome() {
     `<div class="home-provenance">${icon('shield')} ${BEDROCK_LOCAL?(WORK.ready?'Saved workspace':'Connecting to saved workspace'):'Offline rehearsal'} · Simulated operations</div>
     <div class="home-metrics">${manager?metric('Awaiting inspection',waiting.length,'Store returns','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
     <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'At the counter':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'store':'approvals'}">View all ${icon('call')}</button></div>
-    ${reviews.slice(0,3).map(r=>focusRow(r.kind==='counter'?'Inspection exception':r.kind==='page_fix'?'Product improvement':r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting. You’re up to date.</div>'}
-    ${manager?waiting.slice(0,2).map(id=>focusRow(caseCtx(id).line.product,IDX.kase[id].return_id+' · Ready for inspection',`data-home-counter="${esc(id)}"`,'Inspect')).join(''):''}</section>
+    ${reviews.slice(0,3).map(r=>manager&&r.case_id?managerQueueRow(r.case_id,`data-home-review="${esc(r.id)}"`,'Review'):focusRow(r.kind==='counter'?caseName(r.case_id)+' · Inspection exception':r.kind==='page_fix'?'Product improvement':r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting. You’re up to date.</div>'}
+    ${manager?waiting.slice(0,2).map(id=>managerQueueRow(id,`data-home-counter="${esc(id)}"`,'Inspect')).join(''):''}</section>
     <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>Inspect. Grade. Route.</h3><p>Review the return, confirm the condition of the pair, and record its next destination.</p><button class="btn" data-tab="store">Open store returns ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
+  if(manager)el.querySelector('.home-metrics').before(el.querySelector('.home-columns'));
 }
 function productThumb(style) {
   const name=style?.name||'Your pair';
@@ -98,7 +99,7 @@ function productThumb(style) {
 }
 function renderCustomerReturn() {
   ensureCustomerCase(); const id=STATE.active, el=$('#tab-return');
-  el.innerHTML=pageHeading('Your return', 'Choose the option that works for you. We’ll guide you through the rest.','Customer care')+`<div class="customer-return-layout"><section class="card customer-surface"><div class="phone-body" id="phone"></div>${custChatShell(id)}</section><aside class="customer-reassurance"><div class="agent-symbol">${icon('replan')}</div><h2>Let’s find your perfect next step.</h2><p>Your return agent checks your order and available options. You choose what happens next.</p><div class="help-line">${icon('user')}A team member can help when you need one.</div><span class="pill neutral">${IDX.kase[id].hybrid?'Simulated case · actual product context':'Demo order · synthetic data'}</span></aside></div>`;
+  el.innerHTML=`<div class="demo-context"><span>Demo customer: <b>${esc(caseName(id))}</b></span><button class="text-button" data-tab="scenarios">Change use case ${icon('call')}</button></div>`+pageHeading('Your return', 'Choose the option that works for you. We’ll guide you through the rest.','Customer care')+`<div class="customer-return-layout"><section class="card customer-surface"><div class="phone-body" id="phone"></div>${custChatShell(id)}</section><aside class="customer-reassurance"><div class="agent-symbol">${icon('replan')}</div><h2>Let’s find your perfect next step.</h2><p>Your return agent checks your order and available options. You choose what happens next.</p><div class="help-line">${icon('user')}A team member can help when you need one.</div><span class="pill neutral">${IDX.kase[id].hybrid?'Simulated case · actual product context':'Demo order · synthetic data'}</span></aside></div>`;
   renderPhone(); renderCustChat(id);
   el.querySelectorAll('[data-restart]').forEach(b=>b.remove());
 }
@@ -126,7 +127,7 @@ renderApprovals=function(){
 const experiencePrevention=renderPrevention;
 renderPrevention=function(){
   rememberDisclosures($('#tab-prevention')); experiencePrevention();const el=$('#tab-prevention');
-  const head=el.querySelector('.section-head');head.querySelector('h2').textContent='Prevent the next return.';head.querySelector('p').textContent='Investigate patterns, propose a product fix and measure its effect. Explore actual product evidence in the tab above.';
+  const head=el.querySelector('.section-head');head.querySelector('h2').textContent='Prevent the next return.';head.querySelector('p').textContent='Investigate patterns, propose a product fix and measure its effect. Choose the scope above, then review findings and proposed fixes.';
   el.querySelector(':scope > p.small')?.remove();
   const table=head.nextElementSibling;
   if(table?.classList.contains('card')) {const d=document.createElement('details');d.className='card disclosure';d.dataset.disclosure='prevention-patterns';d.innerHTML='<summary>Product signals <span>Synthetic fit-return rates · last 28 days</span></summary>';table.replaceWith(d);d.append(table);}

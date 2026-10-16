@@ -51,7 +51,7 @@ act=async function(id,opts={}){if(!BEDROCK_LOCAL)return localAct(id,opts);try{aw
 decideReview=async function(id,choice){if(!BEDROCK_LOCAL)return localReview(id,choice);try{await workspaceCommand({kind:'review',reviewId:id,choice,role:EXPERIENCE.role==='customer_service'?EXPERIENCE.approver:WORK.role});}catch{}};
 gradeAtCounter=async function(id,store,grade){if(!BEDROCK_LOCAL)return localReceipt(id,store,grade);try{return await workspaceCommand({kind:'receipt',caseId:id,store,grade});}catch{}};
 askPolicyReview=async function(id){if(!BEDROCK_LOCAL)return localPolicyReview(id);try{return await workspaceCommand({kind:'policy-review',caseId:id});}catch{}};
-runPrevention=async function(opts={}){if(!BEDROCK_LOCAL)return localPrevention(opts);try{await workspaceCommand({kind:'prevention',caseId:IDX.kase[STATE.active]?.hybrid?STATE.active:null,mode:opts.mode||STATE.mode});}catch{}};
+runPrevention=async function(opts={}){if(!BEDROCK_LOCAL)return localPrevention(opts);try{await workspaceCommand({kind:'prevention',styleId:opts.styleId||null,caseId:Object.hasOwn(opts,'styleId')?null:IDX.kase[STATE.active]?.hybrid?STATE.active:null,mode:opts.mode||STATE.mode});}catch{}};
 resetAll=async function(){if(!BEDROCK_LOCAL)return localReset();try{await workspaceCommand({kind:'reset',mode:'scripted'});}catch{}};
 measureNow=async function(sid){if(!BEDROCK_LOCAL)return localMeasure(sid);try{await workspaceCommand({kind:'measure',styleId:sid,mode:'scripted'});}catch{}};
 stopRun=function(){if(!BEDROCK_LOCAL)return localStop();bedrockPost('/api/workflow/stop',{}).catch(e=>toast(e.message));};

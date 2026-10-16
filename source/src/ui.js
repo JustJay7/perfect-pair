@@ -41,7 +41,7 @@ function toast(text) {
   document.body.appendChild(el); setTimeout(() => el.remove(), 2600);
 }
 const TOOL_LABEL = n => TOOLS[n]?.label || ({ read_photo: 'Read the photo (Claude vision)' })[n] || n;
-const caseName = id => IDX.cust[IDX.kase[id].customer_id].display_name;
+const caseName = id => IDX.cust[IDX.kase[id].customer_id].display_name || 'Customer '+IDX.kase[id].customer_id;
 const busy = id => ['investigating', 'acting'].includes(CASES[id].status);
 let anyBusy = () => !!STATE.running || DATA.cases.some(k => busy(k.case_id)) || STATE.prevention.status === 'running' || STATE.evalRunning;
 
@@ -66,7 +66,7 @@ function renderMast() {
     ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['home', 'Dashboard'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
@@ -106,7 +106,7 @@ function countUp(root) {
 })();
 function renderTab(id) {
   rememberDisclosures($('#tab-'+id));
-  ({ home: renderWorkspaceHome, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  ({ home: renderWorkspaceHome, scenarios: renderDemoScenarios, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
   renderDataSource(); renderPageContext();
 }
 
@@ -608,8 +608,8 @@ function renderStore() {
   const storeId = UI.counter.store || label.store || (cs.chosen && cs.chosen.dropStore) || stores[0].location_id;
   const g = UI.counter.grade;
   const rc = cs.received;
-  el.innerHTML = head + `<div class="grid2 g-side">
-    <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(x.return_id)}</b> · ${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
+  el.innerHTML = head + managerCustomerCard(sel) + `<div class="grid2 g-side">
+    <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
     <div class="card card-pad stack">
       ${itemTag(sel)}
       <div class="grid2"><div><div class="eyebrow">Photo suggested</div><b>Grade ${esc(k.photo.grade)}</b> · <span class="small">${esc(GRADE[k.photo.grade])}</span></div><div><div class="eyebrow">Agent's plan</div>${plan ? `<b>${esc(IDX.loc[plan.plan]?.name || plan.scores[0].name)}</b>` : '<span class="muted">No plan yet</span>'}</div></div>
@@ -855,7 +855,7 @@ setInterval(() => {
 function approvalSummary(r, isOpen) {
   const k = r.case_id && IDX.kase[r.case_id];
   const line = k ? caseCtx(r.case_id).line : null;
-  const what = line ? `${line.product} · ${money(line.selling_price)}` : r.draft_id ? `${styleName(SYS.drafts[r.draft_id].style_id)} · page note` : r.reason;
+  const what = line ? `${caseName(r.case_id)} · ${line.product} · ${money(line.selling_price)}` : r.draft_id ? `${styleName(SYS.drafts[r.draft_id].style_id)} · page note` : r.reason;
   const h = slaHTML(r), x = slaInfo(r);
   const statusPill = r.status === 'pending' ? (x.escalated ? '<span class="pill red">Escalated</span>' : '<span class="pill warn">Waiting</span>') : r.status === 'approved' ? (r.auto ? '<span class="pill ok">Decided automatically</span>' : '<span class="pill ok">Approved</span>') : r.status === 'more_info' ? '<span class="pill info">More info asked</span>' : r.status === 'rejected' ? '<span class="pill neutral">Declined</span>' : '<span class="pill neutral">Closed</span>';
   const thumb = k ? casePhotos(r.case_id)[0] : null;
@@ -945,7 +945,7 @@ function approvalDetail(r) {
     else if (r.kind === 'counter') actions = counterOptions(r.case_id).options.map(o => `<button type="button" class="btn ${o.best ? '' : 'secondary '}sm" data-review="${r.id}" data-choice="${o.key}">${o.best ? '★ ' : ''}${esc(o.label)}</button>`).join('');
   }
   const k0 = r.case_id && IDX.kase[r.case_id];
-  const decisionCol = `<div class="stack ap-main">
+  const decisionCol = `${k0 ? managerCustomerCard(r.case_id) : ''}<div class="stack ap-main">
       ${r.case_id && IDX.kase[r.case_id] ? apIds(r) : ctxLine ? `<div class="small mono muted">${esc(ctxLine)}</div>` : ''}
       ${k0 && k0.words ? `<div><div class="eyebrow">The customer said</div><blockquote class="ap-words">${esc(k0.words)}</blockquote></div>` : ''}
       <div><div class="eyebrow">Why it's here</div><div>${esc(r.reason)}</div></div>
@@ -1317,7 +1317,7 @@ function renderDashboard() {
   const impact = `<section class="card card-pad dash-impact"><div class="eyebrow">Before and after the pilot</div><h3>The 3 months before Perfect Pair, against the pilot since ${fmtDate(DATA.returns_ledger.pilot)}</h3>
     <div class="imp-grid">${imp.map(([l, a, b, good]) => `<div class="imp"><div class="small muted">${esc(l)}</div><div class="imp-row"><span class="mono">${esc(a)}</span><span class="imp-arrow">→</span><b class="mono ${good ? 'good' : ''}">${esc(b)}</b></div></div>`).join('')}</div>
     <p class="small muted" style="margin:8px 0 0">Synthetic data generated for the demo, with the pilot's effect built in. In a real pilot, a comparison with suitable control stores would help estimate the effect, subject to its assumptions.</p></section>`;
-  el.innerHTML = head + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div>${c7}</div>`;
+  el.innerHTML = head.replace('<div class="dash-tiles">', c7 + '<div class="dash-tiles">') + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div></div>`;
   countUp(el);
 }
 
