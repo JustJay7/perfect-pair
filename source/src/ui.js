@@ -1317,7 +1317,7 @@ function renderDashboard() {
   const impact = `<section class="card card-pad dash-impact"><div class="eyebrow">Before and after the pilot</div><h3>The 3 months before Perfect Pair, against the pilot since ${fmtDate(DATA.returns_ledger.pilot)}</h3>
     <div class="imp-grid">${imp.map(([l, a, b, good]) => `<div class="imp"><div class="small muted">${esc(l)}</div><div class="imp-row"><span class="mono">${esc(a)}</span><span class="imp-arrow">→</span><b class="mono ${good ? 'good' : ''}">${esc(b)}</b></div></div>`).join('')}</div>
     <p class="small muted" style="margin:8px 0 0">Synthetic data generated for the demo, with the pilot's effect built in. In a real pilot, a comparison with suitable control stores would help estimate the effect, subject to its assumptions.</p></section>`;
-  el.innerHTML = head.replace('<div class="dash-tiles">', c7 + '<div class="dash-tiles">') + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div></div>`;
+  el.innerHTML = head + c7 + `<div class="dash-grid">${c1}${c2}${c3}<div class="dash-two">${c4}${c5}</div><div class="dash-two">${c6}${impact}</div></div>`;
   countUp(el);
 }
 
