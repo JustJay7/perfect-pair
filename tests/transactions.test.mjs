@@ -1,3 +1,4 @@
+import {DatabaseSync} from 'node:sqlite';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -6,7 +7,7 @@ import {join} from 'node:path';
 import {Transactions} from '../backend/transactions.mjs';
 import {Workspace} from '../backend/workspace.mjs';
 import {transactionFixture} from './transactions-fixture.mjs';
-function fixture(t,service){const dir=mkdtempSync(join(tmpdir(),'pp-transactions-')),path=join(dir,'transactions.sqlite'),dataset=transactionFixture(path),e=new Transactions(path),w=new Workspace({path:join(dir,'workspace.sqlite'),transactionPath:path,historyPath:join(dir,'missing.sqlite'),service});t.after(()=>{e.close();w.close();rmSync(dir,{recursive:true,force:true});});return {e,w,dataset};}
+function fixture(t,service){const dir=mkdtempSync(join(tmpdir(),'pp-transactions-')),path=join(dir,'transactions.sqlite'),dataset=transactionFixture(path),e=new Transactions(path),w=new Workspace({path:join(dir,'workspace.sqlite'),transactionPath:path,historyPath:join(dir,'missing.sqlite'),service});t.after(()=>{e.close();w.close();rmSync(dir,{recursive:true,force:true});});return {e,w,dataset,path};}
 async function command(w,c,status='completed'){w.submit({kind:'transactions',role:'supervisor',agent:'prevention',mode:'scripted',version:w.version,...c});await w.completion;assert.equal(w.job.status,status,w.job.error);}
 test('transaction aggregates retain signed net totals while comparison excludes inconsistent source signs',t=>{
  const{e}=fixture(t),a=e.overview({banner:'ALDO_CA'}),b=e.overview({banner:'ALDO_US'});
@@ -40,4 +41,16 @@ test('actual investigations save source evidence and replay without touching ope
 test('live transaction tools are fixed-scope and require cited findings',async t=>{
  let bad=false;const service={ready:true,async start(){return {id:'mock',tools:[{name:'transaction_evidence',input:{banner:'ALDO_US'},toolUseId:'t'}]};},async resume(id,results){assert.equal(results[0].result.scope.banner,'ALDO_CA');return {id,done:true,modelId:'mock',text:JSON.stringify({summary:'Recorded transactions',findings:[{observation:'Six sold units for this variant.',uncertainty:'Stock is unknown.',citations:bad?['invented']:results[0].result.citations}],next_steps:[]})};},cancel(){}};
  const{w,dataset}=fixture(t,service);await command(w,{mode:'live',dataset_id:dataset,scope:{banner:'ALDO_CA',product:'P1'}});assert.equal(w.historyRuns[0].model,'mock');bad=true;await command(w,{mode:'live',dataset_id:dataset,scope:{banner:'ALDO_CA',product:'P1'}},'error');assert.equal(w.job.code,'uncited_findings');
+});
+test('one returned pair keeps one cost across destinations and target overrides remain separate',t=>{
+ const{e,path}=fixture(t),db=new DatabaseSync(path);
+ for(const table of ['monthly','market_monthly','scope_monthly'])db.exec(`UPDATE ${table} SET cost=180,margin=150 WHERE channel='WEB'`);db.close();
+ const input={product:'P1',receiving:'S1',assumptions:{handling:2,transfer:3,shipping:5,packing:1}};
+ const p=e.routing(input),web=p.routes.find(r=>r.id==='WEB');
+ assert.equal(p.unit_cost.value,50);assert.ok(p.routes.every(r=>r.cost===50));assert.equal(web.recorded_cost,60);assert.equal(web.contribution,52);assert.equal(web.recoveryIfSold,102);
+ const override=e.routing({...input,assumptions:{...input.assumptions,unitCost:30}});
+ assert.equal(override.benchmark.cost,50);assert.ok(override.routes.every(r=>r.cost===30));assert.equal(override.routes.find(r=>r.id==='WEB').contribution,72);
+ assert.throws(()=>e.routing({...input,assumptions:{unitCost:-1}}));
+ const old=p.citations[0].replace(/:[^:]+$/,':'+Buffer.from(JSON.stringify(input)).toString('base64url'));
+ assert.throws(()=>e.resolve(old),x=>x.code==='calculation_changed');
 });

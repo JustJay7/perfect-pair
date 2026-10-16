@@ -59,3 +59,9 @@ test('manager planning enforces role, saves snapshots and validates live model c
  invalid=true;await command(w,{kind:'manager-plan',caseId:'maya',mode:'live'},'error');assert.equal(w.job.code,'invalid_plan');
  assert.equal(f.restart().api.CASES.maya.networkPlan.agent.model,'mock-thorough');
 });
+
+test('routing cash recovery does not charge the already-paid product cost twice',t=>{
+ const{w}=fixture(t),p=w.api.planReturnNetwork('maya',{matchingOrder:true,orderPrice:130,handling:6,pack:2,onlineShip:8}),r=p.routes.find(r=>r.id==='ecommerce');
+ assert.equal(r.recoveryIfSold,114);assert.equal(r.expectedRecovery,114);assert.equal(r.contribution,56);assert.equal(r.expected,56);assert.equal(r.recoveryIfSold-r.contribution,58);
+ const zero=w.api.planReturnNetwork('maya',{onlineSold8w:0,onlineStock:0}).routes.find(r=>r.id==='ecommerce');assert.equal(zero.expected,-6);assert.equal(zero.expectedRecovery,-6);
+});

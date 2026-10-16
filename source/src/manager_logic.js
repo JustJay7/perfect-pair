@@ -50,7 +50,7 @@ function planReturnNetwork(caseId, input={}) {
     const marginPct=contribution!==null&&row.price>0?contribution/row.price:null;
     const gap=contribution===null?null:r2(contribution-original);
     const protects=!!(row.operational&&contribution!==null&&originalPct!==null&&contribution+0.001>=original&&marginPct+0.00001>=originalPct);
-    routes.push({...row,cost,handling:s.handling,contribution,expected,marginPct,gap,protects,
+    routes.push({...row,cost,handling:s.handling,recoveryIfSold:costsKnown?r2(row.price-s.handling-row.transport-row.fulfillment):null,expectedRecovery:costsKnown&&Number.isFinite(row.probability)?r2(row.probability*(row.price-row.fulfillment)-s.handling-row.transport):null,contribution,expected,marginPct,gap,protects,
       minimumPrice:costsKnown&&originalPct!==null&&originalPct<1?Math.ceil((Math.max(original+cost+s.handling+row.transport+row.fulfillment,(cost+s.handling+row.transport+row.fulfillment)/(1-originalPct))-1e-9)*100)/100:null});
   };
   for(const loc of DATA.locations.filter(l=>['store','outlet'].includes(l.type))) {
