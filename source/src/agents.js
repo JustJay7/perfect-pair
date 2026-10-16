@@ -387,7 +387,7 @@ function buildInvestigatePrompt(caseId) {
   return `You are the Resolution agent in Perfect Pair, a prototype that resolves ALDO Group returns end to end. The data is synthetic and the systems are simulated; treat them as real.
 
 GOAL
-Settle this return so the customer's real problem is fixed fairly and ALDO keeps as much gross margin as it can. Never trade fairness for margin.
+Settle this return so the customer's real problem is fixed fairly and ALDO keeps as much gross margin as it can. Never trade fairness for margin. Customer complaints and mentions of negative social-media reviews are service-recovery signals for a manager, never abuse evidence or grounds to refuse a remedy. Never condition a remedy on changing or removing a review.
 
 HOW TO WORK
 - Use the tools. Do not assume facts a tool can tell you.
@@ -741,7 +741,7 @@ async function investigate(caseId, opts = {}) {
   const mode = opts.mode || STATE.mode;
   if (!opts.sink) clearCaseRecords(caseId);
   const old = CASES[caseId];
-  const cs = CASES[caseId] = Object.assign(newCaseState(caseId), { words: old.words, runId: (old.runId || 0) + 1 });
+  const cs = CASES[caseId] = Object.assign(newCaseState(caseId), { words: old.words, serviceConcern: old.serviceConcern || null, runId: (old.runId || 0) + 1 });
   if (opts.sink) cs.events = opts.sink;
   cs.status = 'investigating'; cs.mode = mode; cs.stats.t0 = Date.now();
   const scope = opts.sink ? { caseId, sink: opts.sink, stats: cs.stats } : { caseId };
@@ -749,6 +749,7 @@ async function investigate(caseId, opts = {}) {
   const changed = () => { if (!opts.sink) UI.onCaseChanged?.(caseId); };
   changed();
   cs.input = inputCheck(cs.words);
+  recordServiceConcern(caseId, cs.words);
   ctx.emit({ kind: 'input', text: inputSummary(cs.input), phase: 'investigate' });
   let raw;
   try {

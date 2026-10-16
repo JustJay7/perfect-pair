@@ -47,7 +47,7 @@ document.addEventListener('change',ev=>{if(ev.target.id==='demo-case-picker'&&ev
 
 function managerQueueRow(id,action,label) {
   const {c,line}=caseCtx(id),a=customerAssessment(id),isNew=c.lifetime_orders<=1;
-  return `<div class="customer-queue-row"><div><b>${esc(caseName(id))}</b><p>${isNew?'New customer':num(c.lifetime_orders)+' orders · '+pct(c.return_rate,1)+' return rate'} · ${esc(line.product)}</p><span class="pill ${a.tone}">${esc(a.label)}</span></div><button class="btn secondary sm" ${action}>${esc(label)} ${icon('call')}</button></div>`;
+  return `<div class="customer-queue-row"><div><b>${esc(caseName(id))}</b><p>${isNew?'New customer':num(c.lifetime_orders)+' orders · '+pct(c.return_rate,1)+' return rate'} · ${esc(line.product)}</p><span class="pill ${a.tone}">${esc(a.label)}</span>${CASES[id].serviceConcern?.status==='pending'?'<span class="pill warn">Service follow-up</span>':''}</div><button class="btn secondary sm" ${action}>${esc(label)} ${icon('call')}</button></div>`;
 }
 
 function membershipTone(status) {

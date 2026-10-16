@@ -113,6 +113,7 @@ async function askCustomer(caseId, q) {
   s.msgs.push({ role: 'user', text: q }); s.busy = true;
   const bot = { role: 'bot', text: '', pending: true, live: !!chatLive() }; s.msgs.push(bot); renderCustChat(caseId);
   try {
+    if (detectServiceConcern(q).flagged) await recordCustomerServiceComment(caseId,q);
     let ans;
     if (bot.live) {
       s.ac = new AbortController();

@@ -1121,6 +1121,17 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
 @media(max-width:1050px){.customer-key-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.customer-first-head{padding:16px}.customer-fact{padding:16px 14px;gap:10px}.customer-fact strong{font-size:23px}.customer-fact small{font-size:11px}.customer-fact>span{font-size:10px}.customer-key-facts{gap:10px}.insights-empty{padding:18px}}
 
+/* Manager page patterns developed with Claude Opus on Bedrock. */
+.manager-layout{display:grid;grid-template-columns:1fr;gap:24px;color:var(--ink)}
+.manager-selector{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:18px 0 24px}.manager-selector>label:first-child{display:grid;gap:8px;min-width:280px}.manager-selector select{max-width:100%;min-width:280px}.manager-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.manager-check input{width:auto}
+.manager-alert{border-left:4px solid var(--red);background:var(--panel-2);padding:24px;border-radius:12px;margin-bottom:24px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}.manager-alert h2{font-size:23px;font-weight:500;margin:8px 0}.manager-alert p{font-size:13px;line-height:1.7;max-width:95ch}.manager-alert blockquote{margin:14px 0;padding:14px 18px;border-left:2px solid var(--line);background:var(--panel);border-radius:8px;font-size:14px}.manager-alert.positive{border-left-color:var(--ok)}
+.manager-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}.manager-option{display:flex;flex-direction:column;gap:12px;padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.manager-option.recommended{border-color:var(--red);background:var(--panel-2)}.manager-option h3{font-size:20px;line-height:1.3;margin:0;font-weight:500}.manager-option p{font-size:13px;line-height:1.6;margin:0}.manager-option button{margin-top:auto}.manager-remedies h2{margin:8px 0;font-size:25px;font-weight:500}.manager-followup{padding:20px;background:var(--inset);border-radius:12px;margin-top:20px}.manager-followup label{display:block;font-size:13px;margin-bottom:10px}.manager-layout textarea{display:block;width:100%;box-sizing:border-box;min-height:90px;padding:12px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}.manager-next,.counter-context{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 24px}.counter-context{padding:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px}.manager-empty,.manager-choice{padding:18px;background:var(--inset);font-size:13px;border-radius:10px}
+.routing-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}.routing-summary>div{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}.routing-summary b{font-size:21px;font-weight:500;overflow-wrap:anywhere}.routing-summary small,.routing-summary span{font-size:12px;color:var(--muted);line-height:1.5}.planning-provenance{display:flex;gap:10px;font-size:12px;color:var(--muted);line-height:1.6;margin:16px 0 24px}.planning-provenance .icon{flex:none}.routing-assumptions{margin-bottom:24px}.routing-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.routing-inputs label{display:grid;gap:8px;font-size:12px;color:var(--muted)}.routing-inputs input,.routing-inputs select{min-width:0;width:100%;box-sizing:border-box}.routing-inputs .manager-check{display:flex}.routing-inputs .manager-check input{width:auto}.routing-inputs>p{grid-column:1/-1}.routing-table-wrap{max-width:100%;overflow-x:auto;margin:20px 0}.routing-table{min-width:860px;font-size:12px}.routing-table td{vertical-align:top;padding:16px 12px;font-variant-numeric:tabular-nums}.routing-table th{white-space:normal;min-width:70px}.routing-table td:first-child{min-width:220px;max-width:250px}.routing-table small{display:block;color:var(--muted);font-size:11px;margin-top:8px;white-space:normal;line-height:1.5}.route-recommended{background:var(--inset)}.margin-gap{font-weight:600}.margin-gap.neg{color:var(--red-ink)}#tab-routing>.card{margin-bottom:24px}#tab-routing .card h2{font-size:24px;font-weight:500;margin:8px 0}#tab-routing .card>p{font-size:13px;line-height:1.6}
+@media(max-width:1100px){.manager-options,.routing-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}.routing-summary{grid-template-columns:1fr}}
+@media(max-width:680px){.manager-options,.routing-inputs{grid-template-columns:1fr}.manager-selector{gap:14px}.manager-selector>label:first-child,.manager-selector select{width:100%;min-width:0}.manager-selector>label:first-child{min-width:0}.manager-alert{padding:18px}.manager-remedies .card-head{align-items:flex-start;flex-direction:column;gap:12px}.manager-next button{width:100%}.manager-option{padding:18px}.routing-summary>div{padding:18px}}
+
+.manager-selector select,.routing-inputs select,.routing-inputs input:not([type="checkbox"]){padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px}.workspace-nav[data-tab="manager"][aria-selected="true"],.workspace-nav[data-tab="routing"][aria-selected="true"]{background:var(--red-soft);color:var(--red-ink)}
+
 </style>
 
 <a class="skip-link" href="#main-content">Skip to content</a>
@@ -1149,6 +1160,8 @@ th{font-size:12.5px;font-weight:600;color:var(--muted)}
       <section class="tab-panel" id="tab-history" role="tabpanel" aria-label="Actual investigations" hidden></section>
       <section class="tab-panel" id="tab-inbox" role="tabpanel" aria-label="Saved cases" hidden></section>
       <section class="tab-panel" id="tab-return" role="tabpanel" aria-label="Return agent" hidden></section>
+      <section class="tab-panel" id="tab-manager" role="tabpanel" aria-label="Customer review" hidden></section>
+      <section class="tab-panel" id="tab-routing" role="tabpanel" aria-label="Return routing" hidden></section>
       <section class="tab-panel" id="tab-store" role="tabpanel" aria-label="Store returns" hidden></section>
       <section class="tab-panel" id="tab-approvals" role="tabpanel" aria-label="Approvals" hidden></section>
       <section class="tab-panel" id="tab-dashboard" role="tabpanel" aria-label="Analytics" hidden></section>
@@ -2373,6 +2386,113 @@ function measureFix(styleId) {
   return { style: styleName(styleId), note: s.fix_note, comparison: s.comparison.map(styleName), before: p1, after: p2, compBefore: p3, compAfter: p4, ordersAfter: o2, weeksAfter: s.post_weeks, did, lo, hi, keep, enough, series: s };
 }
 
+/* Shared planning model. Operational stock and money are never mutated here. */
+function detectServiceConcern(text) {
+  const clean = inputCheck(String(text || '').slice(0, 6000)).clean;
+  const sentences = clean.split(/(?<=[.!?])\s+|\n/).filter(Boolean);
+  const evidence = sentences.filter(s => {
+    if (/\b(won't|will not|not going to|never would)\s+(post|leave|write|share)/i.test(s)) return false;
+    const negative = /bad|poor|terrible|awful|horrible|rude|unhelpful|unacceptable|worst|frustrat|disappoint|angry|upset|one.star|1.star|negative/i.test(s);
+    return negative && /review|social media|instagram|tiktok|facebook|twitter|reddit|yelp|google|customer service|service|return experience|return process/i.test(s);
+  }).slice(0, 5);
+  return { flagged:evidence.length>0, evidence, method:'Comment screening · manager confirmation required', reason:'Customer reports a poor return/service experience or mentions sharing a negative review.' };
+}
+function recordServiceConcern(caseId, text, source='Return conversation') {
+  const cs=CASES[caseId], signal=detectServiceConcern(text); if(!signal.flagged)return null;
+  const prior=cs.serviceConcern;
+  const evidence=[...new Set([...(prior?.evidence||[]),...signal.evidence])].slice(-10);
+  if(prior&&JSON.stringify(evidence)===JSON.stringify(prior.evidence))return prior;
+  cs.serviceConcern={...signal,evidence,source,status:'pending',at:new Date().toISOString(),decision:null};
+  return cs.serviceConcern;
+}
+const PLANNING_DISTANCE = {
+  'Greater Montreal':{S112:4,S118:18,S131:26,S140:15,S205:198,S301:545,S410:254,OUT1:46},
+  Ottawa:{S112:198,S118:187,S131:174,S140:211,S205:5,S301:448,S410:444,OUT1:165},
+  Toronto:{S112:545,S118:548,S131:522,S140:551,S205:448,S301:6,S410:795,OUT1:524},
+  'Quebec City':{S112:254,S118:263,S131:280,S140:251,S205:444,S301:795,S410:5,OUT1:285}
+};
+function planningDefaults(caseId) {
+  const {c,line,ec,k}=caseCtx(caseId), distances=PLANNING_DISTANCE[c.region]||{};
+  const nearby=DATA.locations.filter(x=>x.type==='store'&&Number.isFinite(distances[x.location_id])).sort((a,b)=>distances[a.location_id]-distances[b.location_id]);
+  const nearest=nearby[0]?.location_id||null;
+  const dc=invRow(line.sku,'DC-MTL');
+  return {origin:CASES[caseId].received?.store||CASES[caseId].chosen?.dropStore||nearest||'S112',grade:CASES[caseId].received?.grade||k.photo.grade,
+    handling:Number(ec.processing_cost),pack:2,onlineShip:8,onlineSold8w:dc?.units_sold_8w||0,onlineStock:dc?.on_hand_quantity||0,
+    matchingOrder:false,orderSku:line.sku,orderPrice:caseCtx(caseId).st.price,orderDeadline:5,shipFromStore:true,
+    nearest,distances,asOf:META.today};
+}
+function planReturnNetwork(caseId, input={}) {
+  const {line,ec,st}=caseCtx(caseId), cs=CASES[caseId], d=planningDefaults(caseId);
+  const s={...d,...Object.fromEntries(Object.entries(input).filter(([k])=>['origin','grade','handling','pack','onlineShip','onlineSold8w','onlineStock','matchingOrder','orderSku','orderPrice','orderDeadline','shipFromStore'].includes(k)))};
+  for(const k of ['handling','pack','onlineShip','onlineSold8w','onlineStock','orderPrice','orderDeadline'])if(!Number.isFinite(s[k])||s[k]<0||s[k]>100000)throw new Error('Enter a nonnegative, finite planning input for '+k+'.');
+  if(!DATA.locations.some(l=>l.location_id===s.origin&&l.type==='store')||!['A','B','C','D'].includes(s.grade))throw new Error('Select a valid receiving store and grade.');
+  if(typeof s.matchingOrder!=='boolean'||typeof s.shipFromStore!=='boolean'||typeof s.orderSku!=='string'||s.orderSku.length>150)throw new Error('Invalid online-order scenario.');
+  if(cs.received){s.origin=cs.received.store;s.grade=cs.received.grade;}
+  const cost=ec.estimated_cost, original= r2(line.selling_price-cost), originalPct=line.selling_price>0?original/line.selling_price:null;
+  const transfer=(to)=>to===s.origin?{cost:0,days:0,known:true}:(()=>{const x=IDX.xfer[s.origin+'|'+to];return {cost:x?.estimated_shipping_cost??null,days:x?.typical_transit_days??null,known:!!x};})();
+  const routes=[];
+  const add=(row)=>{
+    const costsKnown=[row.price,cost,s.handling,row.transport,row.fulfillment].every(Number.isFinite);
+    const contribution=costsKnown?r2(row.price-cost-s.handling-row.transport-row.fulfillment):null;
+    const expected=costsKnown&&Number.isFinite(row.probability)?r2(row.probability*(row.price-cost-row.fulfillment)-s.handling-row.transport):null;
+    const marginPct=contribution!==null&&row.price>0?contribution/row.price:null;
+    const gap=contribution===null?null:r2(contribution-original);
+    const protects=!!(row.operational&&contribution!==null&&originalPct!==null&&contribution+0.001>=original&&marginPct+0.00001>=originalPct);
+    routes.push({...row,cost,handling:s.handling,contribution,expected,marginPct,gap,protects,
+      minimumPrice:costsKnown&&originalPct!==null&&originalPct<1?Math.ceil((Math.max(original+cost+s.handling+row.transport+row.fulfillment,(cost+s.handling+row.transport+row.fulfillment)/(1-originalPct))-1e-9)*100)/100:null});
+  };
+  for(const loc of DATA.locations.filter(l=>['store','outlet'].includes(l.type))) {
+    const inv=invRow(line.sku,loc.location_id), t=transfer(loc.location_id);
+    const sold=inv?.units_sold_8w??null, stock=inv?Math.max(0,inv.on_hand_quantity-(SYS.sold[line.sku+'|'+loc.location_id]||0)):null;
+    const gradeOK=s.grade==='A'||s.grade==='B'&&loc.type==='outlet';
+    const price=r2(st.price*(loc.type==='outlet'?(s.grade==='B'?0.6:0.7):1));
+    const probability=sold!==null&&stock!==null?1-Math.exp(-(sold/8)*4/(stock+1)):null;
+    const capacity=DATA.inventory.filter(x=>x.location_id===loc.location_id).reduce((n,x)=>n+x.on_hand_quantity,0)<loc.inventory_capacity;
+    const blockers=[!gradeOK&&'Condition is not eligible for this resale channel',!t.known&&'Transfer quote missing',!capacity&&'Receiving capacity unavailable',!inv&&'SKU demand / stock missing'].filter(Boolean);
+    add({id:'store:'+loc.location_id,name:loc.name,channel:loc.type==='outlet'?'Outlet resale':'Store resale',location:loc.location_id,price,transport:t.cost,fulfillment:0,days:t.days===null?null:t.days+loc.handling_days,sold8w:sold,stock,probability,operational:!blockers.length,blockers,demandBasis:'Synthetic SKU sales and inventory · 8 weeks',distance:d.distances[loc.location_id]??null});
+  }
+  const exact=s.orderSku===line.sku;
+  const onlineBlockers=[s.grade!=='A'&&'Only inspected Grade A can be sold as new online',!s.shipFromStore&&'Receiving store cannot fulfill online orders',s.matchingOrder&&!exact&&'Online order SKU does not match size / colour / width',s.matchingOrder&&s.orderDeadline<2&&'Cannot meet the assumed two-day delivery promise'].filter(Boolean);
+  add({id:'ecommerce',name:'Ship online from '+IDX.loc[s.origin].name,channel:s.matchingOrder?'Matching online order · simulated':'E-commerce demand · forecast',location:s.origin,price:s.matchingOrder?s.orderPrice:st.price,transport:0,fulfillment:r2(s.pack+s.onlineShip),days:2,sold8w:s.onlineSold8w,stock:s.onlineStock,
+    probability:s.matchingOrder&&exact?1:1-Math.exp(-(s.onlineSold8w/8)*4/(s.onlineStock+1)),operational:!onlineBlockers.length,blockers:onlineBlockers,demandBasis:s.matchingOrder?'Assumed open order; exact SKU match, not a live order feed':'Synthetic e-commerce scenario; default demand is a DC-inventory proxy',distance:d.distances[s.origin]??null});
+  routes.sort((a,b)=>Number(b.operational)-Number(a.operational)||(b.expected??-Infinity)-(a.expected??-Infinity));
+  const feasible=routes.filter(r=>r.protects), bestRecovery=routes.find(r=>r.operational&&r.expected!==null)||null;
+  const replacement=cs.decision?.options.find(o=>o.type==='exchange');
+  const replacementSku=replacement?.sku, replacementCost=replacementSku?IDX.econ[IDX.sku[replacementSku]?.style_id]?.estimated_cost:null;
+  const replacementSources=replacementSku&&d.nearest?DATA.locations.filter(l=>atp(replacementSku,l.location_id)>0).map(loc=>{
+    const x=loc.location_id===d.nearest?{estimated_shipping_cost:0,typical_transit_days:0}:IDX.xfer[loc.location_id+'|'+d.nearest];
+    const transferCost=x?.estimated_shipping_cost??null,days=x?x.typical_transit_days+IDX.loc[d.nearest].handling_days:null;
+    const contribution=transferCost!==null&&Number.isFinite(replacementCost)?r2(line.selling_price-replacementCost-s.handling-transferCost):null;
+    const marginPct=contribution!==null&&line.selling_price>0?contribution/line.selling_price:null;
+    return {source:loc.name,sku:replacementSku,available:atp(replacementSku,loc.location_id),transferCost,days,contribution,marginPct,
+      protects:contribution!==null&&originalPct!==null&&contribution+0.001>=original&&marginPct+0.00001>=originalPct&&days!==null&&days<=META.delivery_promise_days};
+  }).sort((a,b)=>(a.transferCost??Infinity)-(b.transferCost??Infinity)):[];
+  return {caseId,sku:line.sku,grade:s.grade,inspected:!!cs.received,origin:s.origin,nearest:d.nearest,distance:d.nearest?d.distances[d.nearest]:null,actualDropDistance:d.distances[s.origin]??null,
+    originalPrice:line.selling_price,originalCost:cost,originalProfit:original,originalMarginPct:originalPct,inputs:s,routes,
+    recommended:feasible[0]?.id||null,bestRecovery:bestRecovery?.id||null,nearestReplacement:{store:d.nearest,sources:replacementSources},
+    status:feasible.length?'Scenario meets original unit-margin floor':'No option preserves the original unit margin',
+    provenance:'Synthetic planning inputs. Customer region distances are assumptions, not geocoded home addresses. No live stock, open-order, shipping or store-capability feed is connected.',
+    formula:'Contribution if sold = sale price − unit cost − inspection/handling − transfer − fulfillment. Expected contribution in 28 days = sale probability × (sale price − unit cost − fulfillment) − inspection/handling − transfer. Sell probability uses 1 − exp(−4 × weekly SKU sales ÷ (stock + 1)), a steady-demand scenario approximation. Unsold stock stays inventory; no salvage proceeds assumed. Original benchmark = price originally paid − unit cost (gross profit, before original fulfillment costs).',
+    limitation:'Margin checks use dollars per unit and percentage on resale; a forecast cannot guarantee the original order’s profit after a refund. Refunds, replacement remedies and resale are separate ledgers and must not be added as savings.',at:new Date().toISOString()};
+}
+function managerRemedies(caseId) {
+  const cs=CASES[caseId], {line}=caseCtx(caseId);
+  return (cs.decision?.options||[]).filter(o=>o.eligible!==false).map((o,i)=>{
+    const label={exchange:'Fit-corrected exchange + convenient collection',smart_credit:'Store credit + approved bonus + suitable picks',store_credit:'Store credit + personal assistance',refund:'Refund + convenient return',keep_it:'Eligible refund without a return'}[o.type]||o.type;
+    return {id:o.type,label,recommended:o.type===cs.decision.recommended,details:o.type==='exchange'?'Offer the agent’s eligible replacement. Nearest-store availability and transfer costs are checked separately.':o.type==='smart_credit'?'Use only the picks and bonus already approved by the existing policy.':o.type==='refund'?'Keep the refund choice visible. Receipt, inspection and existing approvals still apply.':'Explain this saved eligible option and ask for the customer’s choice.',amount:line.selling_price,option:o};
+  }).sort((a,b)=>Number(b.recommended)-Number(a.recommended));
+}
+function saveManagerDecision(caseId,option,note,role) {
+  if(!['store_manager','service_lead','supervisor'].includes(role))throw new Error('A store manager or service lead must record this recommendation.');
+  const cs=CASES[caseId];if(!cs)throw new Error('Case not found.');
+  if(option!=='contact_customer'&&!managerRemedies(caseId).some(o=>o.id===option))throw new Error('Choose a currently eligible saved remedy.');
+  const clean=inputCheck(String(note||'').slice(0,1000)).clean;if(clean.trim().length<3)throw new Error('Add a brief reason for the customer follow-up.');
+  if(/(delete|remove|edit|take down).{0,40}(review|post)|(?:refund|discount|credit).{0,30}(?:only if|in exchange for)/i.test(clean))throw new Error('Customer remedies cannot be conditional on changing or deleting a review.');
+  const result={option,note:clean,by:role,at:new Date().toISOString(),status:'Recommended · customer agreement still required'};
+  cs.managerDecision=result;if(cs.serviceConcern){cs.serviceConcern.status='reviewed';cs.serviceConcern.decision=result;}
+  return result;
+}
+
 /* =====================================================================
    Agents: runtime state, the live Claude runner (sample capability with
    page tools), the scripted backup planner, approvals, Prevention agent
@@ -2762,7 +2882,7 @@ function buildInvestigatePrompt(caseId) {
   return `You are the Resolution agent in Perfect Pair, a prototype that resolves ALDO Group returns end to end. The data is synthetic and the systems are simulated; treat them as real.
 
 GOAL
-Settle this return so the customer's real problem is fixed fairly and ALDO keeps as much gross margin as it can. Never trade fairness for margin.
+Settle this return so the customer's real problem is fixed fairly and ALDO keeps as much gross margin as it can. Never trade fairness for margin. Customer complaints and mentions of negative social-media reviews are service-recovery signals for a manager, never abuse evidence or grounds to refuse a remedy. Never condition a remedy on changing or removing a review.
 
 HOW TO WORK
 - Use the tools. Do not assume facts a tool can tell you.
@@ -3116,7 +3236,7 @@ async function investigate(caseId, opts = {}) {
   const mode = opts.mode || STATE.mode;
   if (!opts.sink) clearCaseRecords(caseId);
   const old = CASES[caseId];
-  const cs = CASES[caseId] = Object.assign(newCaseState(caseId), { words: old.words, runId: (old.runId || 0) + 1 });
+  const cs = CASES[caseId] = Object.assign(newCaseState(caseId), { words: old.words, serviceConcern: old.serviceConcern || null, runId: (old.runId || 0) + 1 });
   if (opts.sink) cs.events = opts.sink;
   cs.status = 'investigating'; cs.mode = mode; cs.stats.t0 = Date.now();
   const scope = opts.sink ? { caseId, sink: opts.sink, stats: cs.stats } : { caseId };
@@ -3124,6 +3244,7 @@ async function investigate(caseId, opts = {}) {
   const changed = () => { if (!opts.sink) UI.onCaseChanged?.(caseId); };
   changed();
   cs.input = inputCheck(cs.words);
+  recordServiceConcern(caseId, cs.words);
   ctx.emit({ kind: 'input', text: inputSummary(cs.input), phase: 'investigate' });
   let raw;
   try {
@@ -4508,6 +4629,7 @@ async function askCustomer(caseId, q) {
   s.msgs.push({ role: 'user', text: q }); s.busy = true;
   const bot = { role: 'bot', text: '', pending: true, live: !!chatLive() }; s.msgs.push(bot); renderCustChat(caseId);
   try {
+    if (detectServiceConcern(q).flagged) await recordCustomerServiceComment(caseId,q);
     let ans;
     if (bot.live) {
       s.ac = new AbortController();
@@ -4754,7 +4876,7 @@ function renderMast() {
     ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['manager', 'Customer review'], ['store', 'Drop-off & grading'], ['routing', 'Return routing'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
@@ -4794,7 +4916,7 @@ function countUp(root) {
 })();
 function renderTab(id) {
   rememberDisclosures($('#tab-'+id));
-  ({ home: renderWorkspaceHome, scenarios: renderDemoScenarios, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  ({ home: renderWorkspaceHome, scenarios: renderDemoScenarios, history: renderHistory, inbox: renderInbox, return: renderReturn, manager: renderManager, routing: renderRouting, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
   renderDataSource(); renderPageContext();
 }
 
@@ -5296,14 +5418,14 @@ function renderStore() {
   const storeId = UI.counter.store || label.store || (cs.chosen && cs.chosen.dropStore) || stores[0].location_id;
   const g = UI.counter.grade;
   const rc = cs.received;
-  el.innerHTML = head + managerCustomerCard(sel) + `<div class="grid2 g-side">
+  el.innerHTML = head + `<div class="counter-context"><b>${esc(caseName(sel))}</b> · ${esc(k.return_id)}<button class="btn secondary sm" data-manager-case="${esc(sel)}">Customer review</button><button class="btn secondary sm" data-routing-case="${esc(sel)}">Compare routing</button></div>` + `<div class="grid2 g-side">
     <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
     <div class="card card-pad stack">
       ${itemTag(sel)}
       <div class="grid2"><div><div class="eyebrow">Photo suggested</div><b>Grade ${esc(k.photo.grade)}</b> · <span class="small">${esc(GRADE[k.photo.grade])}</span></div><div><div class="eyebrow">Agent's plan</div>${plan ? `<b>${esc(IDX.loc[plan.plan]?.name || plan.scores[0].name)}</b>` : '<span class="muted">No plan yet</span>'}</div></div>
       <div class="store-pick"><label class="small" for="counter-store"><b>This counter is at</b></label> <select id="counter-store">${stores.map(s => `<option value="${s.location_id}" ${s.location_id === storeId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
       <div><div class="eyebrow" style="margin-bottom:8px">Grade the pair in hand</div><div class="grade-btns">${['A', 'B', 'C', 'D'].map(x => `<button type="button" data-grade="${x}" aria-pressed="${g === x}"><b>${x}</b><span>${esc(GRADE[x].split(':')[0])}</span></button>`).join('')}</div></div>
-      <button type="button" class="btn red" id="counter-confirm" ${g ? '' : 'disabled'}>${rc ? 'Update the grade' : 'Confirm grade and route'}</button>
+      <button type="button" class="btn red" id="counter-confirm" ${g && !rc ? '' : 'disabled'}>${rc ? 'Inspection recorded' : 'Confirm grade and route'}</button>
       ${rc ? counterResultHTML(sel, rc) : ''}
     </div></div>`;
 }
@@ -7089,7 +7211,7 @@ document.addEventListener('input',ev=>{if(ev.target.id==='history-query'){WORK.h
 const EXPERIENCE = { role: 'customer', customerCase: 'maya', approver: 'supervisor', disclosures: {}, historyFrom: 'dashboard' };
 const WORKSPACES = {
   customer: { label: 'Customer', role: 'customer', pages: ['home', 'return', 'scenarios'], nav: [['home','Dashboard','grid'],['return','My return','replan'],['scenarios','Demo use cases','grid']] },
-  store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','store','approvals'], nav: [['home','Dashboard','grid'],['store','Store returns','store'],['approvals','Approvals','check']] },
+  store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','manager','store','routing','approvals'], nav: [['home','Dashboard','grid'],['manager','Customer review','user'],['store','Drop-off & grading','store'],['routing','Return routing','truck'],['approvals','Approvals','check']] },
   customer_service: { label: 'Customer Service', role: 'supervisor', pages: TABS.map(t=>t[0]), nav: [['home','Dashboard','grid'],['inbox','Cases','inbox'],['return','Return agent','replan'],['prevention','Prevention agent','spark'],['approvals','Approvals','check'],['dashboard','Insights','chart']] },
 };
 Object.assign(ICONS, {
@@ -7122,7 +7244,7 @@ function changeWorkspace(role, destination='home') {
   showTab(destination); renderMast();
 }
 function primaryPage() {
-  if (STATE.tab==='store' && EXPERIENCE.role==='customer_service') return 'inbox';
+  if (['manager','store','routing'].includes(STATE.tab) && EXPERIENCE.role==='customer_service') return 'inbox';
   if (STATE.tab==='history') return EXPERIENCE.historyFrom;
   return ['data','audit','evals','how'].includes(STATE.tab)?'dashboard':STATE.tab;
 }
@@ -7143,7 +7265,7 @@ function renderPageContext() {
   const current=STATE.tab, primary=primaryPage(); let links=[];
   if(EXPERIENCE.role==='customer_service') {
     if(primary==='dashboard')links=[['dashboard','Analytics'],['history','Actual investigations'],['data','Data'],['audit','Audit & fairness'],['evals','Evaluations'],['how','How it works']];
-    if(primary==='inbox')links=[['inbox','Saved cases'],['store','Store handoffs']];
+    if(primary==='inbox')links=[['inbox','Saved cases'],['manager','Customer review'],['store','Drop-off & grading'],['routing','Return routing']];
     if(primary==='return')links=[['return','Customer cases'],['history','Past return evidence']];
     if(primary==='prevention')links=[['prevention','Analysis'],['history','Source records']];
   }
@@ -7169,13 +7291,14 @@ function renderWorkspaceHome() {
   const cases=Object.values(CASES).filter(c=>IDX.kase[c.id]), labels=[...new Set(Object.values(SYS.labels).map(l=>l.case_id))];
   const waiting=labels.filter(id=>CASES[id]&&!CASES[id].received), received=cases.filter(c=>c.received);
   const open=cases.filter(c=>!['new','done','received','declined','not_eligible'].includes(c.status));
-  el.innerHTML=pageHeading(manager?'Ready for the next return.':'Your team, in focus.',manager?'Inspect arrivals, resolve store exceptions and keep returns moving.':'Manage the queue, support customers and turn return patterns into improvements.',manager?'Store dashboard':'Service dashboard')+
+  el.innerHTML=pageHeading(manager?'Ready for the next return.':'Your team, in focus.',manager?'Review customers and recommendations, then handle inspection and routing in their own workspaces.':'Manage the queue, support customers and turn return patterns into improvements.',manager?'Store dashboard':'Service dashboard')+
     `<div class="home-provenance">${icon('shield')} ${BEDROCK_LOCAL?(WORK.ready?'Saved workspace':'Connecting to saved workspace'):'Offline rehearsal'} · Simulated operations</div>
-    <div class="home-metrics">${manager?metric('Awaiting inspection',waiting.length,'Store returns','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
-    <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'At the counter':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'store':'approvals'}">View all ${icon('call')}</button></div>
+    <div class="home-metrics">${manager?metric('Service concerns',cases.filter(c=>c.serviceConcern?.status==='pending').length,'Manager review','manager')+metric('Awaiting inspection',waiting.length,'Drop-off & grading','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
+    <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'Customer follow-up':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'manager':'approvals'}">View all ${icon('call')}</button></div>
     ${reviews.slice(0,3).map(r=>manager&&r.case_id?managerQueueRow(r.case_id,`data-home-review="${esc(r.id)}"`,'Review'):focusRow(r.kind==='counter'?caseName(r.case_id)+' · Inspection exception':r.kind==='page_fix'?'Product improvement':r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting. You’re up to date.</div>'}
+    ${manager?cases.filter(c=>c.serviceConcern?.status==='pending').slice(0,3).map(c=>managerQueueRow(c.id,`data-manager-case="${esc(c.id)}"`,'Review concern')).join(''):''}
     ${manager?waiting.slice(0,2).map(id=>managerQueueRow(id,`data-home-counter="${esc(id)}"`,'Inspect')).join(''):''}</section>
-    <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>Inspect. Grade. Route.</h3><p>Review the return, confirm the condition of the pair, and record its next destination.</p><button class="btn" data-tab="store">Open store returns ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
+    <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>Customer first. A clear next step.</h3><p>Review the customer’s history, service concerns and eligible options before moving to physical inspection.</p><button class="btn" data-tab="manager">Open customer review ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
   if(manager)el.querySelector('.home-metrics').before(el.querySelector('.home-columns'));
 }
 function productThumb(style) {
@@ -7301,7 +7424,7 @@ document.addEventListener('change',ev=>{if(ev.target.id==='demo-case-picker'&&ev
 
 function managerQueueRow(id,action,label) {
   const {c,line}=caseCtx(id),a=customerAssessment(id),isNew=c.lifetime_orders<=1;
-  return `<div class="customer-queue-row"><div><b>${esc(caseName(id))}</b><p>${isNew?'New customer':num(c.lifetime_orders)+' orders · '+pct(c.return_rate,1)+' return rate'} · ${esc(line.product)}</p><span class="pill ${a.tone}">${esc(a.label)}</span></div><button class="btn secondary sm" ${action}>${esc(label)} ${icon('call')}</button></div>`;
+  return `<div class="customer-queue-row"><div><b>${esc(caseName(id))}</b><p>${isNew?'New customer':num(c.lifetime_orders)+' orders · '+pct(c.return_rate,1)+' return rate'} · ${esc(line.product)}</p><span class="pill ${a.tone}">${esc(a.label)}</span>${CASES[id].serviceConcern?.status==='pending'?'<span class="pill warn">Service follow-up</span>':''}</div><button class="btn secondary sm" ${action}>${esc(label)} ${icon('call')}</button></div>`;
 }
 
 function membershipTone(status) {
@@ -7394,6 +7517,65 @@ document.addEventListener('input',ev=>{
 });
 
 document.addEventListener('toggle',ev=>{if(ev.target.id==='prevention-products'&&ev.target.isConnected)PREVENT_VIEW.browserOpen=ev.target.open;},true);
+
+/* Layout follows the Claude Opus Bedrock design; policy and numeric decisions stay in shared code. */
+const MANAGER_UI={caseId:'maya',inputs:{},concernsOnly:false};
+function managerCaseId(){if(!CASES[MANAGER_UI.caseId])MANAGER_UI.caseId=Object.keys(CASES)[0];return MANAGER_UI.caseId;}
+function managerPicker(){const id=managerCaseId(),cases=Object.values(CASES).filter(c=>IDX.kase[c.id]&&(!MANAGER_UI.concernsOnly||c.serviceConcern?.status==='pending'));
+ return `<div class="manager-selector"><label>Customer / case<select id="manager-case"><option value="${esc(id)}">${esc(caseName(id))} · ${esc(IDX.kase[id].order_id)}</option>${cases.filter(c=>c.id!==id).map(c=>`<option value="${esc(c.id)}">${esc(caseName(c.id))} · ${esc(IDX.kase[c.id].order_id)}${c.serviceConcern?.status==='pending'?' · Service concern':''}</option>`).join('')}</select></label><label class="manager-check"><input id="manager-concerns-only" type="checkbox" ${MANAGER_UI.concernsOnly?'checked':''}> Show customers needing service follow-up</label><span class="pill neutral">Synthetic operational cases</span></div>`;
+}
+function serviceConcernHTML(id){const f=CASES[id].serviceConcern;return f?`<section class="manager-alert" role="status"><div class="card-head"><div><div class="eyebrow">Service recovery · manager decision</div><h2>${f.status==='pending'?'Customer experience needs attention':'Service concern reviewed'}</h2></div><span class="pill ${f.status==='pending'?'warn':'ok'}">${f.status==='pending'?'Follow-up needed':'Reviewed'}</span></div>${f.evidence.map(x=>`<blockquote>${esc(x)}</blockquote>`).join('')}<p>Comment screening detected a possible poor-service or negative-review concern. Confirm the context with the customer. Their review does not affect return eligibility; benefits must never depend on editing or deleting a post.</p><span class="small muted">Source: ${esc(f.source)} · ${esc(f.method)}. No public social-media monitoring is connected.</span></section>`:'';}
+function renderManager(){
+ const id=managerCaseId(),cs=CASES[id], remedies=managerRemedies(id),plan=cs.networkPlan;
+ const hasSettlement=['refunds','credits','exchanges'].some(t=>Object.values(SYS[t]).some(x=>x.case_id===id));
+ $('#tab-manager').innerHTML=pageHeading('A better next step for this customer.','Review the person, understand the concern and recommend an eligible resolution. Physical inspection has its own tab.','Store manager · Customer review')+managerPicker()+
+ `<div class="manager-layout"><div>${managerCustomerCard(id)}${serviceConcernHTML(id)}</div><section class="card card-pad manager-remedies"><div class="card-head"><div><div class="eyebrow">Return agent recommendation</div><h2>Options to discuss</h2></div>${!cs.decision&&!hasSettlement?`<button class="btn" id="manager-assess" ${anyBusy()?'disabled':''}>Run return assessment</button>`:`<button class="btn secondary" id="manager-refresh" ${anyBusy()?'disabled':''}>Refresh recommendation</button>`}</div>
+ ${cs.chosen?`<p class="manager-choice">Customer already chose <b>${esc(cs.chosen.option.replaceAll('_',' '))}</b>. A staff recommendation does not replace their saved choice.</p>`:''}
+ ${remedies.length?`<div class="manager-options">${remedies.map((r,i)=>`<article class="manager-option ${r.recommended?'recommended':''}"><div class="eyebrow">${r.recommended?'Agent’s preferred option':'Eligible alternative'}</div><h3>${esc(r.label)}</h3><p>${esc(r.details)}</p>${r.option.sku?`<span class="small">Replacement: ${esc(skuLabel(r.option.sku))}</span>`:''}${r.option.bonus?`<span class="small">Existing approved bonus: ${money(r.option.bonus)} · ${META.bonus_days} days</span>`:''}<span class="small muted">${r.id==='refund'||r.id==='keep_it'?'Refund entitlement':r.id==='exchange'?'Original purchase':'Base credit'}: ${money(r.amount)}</span><button class="btn secondary sm" data-manager-recommend="${esc(r.id)}">Recommend to customer</button></article>`).join('')}</div>`:'<div class="manager-empty">No eligible remedies have been established yet. Run the return assessment or ask Customer Service to review a policy exception.</div>'}
+ <div class="manager-followup"><label for="manager-decision-note">Manager follow-up / reason</label><textarea id="manager-decision-note" rows="2" placeholder="Explain the recommendation and next contact with the customer."></textarea><button class="btn secondary sm" data-manager-recommend="contact_customer">Record personal follow-up</button><p class="small muted">Saves a staff recommendation. Customer consent, existing approval limits and inspection still control refunds, credit and exchanges.</p></div>
+ ${cs.managerDecision?`<div class="msg"><b>Saved recommendation: ${esc(cs.managerDecision.option.replaceAll('_',' '))}</b><p>${esc(cs.managerDecision.note)}</p><small>${esc(cs.managerDecision.status)}</small></div>`:''}
+ ${plan?.agent?`<details class="inline-disclosure"><summary>Latest planning explanation · ${esc(plan.agent.mode)}</summary><p>${esc(plan.agent.summary)}</p></details>`:''}
+ </section><details class="card disclosure"><summary>Record a customer comment <span>Capture an in-person concern or rehearse the flag</span></summary><div class="card-pad"><label for="manager-comment">Customer’s words</label><textarea id="manager-comment" rows="3" placeholder="Record what the customer said about their return or service experience."></textarea><div class="case-actions"><button class="btn secondary sm" id="manager-comment-save">Check and save concern</button><button class="text-button" id="manager-comment-example">Use a synthetic example</button></div></div></details>
+ <div class="manager-next"><button class="btn secondary" data-routing-case="${esc(id)}">Compare resale & transfer options ${icon('call')}</button><button class="btn secondary" data-inspect-case="${esc(id)}">Open drop-off & grading ${icon('call')}</button></div></div>`;
+}
+function routingInput(label,key,value,type='number'){return `<label>${label}<input data-route-input="${key}" type="${type}" ${type==='number'?'min="0" max="100000" step="0.01"':''} value="${esc(value)}"></label>`;}
+const planningMoney=x=>x==null?'Unknown':money(x);
+function renderRouting(){
+ const id=managerCaseId(),cs=CASES[id];let plan;
+ try{plan=planReturnNetwork(id,MANAGER_UI.inputs[id]||cs.networkPlan?.inputs||{});}catch(e){$('#tab-routing').innerHTML=`<p>${esc(e.message)}</p>`;return;}
+ const s=plan.inputs,best=plan.routes.find(r=>r.id===plan.recommended),recovery=plan.routes.find(r=>r.id===plan.bestRecovery),nearest=plan.nearest?IDX.loc[plan.nearest].name:'Unknown';
+ $('#tab-routing').innerHTML=pageHeading('One convenient drop-off. Compare every next destination.','Keep the customer journey separate from the returned pair’s resale route. Compare stores, outlets and online fulfillment before making a logistics decision.','Return routing · planning simulation')+managerPicker()+
+ `<div class="routing-summary"><div><small>Returned item</small><b>${esc(plan.sku)}</b><span>Grade ${esc(plan.grade)} · ${plan.inspected?'Inspection recorded':'Photo estimate; inspection required'}</span></div><div><small>Nearest collection store · assumed</small><b>${esc(nearest)}</b><span>${plan.distance==null?'Home distance unavailable':plan.distance+' km from a synthetic regional starting point'}</span></div><div><small>Original unit gross profit</small><b>${money(plan.originalProfit)}</b><span>${plan.originalMarginPct==null?'Margin unavailable':pct(plan.originalMarginPct,1)} · price ${money(plan.originalPrice)} − cost ${money(plan.originalCost)}</span></div></div>
+ <p class="planning-provenance">${icon('shield')} ${esc(plan.provenance)}</p>
+ <section class="manager-alert ${best?'positive':''}"><div class="eyebrow">Margin protection · dollars and percentage</div><h2>${esc(plan.status)}</h2><p>${best?`Proposed: ${esc(best.name)} · expected 28-day contribution ${money(best.expected)}. This estimate remains subject to inspection and input validation.`:recovery?`Best estimated recovery: ${esc(recovery.name)} at ${money(recovery.expected)} expected contribution in 28 days. It is a recovery alternative, not a margin-preserving recommendation.`:'No operationally feasible resale route under these inputs. Review inspection and missing inputs.'}</p><p class="small">${esc(plan.limitation)}</p></section>
+ <details class="card disclosure routing-assumptions"><summary>Planning inputs <span>Adjust the synthetic scenario</span></summary><div class="card-pad routing-inputs"><label>Receiving store<select data-route-input="origin" ${cs.received?'disabled':''}>${DATA.locations.filter(l=>l.type==='store').map(l=>`<option value="${l.location_id}" ${l.location_id===s.origin?'selected':''}>${esc(l.name)}</option>`).join('')}</select></label><label>Condition<select data-route-input="grade" ${cs.received?'disabled':''}>${['A','B','C','D'].map(g=>`<option value="${g}" ${g===s.grade?'selected':''}>${g} · ${esc(GRADE[g])}</option>`).join('')}</select></label>
+ ${routingInput('Inspection / handling', 'handling',s.handling)}${routingInput('Online packing','pack',s.pack)}${routingInput('Online shipping','onlineShip',s.onlineShip)}${routingInput('E-commerce SKU sales · 8 weeks','onlineSold8w',s.onlineSold8w)}${routingInput('Online stock before returned pair','onlineStock',s.onlineStock)}
+ <label class="manager-check"><input type="checkbox" data-route-input="matchingOrder" ${s.matchingOrder?'checked':''}> Simulate a matching open online order</label><label class="manager-check"><input type="checkbox" data-route-input="shipFromStore" ${s.shipFromStore?'checked':''}> Receiving store can ship online</label>
+ ${routingInput('Online order SKU (exact variant)','orderSku',s.orderSku,'text')}${routingInput('Online order sale price','orderPrice',s.orderPrice)}${routingInput('Online order delivery deadline · days','orderDeadline',s.orderDeadline)}
+ <p class="small muted">These values are scenario assumptions. Matching-order mode is not evidence that a real customer order exists. The shipping quote assumes two days; live carrier validation is still needed. A recorded inspection locks the receiving store and grade.</p></div></details>
+ <section class="card card-pad"><div class="card-head"><div><div class="eyebrow">Returned pair · destination comparison</div><h2>Expected recovery by route</h2></div><button id="routing-save" class="btn secondary" ${anyBusy()?'disabled':''}>Save / explain scenario</button></div><p class="small muted">All amounts CAD · synthetic. Rank uses expected 28-day contribution. Margin protection compares contribution if sold with the original unit gross profit; the forecast is not guaranteed.</p>
+ <div class="routing-table-wrap"><table class="routing-table"><thead><tr><th>Resale route</th><th>Expected contribution · 28 days</th><th>Margin if sold / gap</th><th>Sales / week</th><th>Sell ≤28d</th><th>Feasibility</th><th>Costs</th></tr></thead><tbody>${plan.routes.map(r=>`<tr class="route-row ${r.id===plan.recommended?'route-recommended':''}" data-route-id="${r.id}"><td><b>${esc(r.name)}</b><small>${esc(r.channel)}</small></td><td><b>${planningMoney(r.expected)}</b><small>${planningMoney(r.contribution)} if sold</small></td><td class="margin-gap ${r.gap<0?'neg':''}">${r.marginPct==null?'Unknown':pct(r.marginPct,1)}<small>${r.gap==null?'Unknown':signed(r.gap)} vs original</small></td><td>${r.sold8w==null?'Unknown':(r.sold8w/8).toFixed(1)}</td><td>${r.probability==null?'Unknown':r.id==='ecommerce'&&s.matchingOrder&&s.orderSku===plan.sku?'Order assumed':pct(r.probability,1)}</td><td><span class="pill ${r.protects?'ok':'warn'}">${r.protects?'Meets margin floor':r.operational?'Below margin floor':'Blocked'}</span><small>${r.blockers.length?esc(r.blockers.join('; ')):(r.days??'?')+' days to resale channel'}</small></td><td><button class="btn secondary sm" data-route-detail="${r.id}">Breakdown</button></td></tr>`).join('')}</tbody></table></div>
+ <details class="inline-disclosure"><summary>Cost formula, required price & assumptions</summary><p>${esc(plan.formula)}</p>${tableView(['Route','Minimum sale price to retain original dollars and margin %'],plan.routes.map(r=>[r.name,planningMoney(r.minimumPrice)]))}<p>Minimum price is a break-even requirement, not a proposed customer price. Cost recovery, demand, taxes, incremental future returns and exact route quotes need validation before a real decision.</p></details>
+ <p class="small muted">The customer drops off at ${esc(IDX.loc[plan.origin].name)} (${plan.actualDropDistance==null?'distance unknown':plan.actualDropDistance+' assumed km'}). Transfer time and cost belong to ALDO. The customer does not need to travel to the resale destination.</p></section>
+ <section class="card card-pad"><div class="eyebrow">Replacement pair · customer convenience</div><h2>Bring the replacement to ${esc(nearest)}</h2><p>Compare moving the agent’s eligible replacement to the nearest collection store. This is a separate movement from reselling the returned item.</p>${plan.nearestReplacement.sources.length?tableView(['Source','Available units','Transfer','Days','Contribution after replacement / handling / transfer','Original margin protected'],plan.nearestReplacement.sources.map(x=>[x.source,String(x.available),planningMoney(x.transferCost),x.days==null?'Unknown':String(x.days),planningMoney(x.contribution),x.protects?'Yes · scenario only':'No / unavailable'])).replace('<details class="tv"','<details open class="tv"'):'<p class="small muted">No eligible in-stock exchange variant has been established. Run the Return agent first. No replacement is invented or reserved.</p>'}<p class="small muted">No stock is reserved here. Recheck availability, customer agreement and the five-day promise before arranging collection.</p></section>
+ <div class="manager-next"><button class="btn secondary" data-manager-case="${esc(id)}">Customer recommendation</button><button class="btn secondary" data-inspect-case="${esc(id)}">Drop-off & grading</button><span class="small muted">Planning only · no shipment or payment is created</span></div>`;
+}
+async function recordCustomerServiceComment(id,text,source='Customer help conversation'){if(BEDROCK_LOCAL)return workspaceCommand({kind:'service-comment',caseId:id,text,source,mode:'scripted'});return recordServiceConcern(id,text,source);}
+async function refreshManagerPlan(id){if(BEDROCK_LOCAL)return workspaceCommand({kind:'manager-plan',caseId:id,inputs:MANAGER_UI.inputs[id]||CASES[id].networkPlan?.inputs||{}});const plan=planReturnNetwork(id,MANAGER_UI.inputs[id]||{});plan.agent={mode:'scripted',summary:plan.status};CASES[id].networkPlan=plan;return plan;}
+document.addEventListener('change',ev=>{const t=ev.target;if(t.id==='manager-case'){MANAGER_UI.caseId=t.value;renderTab(STATE.tab);}if(t.id==='manager-concerns-only'){MANAGER_UI.concernsOnly=t.checked;if(t.checked){const first=Object.values(CASES).find(c=>c.serviceConcern?.status==='pending');if(first)MANAGER_UI.caseId=first.id;}renderTab(STATE.tab);}if(t.dataset.routeInput){const id=managerCaseId();MANAGER_UI.inputs[id]={...(MANAGER_UI.inputs[id]||CASES[id].networkPlan?.inputs||{}),[t.dataset.routeInput]:t.type==='checkbox'?t.checked:t.type==='number'?Number(t.value):t.value};const open=$('#tab-routing .routing-assumptions')?.open;renderRouting();if(open)$('#tab-routing .routing-assumptions').open=true;}});
+document.addEventListener('click',async ev=>{const t=ev.target.closest('button');if(!t)return;
+ if(t.dataset.managerCase||t.dataset.routingCase){MANAGER_UI.caseId=t.dataset.managerCase||t.dataset.routingCase;showTab(t.dataset.managerCase?'manager':'routing');return;}
+ if(t.dataset.inspectCase){UI.counter={caseId:t.dataset.inspectCase,store:null,grade:null};showTab('store');return;}
+ const id=managerCaseId();try{
+  if(t.dataset.routeDetail){const p=planReturnNetwork(id,MANAGER_UI.inputs[id]||CASES[id].networkPlan?.inputs||{}),r=p.routes.find(x=>x.id===t.dataset.routeDetail);if(r)evidenceDialog(r.name,`<p>${esc(r.demandBasis)}</p><p class="small muted">Synthetic scenario · CAD · no order or shipment created</p>${tableView(['Component','Amount'],[['Resale price',planningMoney(r.price)],['Unit cost',planningMoney(r.cost)],['Inspection / handling',planningMoney(r.handling)],['Transfer',planningMoney(r.transport)],['Packing + online shipping',planningMoney(r.fulfillment)],['Contribution if sold',planningMoney(r.contribution)],['Expected contribution in 28 days',planningMoney(r.expected)],['Original unit gross profit',planningMoney(p.originalProfit)],['Gap against original profit',r.gap==null?'Unknown':signed(r.gap)],['Minimum price to preserve original unit margin',planningMoney(r.minimumPrice)]]).replace('<details class="tv"','<details open class="tv"')}<p>${esc(p.formula)}</p><p class="small muted">${esc(p.limitation)}</p>`);}
+
+  if(t.id==='manager-comment-example')$('#manager-comment').value='The return process was terrible. I will post a negative review on Instagram about this customer service.';
+  if(t.id==='manager-comment-save'){const text=$('#manager-comment').value;const result=await recordCustomerServiceComment(id,text,'Staff-recorded customer comment');toast(result?'Service concern saved for manager review.':'No service-review signal detected.');renderManager();}
+  if(t.id==='manager-assess'){await investigate(id);if(!CASES[id].error)await refreshManagerPlan(id);renderManager();}
+  if(t.id==='manager-refresh'||t.id==='routing-save'){await refreshManagerPlan(id);renderTab(STATE.tab);toast('Planning scenario saved. No shipment or payment created.');}
+  if(t.dataset.managerRecommend){const note=$('#manager-decision-note').value,option=t.dataset.managerRecommend;if(BEDROCK_LOCAL)await workspaceCommand({kind:'manager-decision',caseId:id,option,note,mode:'scripted'});else saveManagerDecision(id,option,note,WORK.role);renderManager();toast('Manager recommendation saved. Customer agreement still required.');}
+ }catch(e){toast(e.message);}
+});
 
 boot();
 

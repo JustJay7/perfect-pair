@@ -66,7 +66,7 @@ function renderMast() {
     ? (STATE.mode === 'live' ? (live.provider === 'bedrock' ? `<b>Live agent · Amazon Bedrock:</b> ${esc(liveModel)}. Each run uses your workshop AWS allowance. Simulated actions and safety rules run on the local server and are saved between visits.` : '<b>Live agent:</b> Claude decides which tools to call and writes the reasoning you see. Safety checks still run in code. Each run uses your Claude usage.') : '<b>Scripted backup:</b> the same tools and safety checks in a fixed order. Use it to rehearse, or if the network fails during the pitch.')
     : `<b>Scripted backup.</b> ${esc(live.reason)}`;
 }
-const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['store', 'Store returns'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
+const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return', 'Return agent'], ['history', 'Actual investigations'], ['inbox', 'Saved cases'], ['manager', 'Customer review'], ['store', 'Drop-off & grading'], ['routing', 'Return routing'], ['approvals', 'Approvals'], ['dashboard', 'Analytics'], ['prevention', 'Prevention agent'], ['evals', 'Evaluations'], ['audit', 'Audit and fairness'], ['data', 'Data'], ['how', 'How it works']];
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
@@ -106,7 +106,7 @@ function countUp(root) {
 })();
 function renderTab(id) {
   rememberDisclosures($('#tab-'+id));
-  ({ home: renderWorkspaceHome, scenarios: renderDemoScenarios, history: renderHistory, inbox: renderInbox, return: renderReturn, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
+  ({ home: renderWorkspaceHome, scenarios: renderDemoScenarios, history: renderHistory, inbox: renderInbox, return: renderReturn, manager: renderManager, routing: renderRouting, store: renderStore, approvals: renderApprovals, dashboard: renderDashboard, prevention: renderPrevention, evals: renderEvals, audit: renderAudit, data: renderData, how: renderHow })[id]();
   renderDataSource(); renderPageContext();
 }
 
@@ -608,14 +608,14 @@ function renderStore() {
   const storeId = UI.counter.store || label.store || (cs.chosen && cs.chosen.dropStore) || stores[0].location_id;
   const g = UI.counter.grade;
   const rc = cs.received;
-  el.innerHTML = head + managerCustomerCard(sel) + `<div class="grid2 g-side">
+  el.innerHTML = head + `<div class="counter-context"><b>${esc(caseName(sel))}</b> · ${esc(k.return_id)}<button class="btn secondary sm" data-manager-case="${esc(sel)}">Customer review</button><button class="btn secondary sm" data-routing-case="${esc(sel)}">Compare routing</button></div>` + `<div class="grid2 g-side">
     <div class="card card-pad"><div class="eyebrow" style="margin-bottom:10px">Expected</div><div class="dropoff">${expected.map(x => { const lc = caseCtx(x.case_id).line; return `<button type="button" data-counter="${x.case_id}" aria-pressed="${x.case_id === sel}"><b>${esc(caseName(x.case_id))}</b> · ${esc(x.return_id)}<br>${esc(lc.product)}, size ${esc(lc.size)}<br><span class="small muted">${CASES[x.case_id].received ? 'Received' : 'Waiting for drop-off'}</span></button>`; }).join('')}</div></div>
     <div class="card card-pad stack">
       ${itemTag(sel)}
       <div class="grid2"><div><div class="eyebrow">Photo suggested</div><b>Grade ${esc(k.photo.grade)}</b> · <span class="small">${esc(GRADE[k.photo.grade])}</span></div><div><div class="eyebrow">Agent's plan</div>${plan ? `<b>${esc(IDX.loc[plan.plan]?.name || plan.scores[0].name)}</b>` : '<span class="muted">No plan yet</span>'}</div></div>
       <div class="store-pick"><label class="small" for="counter-store"><b>This counter is at</b></label> <select id="counter-store">${stores.map(s => `<option value="${s.location_id}" ${s.location_id === storeId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
       <div><div class="eyebrow" style="margin-bottom:8px">Grade the pair in hand</div><div class="grade-btns">${['A', 'B', 'C', 'D'].map(x => `<button type="button" data-grade="${x}" aria-pressed="${g === x}"><b>${x}</b><span>${esc(GRADE[x].split(':')[0])}</span></button>`).join('')}</div></div>
-      <button type="button" class="btn red" id="counter-confirm" ${g ? '' : 'disabled'}>${rc ? 'Update the grade' : 'Confirm grade and route'}</button>
+      <button type="button" class="btn red" id="counter-confirm" ${g && !rc ? '' : 'disabled'}>${rc ? 'Inspection recorded' : 'Confirm grade and route'}</button>
       ${rc ? counterResultHTML(sel, rc) : ''}
     </div></div>`;
 }

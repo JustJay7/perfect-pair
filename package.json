@@ -16,7 +16,8 @@
     "test:workspace-browser": "node tests/workspace_browser.cjs",
     "test:experience-browser": "node tests/experience_browser.cjs",
     "test:journeys-browser": "node tests/journeys_browser.cjs",
-    "test:insights-browser": "node tests/insights_browser.cjs"
+    "test:insights-browser": "node tests/insights_browser.cjs",
+    "test:manager-browser": "node tests/manager_browser.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "3.1152.0",

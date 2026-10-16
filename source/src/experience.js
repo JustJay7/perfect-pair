@@ -2,7 +2,7 @@
 const EXPERIENCE = { role: 'customer', customerCase: 'maya', approver: 'supervisor', disclosures: {}, historyFrom: 'dashboard' };
 const WORKSPACES = {
   customer: { label: 'Customer', role: 'customer', pages: ['home', 'return', 'scenarios'], nav: [['home','Dashboard','grid'],['return','My return','replan'],['scenarios','Demo use cases','grid']] },
-  store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','store','approvals'], nav: [['home','Dashboard','grid'],['store','Store returns','store'],['approvals','Approvals','check']] },
+  store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','manager','store','routing','approvals'], nav: [['home','Dashboard','grid'],['manager','Customer review','user'],['store','Drop-off & grading','store'],['routing','Return routing','truck'],['approvals','Approvals','check']] },
   customer_service: { label: 'Customer Service', role: 'supervisor', pages: TABS.map(t=>t[0]), nav: [['home','Dashboard','grid'],['inbox','Cases','inbox'],['return','Return agent','replan'],['prevention','Prevention agent','spark'],['approvals','Approvals','check'],['dashboard','Insights','chart']] },
 };
 Object.assign(ICONS, {
@@ -35,7 +35,7 @@ function changeWorkspace(role, destination='home') {
   showTab(destination); renderMast();
 }
 function primaryPage() {
-  if (STATE.tab==='store' && EXPERIENCE.role==='customer_service') return 'inbox';
+  if (['manager','store','routing'].includes(STATE.tab) && EXPERIENCE.role==='customer_service') return 'inbox';
   if (STATE.tab==='history') return EXPERIENCE.historyFrom;
   return ['data','audit','evals','how'].includes(STATE.tab)?'dashboard':STATE.tab;
 }
@@ -56,7 +56,7 @@ function renderPageContext() {
   const current=STATE.tab, primary=primaryPage(); let links=[];
   if(EXPERIENCE.role==='customer_service') {
     if(primary==='dashboard')links=[['dashboard','Analytics'],['history','Actual investigations'],['data','Data'],['audit','Audit & fairness'],['evals','Evaluations'],['how','How it works']];
-    if(primary==='inbox')links=[['inbox','Saved cases'],['store','Store handoffs']];
+    if(primary==='inbox')links=[['inbox','Saved cases'],['manager','Customer review'],['store','Drop-off & grading'],['routing','Return routing']];
     if(primary==='return')links=[['return','Customer cases'],['history','Past return evidence']];
     if(primary==='prevention')links=[['prevention','Analysis'],['history','Source records']];
   }
@@ -82,13 +82,14 @@ function renderWorkspaceHome() {
   const cases=Object.values(CASES).filter(c=>IDX.kase[c.id]), labels=[...new Set(Object.values(SYS.labels).map(l=>l.case_id))];
   const waiting=labels.filter(id=>CASES[id]&&!CASES[id].received), received=cases.filter(c=>c.received);
   const open=cases.filter(c=>!['new','done','received','declined','not_eligible'].includes(c.status));
-  el.innerHTML=pageHeading(manager?'Ready for the next return.':'Your team, in focus.',manager?'Inspect arrivals, resolve store exceptions and keep returns moving.':'Manage the queue, support customers and turn return patterns into improvements.',manager?'Store dashboard':'Service dashboard')+
+  el.innerHTML=pageHeading(manager?'Ready for the next return.':'Your team, in focus.',manager?'Review customers and recommendations, then handle inspection and routing in their own workspaces.':'Manage the queue, support customers and turn return patterns into improvements.',manager?'Store dashboard':'Service dashboard')+
     `<div class="home-provenance">${icon('shield')} ${BEDROCK_LOCAL?(WORK.ready?'Saved workspace':'Connecting to saved workspace'):'Offline rehearsal'} · Simulated operations</div>
-    <div class="home-metrics">${manager?metric('Awaiting inspection',waiting.length,'Store returns','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
-    <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'At the counter':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'store':'approvals'}">View all ${icon('call')}</button></div>
+    <div class="home-metrics">${manager?metric('Service concerns',cases.filter(c=>c.serviceConcern?.status==='pending').length,'Manager review','manager')+metric('Awaiting inspection',waiting.length,'Drop-off & grading','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
+    <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'Customer follow-up':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'manager':'approvals'}">View all ${icon('call')}</button></div>
     ${reviews.slice(0,3).map(r=>manager&&r.case_id?managerQueueRow(r.case_id,`data-home-review="${esc(r.id)}"`,'Review'):focusRow(r.kind==='counter'?caseName(r.case_id)+' · Inspection exception':r.kind==='page_fix'?'Product improvement':r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting. You’re up to date.</div>'}
+    ${manager?cases.filter(c=>c.serviceConcern?.status==='pending').slice(0,3).map(c=>managerQueueRow(c.id,`data-manager-case="${esc(c.id)}"`,'Review concern')).join(''):''}
     ${manager?waiting.slice(0,2).map(id=>managerQueueRow(id,`data-home-counter="${esc(id)}"`,'Inspect')).join(''):''}</section>
-    <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>Inspect. Grade. Route.</h3><p>Review the return, confirm the condition of the pair, and record its next destination.</p><button class="btn" data-tab="store">Open store returns ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
+    <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>Customer first. A clear next step.</h3><p>Review the customer’s history, service concerns and eligible options before moving to physical inspection.</p><button class="btn" data-tab="manager">Open customer review ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
   if(manager)el.querySelector('.home-metrics').before(el.querySelector('.home-columns'));
 }
 function productThumb(style) {
