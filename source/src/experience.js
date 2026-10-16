@@ -1,10 +1,11 @@
 /* Workspace navigation is a prototype view boundary, not authentication. */
 const EXPERIENCE = { role: 'customer', customerCase: 'maya', approver: 'supervisor', disclosures: {}, historyFrom: 'dashboard' };
 const WORKSPACES = {
-  customer: { label: 'Customer', role: 'customer', pages: ['home', 'return', 'scenarios'], nav: [['home','Dashboard','grid'],['return','My return','replan'],['scenarios','Demo use cases','grid']] },
-  store_manager: { label: 'Store Manager', role: 'store_manager', pages: ['home','manager','store','routing','approvals'], nav: [['home','Dashboard','grid'],['manager','Needs attention','user'],['store','Drop-off & grading','store'],['routing','Item destination','truck'],['approvals','Approvals','check']] },
-  customer_service: { label: 'Customer Service', role: 'supervisor', pages: TABS.map(t=>t[0]), nav: [['home','Dashboard','grid'],['inbox','Cases','inbox'],['return','Return agent','replan'],['prevention','Prevention agent','spark'],['approvals','Approvals','check'],['dashboard','Insights','chart']] },
+  customer: { label:'Customer',role:'customer',pages:['return','scenarios'],nav:[['return','My return','replan'],['scenarios','Demo use cases','grid']] },
+  store_manager: { label:'Store Manager',role:'store_manager',pages:['manager','store','routing','approvals'],nav:[['manager','Work queue','inbox'],['store','Process returns','store']] },
+  customer_service: { label:'Customer Service',role:'supervisor',pages:TABS.map(t=>t[0]).filter(id=>id!=='home'),nav:[['inbox','Cases','inbox'],['prevention','Prevention','spark'],['dashboard','Insights','chart']] },
 };
+function workspaceLanding(){return EXPERIENCE.role==='customer'?'return':EXPERIENCE.role==='store_manager'?'manager':'inbox';}
 Object.assign(ICONS, {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   inbox: '<path d="M4 4h16l2 12v4H2v-4zM2 16h6l2 3h4l2-3h6"/>',
@@ -35,9 +36,11 @@ function changeWorkspace(role, destination='home') {
   showTab(destination); renderMast();
 }
 function primaryPage() {
-  if (['manager','store','routing'].includes(STATE.tab) && EXPERIENCE.role==='customer_service') return 'inbox';
-  if (STATE.tab==='history') return EXPERIENCE.historyFrom;
-  return ['data','audit','evals','how'].includes(STATE.tab)?'dashboard':STATE.tab;
+ if(EXPERIENCE.role==='customer')return STATE.tab;
+ if(EXPERIENCE.role==='store_manager')return ['store','routing'].includes(STATE.tab)?'store':'manager';
+ if(['inbox','return','manager','store','routing','approvals'].includes(STATE.tab))return 'inbox';
+ if(['prevention','history'].includes(STATE.tab))return 'prevention';
+ return 'dashboard';
 }
 function renderWorkspaceNavigation() {
   const w=WORKSPACES[EXPERIENCE.role], current=primaryPage(), n=workspaceReviews().filter(r=>r.status==='pending').length;
@@ -47,50 +50,32 @@ function renderWorkspaceNavigation() {
   $('#workspace-label').textContent=w.label+' workspace';
   $('#nav-caption').textContent=EXPERIENCE.role==='customer'?'YOUR SPACE':'WORKSPACE';
   $('#settings-open').hidden=EXPERIENCE.role==='customer';
-  $('#tabs').innerHTML=w.nav.map(([id,label,ic])=>`<button class="workspace-nav" role="tab" id="tabbtn-${id}" aria-controls="tab-${id}" aria-selected="${current===id}" tabindex="${current===id?0:-1}" data-tab="${id}">${icon(ic)}<span>${label}</span>${id==='approvals'&&n?`<span class="nav-count">${n}</span>`:id==='manager'&&managerAttentionCases().length?`<span class="nav-count">${managerAttentionCases().length}</span>`:''}</button>`).join('');
+  $('#tabs').innerHTML=w.nav.map(([id,label,ic])=>`<button class="workspace-nav" role="tab" id="tabbtn-${id}" aria-controls="tab-${current===id?STATE.tab:id}" aria-selected="${current===id}" tabindex="${current===id?0:-1}" data-tab="${id}">${icon(ic)}<span>${label}</span>${id==='approvals'&&n?`<span class="nav-count">${n}</span>`:id==='manager'&&managerAttentionCases().length?`<span class="nav-count">${managerAttentionCases().length}</span>`:''}</button>`).join('');
   renderPageContext();
 }
 function pageHeading(title,subtitle,kicker) { return `<div class="page-heading"><div class="eyebrow">${esc(kicker||WORKSPACES[EXPERIENCE.role].label)}</div><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div>`; }
 function renderPageContext() {
-  const el=$('#page-context'); if(!el)return;
-  const current=STATE.tab, primary=primaryPage(); let links=[];
-  if(EXPERIENCE.role==='customer_service') {
-    if(primary==='dashboard')links=[['dashboard','Analytics'],['history','Actual investigations'],['data','Data'],['audit','Audit & fairness'],['evals','Evaluations'],['how','How it works']];
-    if(primary==='inbox')links=[['inbox','Saved cases'],['manager','Needs attention'],['store','Drop-off & grading'],['routing','Item destination']];
-    if(primary==='return')links=[['return','Customer cases'],['history','Past return evidence']];
-    if(primary==='prevention')links=[['prevention','Analysis'],['history','Source records']];
+ const el=$('#page-context');if(!el)return;const current=STATE.tab,primary=primaryPage();let links=[],extra='';
+ if(EXPERIENCE.role==='store_manager'){
+  if(primary==='store')links=[['store','1 · Receive & inspect'],['routing','2 · Item destination']];
+  else if(current==='approvals')links=[['manager','← Work queue'],['approvals','Approval details & history']];
+ }
+ if(EXPERIENCE.role==='customer_service'){
+  if(primary==='inbox'&&current!=='inbox')links=[['inbox','← Cases'],[current,({return:'Return assessment',manager:'Customer follow-up',store:'Receive & inspect',routing:'Item destination',approvals:'Approval requests'})[current]]];
+  if(primary==='prevention')links=[['prevention','Product & store analysis'],['history','Investigate historical records']];
+  if(primary==='dashboard'){
+   links=[['dashboard','Analytics']];
+   extra=`<label class="workspace-tools">Evidence & demo tools<select id="workspace-tool"><option value="">Choose a tool…</option>${[['data','Source data'],['audit','Audit & fairness'],['evals','Scenario tests'],['how','Architecture & setup']].map(([id,label])=>`<option value="${id}" ${id===current?'selected':''}>${label}</option>`).join('')}</select></label>`;
   }
-  el.innerHTML=links.length?`<nav class="page-subnav" aria-label="${primary==='dashboard'?'Insights':primary==='inbox'?'Cases':'Agent'} pages">${links.map(([id,label])=>`<button class="subnav-btn" data-tab="${id}" ${id==='history'?`data-history-from="${primary}"`:''} aria-current="${id===current?'page':'false'}">${label}</button>`).join('')}</nav>`:'';
+ }
+ el.innerHTML=links.length||extra?`<nav class="page-subnav" aria-label="Workspace sections">${links.map(([id,label])=>`<button id="section-${id}" class="subnav-btn" data-tab="${id}" aria-current="${id===current?'page':'false'}">${label}</button>`).join('')}${extra}</nav>`:'';
 }
 const experienceMast=renderMast;
 renderMast=function(){experienceMast();const staff=EXPERIENCE.role!=='customer';$('#agent-status').hidden=!staff;$('#agent-status').textContent=STATE.mode==='live'&&STATE.live.available?'● Live agent':'● Scripted demo';$('#agent-status').dataset.live=String(STATE.mode==='live'&&STATE.live.available);$('#workspace-role').disabled=anyBusy();$('#workspace-stop').hidden=!anyBusy()||WORK.loading;};
 function metric(label,value,note,tab) { return `<button class="home-metric" data-tab="${tab}"><span>${label}</span><strong>${value}</strong><small>${note} ${icon('call')}</small></button>`; }
 function focusRow(title,sub,action,label='Open') { return `<div class="focus-row"><div><b>${esc(title)}</b><span>${esc(sub)}</span></div><button class="btn secondary sm" ${action}>${label} ${icon('call')}</button></div>`; }
-function renderWorkspaceHome() {
-  const el=$('#tab-home');
-  if(EXPERIENCE.role==='customer') {
-    ensureCustomerCase(); const id=STATE.active,cs=CASES[id],{line,k}=caseCtx(id), complete=['done','received'].includes(cs.status), waiting=['review','awaiting_approval','needs_person','more_info'].includes(cs.status);
-    const step=complete?3:cs.status==='options'?2:cs.status==='new'?0:1;
-    el.innerHTML=pageHeading(`Hi ${caseName(id)}. Let’s make it right.`, 'A better fit, an exchange or a return. We’ll help you find your next step.','Your dashboard')+`
-      <div class="customer-overview">
-        <section class="card order-spotlight"><div class="spotlight-art">${productThumb(caseCtx(id).style)}</div><div class="spotlight-content"><span class="pill ${complete?'ok':'neutral'}">${complete?'Return arranged':waiting?'Our team is reviewing':cs.status==='options'?'Your options are ready':'Your recent order'}</span><h2>${esc(line.product)}</h2><p>${esc(line.colour)} · Size ${esc(line.size)}<br><span class="small muted">Order ${esc(k.order_id)}</span></p><button class="btn" data-tab="return">${complete?'View return details':cs.status==='new'?'Start a return':'Continue my return'} ${icon('call')}</button><span class="small muted">${IDX.kase[id].hybrid?'Simulated customer · actual product context':'Demo customer · synthetic order'}</span></div></section>
-        <section class="card progress-card"><div class="eyebrow">What happens next</div><h2>Simple, from here.</h2><ol class="journey-steps">${[['Tell us what happened','Share the issue and a photo.'],['Choose what works','Review your available options.'],['We’ll take care of the rest','Track your return in one place.']].map(([t,d],i)=>`<li class="${i<step?'complete':''}"><span>${i<step?icon('check'):i+1}</span><div><b>${t}</b><p>${d}</p></div></li>`).join('')}</ol></section>
-      </div><div class="quiet-help">${icon('user')}<div><b>A little help, whenever you need it.</b><p>Open your return and use Help to ask a question or request a team member.</p></div></div>`;
-    return;
-  }
-  const manager=EXPERIENCE.role==='store_manager', reviews=workspaceReviews().filter(r=>r.status==='pending').sort((a,b)=>slaInfo(a).left-slaInfo(b).left);
-  const cases=Object.values(CASES).filter(c=>IDX.kase[c.id]), labels=[...new Set(Object.values(SYS.labels).map(l=>l.case_id))];
-  const waiting=labels.filter(id=>CASES[id]&&!CASES[id].received), received=cases.filter(c=>c.received);
-  const open=cases.filter(c=>!['new','done','received','declined','not_eligible'].includes(c.status));
-  el.innerHTML=pageHeading(manager?'Ready for the next return.':'Your team, in focus.',manager?'Handle flagged cases, inspect drop-offs and review where returned items should go.':'Manage the queue, support customers and turn return patterns into improvements.',manager?'Store dashboard':'Service dashboard')+
-    `<div class="home-provenance">${icon('shield')} ${BEDROCK_LOCAL?(WORK.ready?'Saved workspace':'Connecting to saved workspace'):'Offline rehearsal'} · Simulated operations</div>
-    <div class="home-metrics">${manager?metric('Flagged cases',managerAttentionCases().length,'Needs attention','manager')+metric('Awaiting inspection',waiting.length,'Drop-off & grading','store')+metric('Store approvals',reviews.length,'Needs a decision','approvals')+metric('Inspections recorded',received.length,'Saved counter activity','store'):metric('Open returns',open.length,'In progress or awaiting a person','inbox')+metric('Awaiting approval',reviews.length,'Review requests','approvals')+metric('Store handoffs',waiting.length,'Awaiting inspection','store')}</div>
-    <div class="home-columns"><section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">Priority queue</div><h2>${manager?'Flagged cases':'Needs your attention'}</h2></div><button class="text-button" data-tab="${manager?'manager':'approvals'}">View all ${icon('call')}</button></div>
-    ${manager?managerAttentionCases().slice(0,3).map(c=>focusRow(caseName(c.id),managerAttentionReasons(c.id).join(' · '),`data-manager-case="${esc(c.id)}"`,'Review')).join('')||'<div class="home-empty">No flagged cases need your attention.</div>':reviews.slice(0,3).map(r=>focusRow(r.case_id?caseCtx(r.case_id).line.product:'Review request',r.reason,`data-home-review="${esc(r.id)}"`,'Review')).join('')||'<div class="home-empty">No approvals waiting.</div>'}
-    </section>
-    <section class="card focus-card"><div class="surface-head"><div><div class="eyebrow">${manager?'Store workflow':'Your AI agents'}</div><h2>${manager?'One clear handoff':'Two agents. One better experience.'}</h2></div></div>${manager?`<div class="workflow-copy"><div class="agent-symbol">${icon('store')}</div><h3>The agent handles routine returns.</h3><p>Step in for a service concern or unresolved assessment. Drop-off inspection and item destination stay separate.</p><button class="btn" data-tab="manager">View flagged cases ${icon('call')}</button></div>`:`<button class="agent-entry" data-tab="return"><span class="agent-symbol">${icon('replan')}</span><span><b>Return agent</b><small>Help one customer find the right resolution.</small></span>${icon('call')}</button><button class="agent-entry" data-tab="prevention"><span class="agent-symbol prevention-symbol">${icon('spark')}</span><span><b>Prevention agent</b><small>Investigate patterns and propose product fixes.</small></span>${icon('call')}</button>`}</section></div>`;
-  if(manager)el.querySelector('.home-metrics').before(el.querySelector('.home-columns'));
-}
+// Legacy home links now open the role's working page; there is no separate dashboard.
+function renderWorkspaceHome(){showTab(workspaceLanding());}
 function productThumb(style) {
   const name=style?.name||'Your pair';
   // Use the existing product illustration, with no network request or new asset.
@@ -141,6 +126,7 @@ renderPrevention=function(){
 // Settings and navigation stay separate from business actions and server permissions.
 document.addEventListener('click',ev=>{
   const t=ev.target.closest('button,a');if(!t)return;
+  if(t.dataset.tab==='routing'&&STATE.tab==='store'&&UI.counter?.caseId){MANAGER_UI.caseId=UI.counter.caseId;TX.routingSource='synthetic';}
   if(t.dataset.historyFrom)EXPERIENCE.historyFrom=t.dataset.historyFrom;
   else if(t.dataset.tab==='history'&&STATE.tab!=='history')EXPERIENCE.historyFrom='dashboard';
   if(t.id==='settings-open')$('#demo-settings').showModal();
@@ -152,6 +138,7 @@ document.addEventListener('click',ev=>{
 document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t.id==='workspace-role')changeWorkspace(t.value);
+  if(t.id==='workspace-tool'&&t.value)showTab(t.value);
   if(t.id==='approval-role'){EXPERIENCE.approver=t.value;renderApprovals();}
   if(t.id==='case-picker'){STATE.active=t.value;UI.sel={};renderReturn();}
 });

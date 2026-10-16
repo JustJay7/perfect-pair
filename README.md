@@ -10,17 +10,35 @@ Double-click `perfect_pair_demo_offline.html` and open it in Chrome. The **Scrip
 
 ## Three focused workspaces
 
-Use **Viewing as** in the top right. The selected workspace is remembered on this browser; each reload opens its dashboard.
+Use **Viewing as** in the top right. The workspace is remembered; reloading opens its working page, with no separate home dashboard.
 
-| Workspace | Pages |
+| Workspace | Sidebar pages | Details inside those pages |
+|---|---|---|
+| Customer | My return · Demo use cases | Options, progress and help; all eight demonstrations. |
+| Store Manager | Work queue · Process returns | Flagged customers and approval requests; receiving/inspection followed by item destination. |
+| Customer Service | Cases · Prevention · Insights | Saved cases, Return agent, approvals and follow-ups; product analysis and historical investigations; analytics and secondary evidence tools. |
+
+### Page audit and consolidation
+
+| Previous page | Decision and current location |
 |---|---|
-| Customer | Dashboard, My return and Demo use cases. Select a demonstration, then follow its customer journey with options, progress and Help. |
-| Store Manager | Dashboard, Needs attention, Drop-off & grading, Item destination and Approvals filtered to store inspection exceptions. |
-| Customer Service | Dashboard, Cases, Return agent, Prevention agent, Approvals and Insights. |
+| Role dashboards | Removed: duplicated case queues and shortcuts. Each role opens its working page. |
+| My return / Return agent | Customer's main journey; staff assessment opens within Cases with a back link. |
+| Demo use cases | Retained for choosing and presenting customer scenarios. |
+| Cases | Customer Service's main operational workspace, with search and saved replays. |
+| Needs attention | Renamed Work queue for Store Manager; customer follow-ups open within Customer Service Cases. |
+| Approvals | Removed from the sidebar; requests and history open from Work queue or Cases. Actionable flagged cases link directly to their approval. |
+| Drop-off & grading | First step of Process returns: Receive & inspect. |
+| Item destination | Second step of Process returns; follows the selected inspection case. Available as a case detail for Customer Service. |
+| Prevention agent | Retained: investigates product/store patterns rather than individual customer decisions. |
+| Historical investigations | One location under Prevention, instead of repeated navigation under both agents and Insights. |
+| Insights analytics | Retained: aggregate performance is distinct from operational case handling. |
+| Source data | Secondary Evidence & demo tools selector under Insights. |
+| Audit & fairness | Secondary Evidence & demo tools selector under Insights. |
+| Scenario tests | Secondary Evidence & demo tools selector under Insights. |
+| Architecture & setup | Secondary Evidence & demo tools selector under Insights. |
 
-Customer Service can select a case and use **View as customer** to preview that customer's journey. Browsing other cases as staff does not change the selected customer. **Cases → Drop-off & grading** opens inspections; **Insights** contains analytics, actual investigations, data, audit, evaluations and the architecture explanation. Both agent pages also link directly to actual evidence.
-
-Agent activity, financials, source assumptions and replays expand on demand. **Demo settings** contains Synthetic / Actual, Live / Scripted, model speed, stock-conflict rehearsal, reset and AWS setup. Dashboard counts describe saved simulated operations; actual historical analytics stay in Insights.
+Customer Service can select **View as customer** to preview that customer's journey. Staff case browsing does not change the selected customer. Agent activity, financials, source assumptions and replays expand on demand. **Demo settings** contains dataset, model and AWS controls. Consolidation changes navigation, not approval authority or business calculations.
 
 The dropdown previews user workspaces, **not authenticated access control**. Service approval authority is selected within Approvals; product changes require the Merchandiser authority. Existing server action and role checks remain enforced. Real sign-in and multi-user authorization would be a separate deployment step.
 
@@ -66,17 +84,17 @@ The connection test alone does not verify a full agent workflow.
 ### Demo navigation and customer context
 
 - **Customer → Demo use cases** presents all eight original scenarios; the saved-customer selector also opens queued, custom and hybrid cases. Selecting a journey preserves its progress. Customer Service retains the operational case inbox.
-- **Store Manager → Needs attention / Approvals** shows the customer first: lifetime profile counts, return rate, recent history, new/returning status and a separate color-coded agent assessment. Grey means not assessed, blue means in progress, green means no flag raised, amber means review/incomplete, and red means an active evidence flag. Text labels accompany every color. All operational customer profiles are synthetic, including hybrid cases.
+- **Store Manager → Work queue → flagged case or approval** shows the customer first: lifetime profile counts, return rate, recent history, new/returning status and a separate color-coded agent assessment. Grey means not assessed, blue means in progress, green means no flag raised, amber means review/incomplete, and red means an active evidence flag. Text labels accompany every color. All operational customer profiles are synthetic, including hybrid cases.
 - History does not automatically reject a customer. Existing policy uses Gold/Silver status and a return rate ≤20% for early refund eligibility, with inspection required. An agent evidence flag routes financial actions to supervisor review; new customers receive the same eligibility assessment, with ordinary receipt/inspection timing. The card shows the saved decision or review reason, not an invented explanation.
 - **Store Manager customer overview** uses individual shaded cards for membership, lifetime orders, profile return rate, past returns, tenure and recent damage claims. Gold, Silver, Platinum and Bronze have readable tier-colored text; styling does not assign a tier or change eligibility.
-- **Customer Service → Insights** puts the reason heatmap before the metrics and other charts, for both datasets. Actual heatmap rows honor the selected banner, channel and dates. Selecting a reason narrows the columns while keeping all reasons in that scope as the percentage denominator. Empty combinations show an explicit no-records message; zero reason quantities show 0%. Full-period product/customer context is collapsed separately and labels its filter limitations.
+- **Customer Service → Insights** puts summary metrics before the reason heatmap and other charts, for both datasets. Actual heatmap rows honor the selected banner, channel and dates. Selecting a reason narrows the columns while keeping all reasons in that scope as the percentage denominator. Empty combinations show an explicit no-records message; zero reason quantities show 0%. Full-period product/customer context is collapsed separately and labels its filter limitations.
 - **Prevention agent** has dataset, company, market and all-products/single-product controls. Actual company/market choices follow the imported banners (ALDO, Call It Spring and Sperry). Actual analysis is read-only and source-linked; all-products totals cover the entire selected market, while the ranked product list is a sample. The synthetic network is fixed to Canada and supports all demo products or one style, with the existing approval and measurement flow.
 
 ### Manager decisions and return-network planning
 
 The latest manager layout was developed with a completed `us.anthropic.claude-opus-5-5` design request through AWS Bedrock. The operational app model remains configurable; design assistance does not establish a live ALDO integration.
 
-- **Needs attention** contains customer information, tier cards, eligible remedy combinations and a saved staff recommendation. **Drop-off & grading** contains physical receipt and condition checks, with links back to the customer and routing workspaces.
+- **Work queue** contains customer information, tier cards, eligible remedy combinations and a saved staff recommendation. **Drop-off & grading** contains physical receipt and condition checks, with links back to the customer and routing workspaces.
 - Negative service/return-review comments in the return description, customer Help conversation or staff-recorded comment are screened into a persistent **service concern**. The quoted evidence and manager follow-up are saved separately from abuse flags. This is deterministic screening for human confirmation, not public social-media monitoring. A manager can recommend only an existing eligible remedy or personal follow-up. This does not choose for the customer or execute a financial action.
 - **Item destination** compares synthetic SKU sales rates and 28-day sale probabilities at stores/outlets with an e-commerce scenario. An assumed matching online order must match the exact SKU and delivery deadline; the receiving store must support fulfillment. Grade A is required for online resale as new. Recorded inspection overrides planning grade/store.
 - The first proposed destination is the feasible route with the highest expected contribution among those preserving both original unit gross-profit dollars and margin percentage. If none qualifies, no margin-preserving route is recommended. Recovery alternatives remain visible with their shortfall. These are planning results; existing simulated settlement/inspection policy is separate and no new transfer, stock reservation or e-commerce shipment is created.
@@ -84,18 +102,18 @@ The latest manager layout was developed with a completed `us.anthropic.claude-op
 - All network inputs are **synthetic**. Region-to-store distances are example distances, not customer-home geocoding. E-commerce forecast defaults use synthetic DC-inventory sales as an explicitly labeled proxy; matching-order mode is an assumption, not a connected order feed. No live addresses, exact outlet sales, carrier quotes, ship-from-store capability, or open-order data were supplied. Missing transfer quotes/demand stay unknown and block a feasible recommendation.
 - Original benchmark = original price paid − unit cost. Resale contribution = resale price − unit cost − handling − transfer − fulfillment. Expected contribution = sale probability × (resale price − unit cost − fulfillment) − handling − transfer. A forecast cannot guarantee total original-order profit after a refund. Remedy estimates and returned-stock resale belong to separate ledgers; they must not be summed into claimed savings.
 
-The **Needs attention** queue is derived automatically from pending service comments, unresolved agent assessments and approval requests. Routine assessed cases are excluded. Prevention handles product/store patterns; the Return workflow handles individual requests. Managers open a flagged case to see its handoff reason and preferred remedy; alternatives, history and policy detail are expandable. Service-review flags are comment-screening signals requiring confirmation, not fraud findings. Customer Service approval requests remain subject to their existing role controls.
+The **Work queue** queue is derived automatically from pending service comments, unresolved agent assessments and approval requests. Routine assessed cases are excluded. Prevention handles product/store patterns; the Return workflow handles individual requests. Managers open a flagged case to see its handoff reason and preferred remedy; alternatives, history and policy detail are expandable. Service-review flags are comment-screening signals requiring confirmation, not fraud findings. Customer Service approval requests remain subject to their existing role controls.
 
 **Item destination** presents a result, a next step and three comparison cards. Demo inputs, full destination calculations and replacement collection are expandable. This remains a planning view: it does not book a shipment, promise a sale or guarantee margin. Both synthetic and actual transaction views preserve their source labels and existing financial checks.
 
-To rehearse: open **Store Manager → Needs attention → Demo / previously reviewed cases**, choose Maya, run the return assessment if needed, then expand **Record a customer comment → Use a synthetic example** and save it. Record the manager's reason and recommendation. Open **Item destination**, expand **Demo setup & cost assumptions**, and compare normal forecast demand with an assumed exact matching online order. Save / explain records the scenario; Live mode adds a bounded model explanation whose route/remedy IDs must pass server checks.
+To rehearse: open **Store Manager → Work queue → Demo / previously reviewed cases**, choose Maya, run the return assessment if needed, then expand **Record a customer comment → Use a synthetic example** and save it. Record the manager's reason and recommendation. Open **Item destination**, expand **Demo setup & cost assumptions**, and compare normal forecast demand with an assumed exact matching online order. Save / explain records the scenario; Live mode adds a bounded model explanation whose route/remedy IDs must pass server checks.
 
 ### New transaction data: individual stores and online sales
 
 The additional `Transaction_Detail_ALDO_CA_US_2025.csv` is integrated separately from OMS history. It contains **8,701,520 lines**, February 2, 2025 through January 31, 2026, for **303 site IDs** across ALDO Canada and ALDO US. Sites include regular stores, outlets, e-commerce, customer service and unclassified locations. All rows are imported; no sample is substituted for the full totals. The earlier six files are byte-identical to the previous delivery.
 
-- **Customer Service → Prevention agent → Dataset → Actual store & online sales**: select market, individual location, recorded channel and months, then all products or one descriptive variant. Recorded reasons appear first. Sales, signed net amounts, recorded gross margins and period return-to-sale event ratios follow. These ratios are not matched-purchase or customer return rates. Numeric reason codes have no supplied dictionary and remain unmapped. Top products/reasons are explicitly ranked subsets.
-- **Store Manager → Item destination → Routing evidence → Actual store & online sales**: choose the real product's colour/size and a convenient receiving store. Compare recorded sales per calendar week and weighted selling prices by store/outlet and online site. Routing uses one common returned-pair cost proxy across all destinations (selected-product sales cost / units, or an explicit override). Historical destination costs remain available as context; moving the pair does not change its product cost. Enter handling, transfer, packing and shipping assumptions, then recalculate. Blank costs remain unknown. The transfer estimate applies uniformly to other stores; it is not a route quote. Online rows model fulfillment from the receiving store using historical online demand evidence.
+- **Customer Service → Prevention → Dataset → Actual store & online sales**: select market, individual location, recorded channel and months, then all products or one descriptive variant. Recorded reasons appear first. Sales, signed net amounts, recorded gross margins and period return-to-sale event ratios follow. These ratios are not matched-purchase or customer return rates. Numeric reason codes have no supplied dictionary and remain unmapped. Top products/reasons are explicitly ranked subsets.
+- **Store Manager → Process returns → Item destination → Routing evidence → Actual store & online sales**: choose the real product's colour/size and a convenient receiving store. Compare recorded sales per calendar week and weighted selling prices by store/outlet and online site. Routing uses one common returned-pair cost proxy across all destinations (selected-product sales cost / units, or an explicit override). Historical destination costs remain available as context; moving the pair does not change its product cost. Enter handling, transfer, packing and shipping assumptions, then recalculate. Blank costs remain unknown. The transfer estimate applies uniformly to other stores; it is not a route quote. Online rows model fulfillment from the receiving store using historical online demand evidence.
 - The default financial benchmark is the selected product/period/channel's recorded weighted-average sale, **not a verified original customer order**. Optional benchmark overrides are assumptions. A financial candidate must preserve benchmark gross-profit dollars and margin percentage after entered costs. Condition constraints apply, but inspection, current demand/capacity, shipping capability, delivery times and exact product identification still need verification. No operational recommendation, shipment, reservation or financial action is created.
 - Product identity includes market, brand, style, colour, size, category and materials. No explicit SKU or width is supplied. No automatic join is made to synthetic customers or the older OMS returns, preventing false matches and double-counting. Store postal codes are not customer addresses. Missing size stays unknown. Customer GUIDs are absent on 97.48% of source lines and are not used to construct customer histories.
 - Costs and margins are recorded historical product amounts, not full logistics profit. Amounts stay in one market's unspecified source currency; there is no FX conversion or Canada/US monetary total. Consistent positive sale and negative return/adjustment lines supply comparison measures. **1,145 inconsistent-sign lines** remain in net totals and are excluded from these comparison measures. Source sales minus cost reconciles to margin within one cent per row.
@@ -163,6 +181,7 @@ customer handoffs are saved server-side with the submitted conversation excerpt.
 - `npm run test:transactions-browser`: actual market/location/product filters, saved analyses/replay, margin assumptions, source evidence, synthetic switching and mobile layouts. Backend tests include fixed-scope mocked live transaction tools.
 - `npm run test:insights-browser`: independently recomputed actual filter totals and reason shares, no-data and zero-quantity cases, date ranges, reset and mobile layouts.
 - `npm run test:journeys-browser`: scenario selection, customer status and history cards, heatmap ordering, actual market/product isolation, synthetic product scoping and mobile layouts.
+- `npm run test:navigation-browser`: all 14 retained views, role landing pages, nested-page selection, case back links and mobile layout.
 - `npm run test:experience-browser`: three role views, guarded navigation, a
   customer exchange, store inspection, specialist approval, saved workspace and
   customer selection, expandable evidence, mobile pages and dark mode.
@@ -263,7 +282,7 @@ dashboard suppresses cross-banner monetary totals. `Book.xlsx` is empty and supp
 | `source/import_evidence.py` | Full source-record SQLite importer with source hashes; local database excluded from Git |
 | `source/src/workspace.js`, `history.js`, `state.js`, `hybrid.js` | Saved-case interface, source investigations, shared snapshots and labelled synthetic supplementation |
 | `source/gen_real.py` | Rebuilds `src/real.json` from the five supplied CSVs, with source hashes and join coverage |
-| `source/src/experience.js`, `experience.css`, `journeys.js`, `prevention_scope.js` | Three workspace views, focused dashboards, navigation, progressive disclosure and responsive layout |
+| `source/src/experience.js`, `experience.css`, `journeys.js`, `prevention_scope.js` | Three workspace views, task-focused navigation, progressive disclosure and responsive layout |
 | `source/src/data_source.js` | Synthetic / Actual selection and the actual-data explorer |
 | `data/` | The synthetic tables as CSV, for loading into DynamoDB / S3 / Athena |
 | `agent/` | `tools.json` (original tool schemas for a possible AgentCore/Lambda deployment), `tool_sets.json`, `prompts/`, `safety_rules.md` (rules R1 to R13 and the Cedar policies) |

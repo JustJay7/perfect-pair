@@ -70,7 +70,7 @@ const TABS = [['home', 'Dashboard'], ['scenarios', 'Demo use cases'], ['return',
 function pendingReviews() { return Object.values(SYS.reviews).filter(r => r.status === 'pending'); }
 function renderTabsBar() { renderWorkspaceNavigation(); }
 function showTab(id) {
-  if (!workspaceCanAccess(id)) id = 'home';
+  if (id==='home'||!workspaceCanAccess(id)) id=workspaceLanding();
   STATE.tab = id;
   if (EXPERIENCE.role === 'customer') ensureCustomerCase();
   if (id === 'history' && REAL) setDataSource('actual', false);

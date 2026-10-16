@@ -14,6 +14,7 @@
     "check:aws": "node backend/check-aws.mjs",
     "import:history": "python3 source/import_evidence.py",
     "test:workspace-browser": "node tests/workspace_browser.cjs",
+    "test:navigation-browser": "node tests/navigation_browser.cjs",
     "test:experience-browser": "node tests/experience_browser.cjs",
     "test:journeys-browser": "node tests/journeys_browser.cjs",
     "test:insights-browser": "node tests/insights_browser.cjs",

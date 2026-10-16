@@ -90,3 +90,5 @@
 #tab-manager .manager-options{grid-template-columns:1fr}.manager-handoff{border-left-color:var(--red,#c8102e)}
 
 .route-receipt{margin:20px 0}.route-receipt select{display:block;max-width:100%;margin:10px 0}.receipt-equation{font-size:18px;font-weight:600;padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow-wrap:anywhere}.route-receipt td{white-space:normal;vertical-align:top}.route-receipt td:nth-child(2){min-width:110px;font-variant-numeric:tabular-nums}.route-receipt th:last-child{min-width:240px}
+
+.workspace-tools{display:flex;align-items:center;gap:12px;margin-left:auto;font-size:13px}.workspace-tools select{max-width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}@media(max-width:700px){.workspace-tools{margin-left:0;flex-wrap:wrap}.page-subnav{flex-wrap:wrap}}
