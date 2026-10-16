@@ -62,8 +62,7 @@ Node runtime when available. For other computers, install Node.js 24 or newer, t
 5. Open **http://127.0.0.1:8787**, choose **Customer Service**, then open
    **Demo settings → Live agent**. Close settings and open **Return agent** for Maya's scenario. Switching the dataset does not switch the AI model.
 
-The connection screen holds entered credentials in server memory only. Disconnect
-or stop the server to clear them. Reconnect when workshop credentials expire.
+The connection screen defaults to Remember on macOS. Credentials and model settings are saved in macOS Keychain, scoped to this checkout, and restored with one small connection-test request at server startup. Disconnect removes the saved entry. Uncheck Remember for memory-only use. Renew all three fields when AWS expires the workshop session. Keychain access failures are reported; credentials never fall back to a plaintext file.
 The server listens only on this Mac, and must remain running. Reloading the app
 starts in Scripted backup and Synthetic data; it never starts inference by itself.
 
@@ -159,7 +158,7 @@ The backend controls the Bedrock transcript and tool schemas, with at most 8
 model calls / 16,000 output tokens per model run, 4,096 tokens per call,
 120 calls per hour, and a five-minute transcript expiry. A case also has a
 60-tool budget. These are usage controls, not a dollar spending cap. Credentials
-remain in memory; case data and tool observations are deliberately saved locally.
+use memory or the opted-in macOS Keychain; case data and tool observations are deliberately saved locally.
 The model receives only the current prompt, relevant tool results and any photo,
 not the complete raw dataset. Raw files are not directly served by the backend.
 
@@ -315,6 +314,6 @@ The audit corrected a destination-cost inconsistency: earlier actual routing sub
 
 ### Connection and manager status clarity
 
-The app remembers an explicitly selected Live/Scripted mode in this browser. Refreshing checks the running server without making a model call; Live is restored only while that server reports a working connection. AWS credentials remain in server memory and are cleared by disconnect or shutdown. Expired workshop sessions require fresh credentials; saved mode is not a saved credential.
+The app remembers an explicitly selected Live/Scripted mode in this browser. Refreshing checks the running server without making a model call; Live is restored only while that server reports a working connection. Remembered AWS credentials restore from macOS Keychain after shutdown. Disconnect deletes the saved entry; unsaved credentials remain in memory only. Expired workshop sessions require fresh credentials; saved mode is not a saved credential.
 
 Store Manager Work queue includes service concerns, inspection exceptions and assessment failures without an assigned approval. Customer Service-only approvals remain in Customer Service Cases. A manager opening such a case through the demo selector sees the waiting status and its reason, not an empty remedy prompt. Follow-up notes are optional and collapsed when there is no remedy or service concern.

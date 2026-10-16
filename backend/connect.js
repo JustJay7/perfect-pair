@@ -4,7 +4,9 @@ const status = document.getElementById('status');
 const secrets = ['accessKeyId', 'secretAccessKey', 'sessionToken'];
 const clearSecrets = () => secrets.forEach(id => { document.getElementById(id).value = ''; });
 function paint(s) {
-  status.textContent = s.connected ? `Connected to Amazon Bedrock\n${s.modelId} · ${s.region}\nOpen Perfect Pair and select Live agent.` : (s.error?.message || 'AWS is not connected yet. Enter your workshop credentials below.');
+  document.getElementById('remember').disabled=!s.rememberAvailable;
+  if(!s.rememberAvailable)document.getElementById('remember').checked=false;
+  status.textContent = s.connected ? `Connected to Amazon Bedrock\n${s.modelId} · ${s.region}\n${s.remembered?'Saved in macOS Keychain · restores automatically after restart.':'Connected for this server session only.'}\nOpen Perfect Pair and select Live agent.` : (s.restoring?'Restoring your saved AWS connection…':s.storageError||s.error?.message || 'AWS is not connected yet. Enter your workshop credentials below.');
 }
 async function load() {
   const res = await fetch('/api/status', { cache: 'no-store' });
@@ -12,11 +14,12 @@ async function load() {
   const s = await res.json(); csrfToken = s.csrfToken;
   for (const k of ['region', 'modelId', 'thoroughModelId']) document.getElementById(k).value = s[k] || '';
   paint(s);
+  if(s.restoring)setTimeout(()=>load().catch(()=>{}),1500);
 }
 async function post(path, input) {
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-PP-Token': csrfToken }, body: JSON.stringify(input) });
   const s = await res.json();
-  if (!res.ok) throw new Error(s.error?.message || 'Connection failed.');
+  if (!res.ok) throw new Error(s.restoring?'Restoring your saved AWS connection…':s.storageError||s.error?.message || 'Connection failed.');
   paint(s);
 }
 async function busy(action) {
@@ -27,6 +30,7 @@ async function busy(action) {
 form.addEventListener('submit', event => {
   event.preventDefault();
   const input = Object.fromEntries(new FormData(form));
+  input.remember=document.getElementById('remember').checked;
   clearSecrets();
   status.textContent = 'Testing a small request with Amazon Bedrock…';
   busy(() => post('/api/connect', input));

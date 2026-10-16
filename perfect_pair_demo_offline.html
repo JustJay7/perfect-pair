@@ -7050,9 +7050,10 @@ async function getLiveSample() {
     if (!response.ok) throw new Error();
     const info = await response.json();
     bedrockToken = info.csrfToken;
+    if(info.restoring)setTimeout(refreshBedrock,1500);
     STATE.live.modelId = info.modelId;
     STATE.live.thoroughModelId = info.thoroughModelId;
-    STATE.live.reason = info.error?.message || 'Connect AWS once for this running server. Refreshing the page does not disconnect AWS; restarting the server or disconnecting clears the temporary session. Expired workshop credentials must be renewed.';
+    STATE.live.reason = info.error?.message || 'Connect AWS once for this running server. Refreshing the page does not disconnect AWS; saved connections restore from macOS Keychain after a restart. Use Connect AWS to save or renew your workshop credentials.';
     return info.connected ? bedrockSample : null;
   } catch {
     STATE.live.reason = 'The local AWS connection is unavailable. Start the Perfect Pair server, then reload.';
