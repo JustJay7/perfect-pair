@@ -36,3 +36,12 @@ restock.csv
 Notes.docx
 Book.xlsx
 perfect_pair.zip
+
+*.sqlite*
+*.db
+*.log
+*.zip
+**/demo-key
+**/known_hosts
+/app/source/dist/test.html
+/audit/screenshots/

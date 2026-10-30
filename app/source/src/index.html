@@ -1,0 +1,53 @@
+<title>Perfect Pair Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,300..800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/*STYLES*/
+</style>
+
+<header class="mast">
+  <div class="wrap mast-row">
+    <div class="mast-title"><b>Perfect Pair</b><span>Team Code Reapers · BSRM × ALDO Retail Gen AI Hackathon · synthetic cases, real ALDO totals</span></div>
+    <div class="controls" aria-label="Demo controls">
+      <span class="ctl-label">Demo controls</span>
+      <div class="seg" role="group" aria-label="Agent mode">
+        <button type="button" id="mode-live" aria-pressed="false">Live agent</button>
+        <button type="button" id="mode-scripted" aria-pressed="true">Scripted backup</button>
+      </div>
+      <label class="sr-only" for="tier">Model speed</label>
+      <select id="tier" title="Model speed for the live agent">
+        <option value="quick">Fast model</option>
+        <option value="default">Thorough model</option>
+      </select>
+      <label class="switch" title="Makes the first reservation fail, so the agent has to re-plan"><input type="checkbox" id="failsw" checked> Pair sells mid-reservation</label>
+      <button type="button" class="btn-ghost theme-btn" id="theme-btn" aria-label="Switch to dark mode" title="Switch light and dark mode"></button>
+      <button type="button" class="btn-ghost" id="reset-btn">Reset demo</button>
+    </div>
+  </div>
+  <div class="wrap"><div class="livenote" id="livenote"></div></div>
+</header>
+
+<nav class="tabs" aria-label="Screens"><div class="wrap" id="tabs"></div></nav>
+
+<main class="wrap">
+  <section class="tab-panel" id="tab-return" role="tabpanel" aria-labelledby="tabbtn-return" hidden></section>
+  <section class="tab-panel" id="tab-store" role="tabpanel" aria-labelledby="tabbtn-store" hidden></section>
+  <section class="tab-panel" id="tab-associate" role="tabpanel" aria-labelledby="tabbtn-associate" hidden></section>
+  <section class="tab-panel" id="tab-approvals" role="tabpanel" aria-labelledby="tabbtn-approvals" hidden></section>
+  <section class="tab-panel" id="tab-dashboard" role="tabpanel" aria-labelledby="tabbtn-dashboard" hidden></section>
+  <section class="tab-panel" id="tab-prevention" role="tabpanel" aria-labelledby="tabbtn-prevention" hidden></section>
+  <section class="tab-panel" id="tab-evals" role="tabpanel" aria-labelledby="tabbtn-evals" hidden></section>
+  <section class="tab-panel" id="tab-audit" role="tabpanel" aria-labelledby="tabbtn-audit" hidden></section>
+  <section class="tab-panel" id="tab-data" role="tabpanel" aria-labelledby="tabbtn-data" hidden></section>
+  <section class="tab-panel" id="tab-how" role="tabpanel" aria-labelledby="tabbtn-how" hidden></section>
+  <footer class="foot">
+    <b>Perfect Pair</b> · Team Code Reapers · a working prototype for the BSRM × ALDO Retail Gen AI Hackathon, October 2026.
+    The customers, orders, photos, reviews and policy clauses in the return story are synthetic. The Dashboard and the Prevention agent's real-styles view use totals from ALDO Group data supplied for the hackathon (no customer, order or transaction numbers). This is not ALDO's system and not ALDO's published return policy.
+  </footer>
+</main>
+
+<script type="application/json" id="pp-data">/*DATA*/</script>
+<script>
+/*SCRIPTS*/
+</script>

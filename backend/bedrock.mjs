@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import vm from 'node:vm';
 
 export const fail = (code, message, status = 400) => Object.assign(new Error(message), { code, status });
-const source = new URL('../source/src/', import.meta.url);
+const source = new URL('../app/source/src/', import.meta.url);
 const context = vm.createContext({ document: { getElementById: () => ({ textContent: readFileSync(new URL('data.json', source), 'utf8') }) } });
 vm.runInContext(readFileSync(new URL('core.js', source), 'utf8'), context, { timeout: 5000 });
 const definitions = JSON.parse(vm.runInContext('JSON.stringify(Object.values(TOOLS).map(({name, description, inputSchema}) => ({name, description, inputSchema})))', context));
@@ -49,7 +49,7 @@ export function publicError(error) {
 }
 
 export function readConfig(env = process.env) {
-  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-5-5', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
+  return { region: env.AWS_REGION || env.AWS_DEFAULT_REGION || 'us-east-1', modelId: env.BEDROCK_MODEL_ID || 'us.anthropic.claude-opus-5-5', thoroughModelId: env.BEDROCK_THOROUGH_MODEL_ID || '' };
 }
 
 export class BedrockService {
@@ -71,7 +71,7 @@ export class BedrockService {
     return this.clientFactory({ region: config.region, ...(credentials ? { credentials } : {}), maxAttempts: 1 });
   }
   status() {
-    return { provider: 'bedrock', connected: this.ready, ...this.config, error: this.lastError, mode: 'local-demo', toolExecution: 'server-simulation' };
+    return { provider: 'bedrock', connected: this.ready, ...this.config, error: this.lastError, mode: 'local-demo', toolExecution: 'server-authoritative-simulation' };
   }
   async send(client, input, signal) {
     const now = Date.now();

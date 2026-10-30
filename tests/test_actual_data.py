@@ -6,7 +6,7 @@ import unittest
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'source'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from gen_real import FILES, build_actual, load_inputs
 
 

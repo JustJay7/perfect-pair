@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location('transactions',Path(__file__).resolve().parents[1]/'source/import_transactions.py')
+spec = importlib.util.spec_from_file_location('transactions',Path(__file__).resolve().parents[1]/'tools/import_transactions.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 

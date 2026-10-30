@@ -1,14 +1,16 @@
 import http from 'node:http';
+import { Workspace } from './workspace.mjs';
 import { readFile } from 'node:fs/promises';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { BedrockService, fail, publicError } from './bedrock.mjs';
 import { keychainStore, SavedConnection } from './keychain.mjs';
-import { Workspace } from './workspace.mjs';
+
 
 const root = new URL('../', import.meta.url);
 const files = new Map([
-  ['/', ['perfect_pair_demo_offline.html', 'text/html; charset=utf-8']],
+  ['/', ['app/perfect_pair_demo.html', 'text/html; charset=utf-8']],
+  ['/bridge.js', ['backend/bridge.js', 'text/javascript; charset=utf-8']],
   ['/connect', ['backend/connect.html', 'text/html; charset=utf-8']],
   ['/connect.js', ['backend/connect.js', 'text/javascript; charset=utf-8']],
 ]);
@@ -30,7 +32,8 @@ async function jsonBody(req) {
 }
 
 export function createServer({ service = new BedrockService(), workspacePath = ':memory:', historyPath, transactionPath, credentialStore = null } = {}) {
-  const workspace = new Workspace({ service, path: workspacePath, ...(historyPath ? { historyPath } : {}), ...(transactionPath ? { transactionPath } : {}) });
+
+  const workspace = new Workspace({service,path:workspacePath,historyPath,transactionPath});
   const connection=new SavedConnection(service,credentialStore);
   const restored=connection.restore();
   const token = randomBytes(32).toString('hex');
@@ -53,7 +56,9 @@ export function createServer({ service = new BedrockService(), workspacePath = '
       if (req.method === 'GET' && files.has(url.pathname)) {
         const [file, type] = files.get(url.pathname);
         res.writeHead(200, { 'Content-Type': type });
-        res.end(await readFile(new URL(file, root)));
+        let content = await readFile(new URL(file, root));
+        if(url.pathname === '/') content = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="/bridge.js"></script><style>[hidden]{display:none!important}</style>' + content.toString();
+        res.end(content);
         return;
       }
       if (req.method === 'GET' && url.pathname === '/api/status') { reply(200, { ...connection.status(), csrfToken: token }); return; }
@@ -72,10 +77,11 @@ export function createServer({ service = new BedrockService(), workspacePath = '
       const given = Buffer.from(req.headers['x-pp-token'] || '');
       if (req.headers.origin !== origin || given.length !== token.length || !timingSafeEqual(given, Buffer.from(token))) throw fail('forbidden', 'Reload the local app before continuing.', 403);
       const body = await jsonBody(req);
-      if (url.pathname === '/api/transactions/plan') { reply(200,workspace.transactions.routing(body));return; }
-      if (url.pathname === '/api/workflow') { reply(202, workspace.submit(body)); return; }
-      if (url.pathname === '/api/workflow/stop') { workspace.stop(); reply(200,{stopped:true}); return; }
-      if (url.pathname === '/api/replays') { reply(201,{id:workspace.saveReplay(body.caseId,body.historyId)}); return; }
+      if(url.pathname === '/api/workflow') {reply(202,workspace.submit(body));return;}
+      if(url.pathname === '/api/workflow/stop') {workspace.stop();reply(200,{stopped:true});return;}
+      if(url.pathname === '/api/replays') {reply(201,{id:workspace.saveReplay(body.caseId,body.historyId)});return;}
+      if(url.pathname === '/api/replays/delete') {workspace.store.db.prepare('DELETE FROM replays WHERE id=?').run(String(body.id));reply(200,{deleted:true});return;}
+
       if (url.pathname === '/api/connect') { await restored;reply(200, await connection.connect(body)); return; }
       if (url.pathname === '/api/disconnect') { await restored;reply(200, await connection.disconnect()); return; }
       if (url.pathname === '/api/runs') { reply(200, await service.start(body, abort.signal)); return; }
@@ -90,8 +96,7 @@ export function createServer({ service = new BedrockService(), workspacePath = '
   });
   server.requestTimeout = 120000;
   server.headersTimeout = 15000;
-  server.workspace=workspace;
-  server.on('close', () => { service.disconnect(); workspace.stop(); if(workspace.busy)workspace.completion.finally(()=>workspace.close());else workspace.close(); });
+  server.on('close', () => {service.disconnect();workspace.close();});
   return server;
 }
 
@@ -99,7 +104,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try { process.loadEnvFile(new URL('../.env', import.meta.url)); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   process.env.AWS_EC2_METADATA_DISABLED = 'true';
   const server = createServer({ credentialStore:keychainStore(), workspacePath: process.env.PP_STATE_PATH || new URL('../local_data/workspace.sqlite', import.meta.url).pathname, historyPath:process.env.PP_HISTORY_PATH,transactionPath:process.env.PP_TRANSACTIONS_PATH });
-  const port = Number(process.env.PORT || 8787);
+  const port = Number(process.env.PORT || 8789);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('PORT must be between 1024 and 65535.');
   server.on('error', error => { console.error(error.code === 'EADDRINUSE' ? `Port ${port} is in use. Stop the other server or choose another PORT.` : 'Could not start the local server.'); process.exitCode = 1; });
   server.listen(port, '127.0.0.1', () => console.log(`Perfect Pair: http://127.0.0.1:${port}\nConnect AWS: http://127.0.0.1:${port}/connect\nLocal access only. Remembered AWS credentials restore from macOS Keychain. Disconnect removes the saved connection.`));
